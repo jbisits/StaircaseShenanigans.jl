@@ -10,6 +10,7 @@ using SeawaterPolynomials: BoussinesqEquationOfState
 
 abstract type AbstractStaircaseModel end
 abstract type AbstractStaircaseInitialConditions end
+abstract type AbstractNoise end
 
 export StaircaseDNS, DNSModel, SDNS_simulation_setup
 

@@ -1,6 +1,6 @@
 module StaircaseShenanigans
 
-using Oceananigans, Reexport
+using Oceananigans, Reexport, Printf
 using SeawaterPolynomials.TEOS10
 using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 using SeawaterPolynomials: BoussinesqEquationOfState

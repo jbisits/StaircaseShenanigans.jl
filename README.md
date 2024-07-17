@@ -7,6 +7,7 @@
 [![Build Status](https://github.com/jbisits/StaircaseShenanigans.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/jbisits/StaircaseShenanigans.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
 A Julia package for setting up Direct Numerical Simulations (DNS) of thermohaline staircases using [Oceananigans.jl](https://github.com/CliMA/Oceananigans.jl).
+This is currently work in progress and breaking changes are likley.
 
 To add the package (assuming Julia is already installed):
 

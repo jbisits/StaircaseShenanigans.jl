@@ -166,3 +166,89 @@ function output_directory(sdns::StaircaseDNS, stop_time::Number, output_path)
     return output_dir
 
 end
+"""
+    function save_tracers!(simulation, model, save_schedule, save_file, output_dir, overwrite_saved_output)
+Save `model.tracers` during a `Simulation` using an `OutputWriter`.
+"""
+function save_tracers!(simulation, model, save_schedule, save_file, output_dir,
+                       overwrite_saved_output)
+
+    S, T = model.tracers.S, model.tracers.T
+    tracers = Dict("S" => S, "T" => T)
+
+    simulation.output_writers[:tracers] =
+        save_file == :netcdf ? NetCDFOutputWriter(model, tracers;
+                                                  filename = "tracers",
+                                                  dir = output_dir,
+                                                  overwrite_existing = overwrite_saved_output,
+                                                  schedule = TimeInterval(save_schedule)
+                                                  ) :
+                                JLD2OutputWriter(model, tracers;
+                                                 filename = "tracers",
+                                                 dir = output_dir,
+                                                 schedule = TimeInterval(save_schedule),
+                                                 overwrite_existing = overwrite_saved_output)
+
+    return nothing
+
+end
+save_tracers!(simulation, model, save_info::Tuple) =
+    save_tracers!(simulation, model, save_info...)
+"""
+    function save_velocities!(simulation, model, save_schedule, save_file, output_dir,
+                              overwrite_saved_output)
+Save `model.velocities` during a `Simulation` using an `OutputWriter`.
+"""
+function save_velocities!(simulation, model, save_schedule, save_file, output_dir,
+                          overwrite_saved_output)
+
+    u, v, w = model.velocities
+    velocities = Dict("u" => u, "v" => v, "w" => w)
+
+    simulation.output_writers[:velocities] =
+        save_file == :netcdf ? NetCDFOutputWriter(model, velocities;
+                                                filename = "velocities",
+                                                dir = output_dir,
+                                                overwrite_existing = overwrite_saved_output,
+                                                schedule = TimeInterval(save_schedule)
+                                                ) :
+                                JLD2OutputWriter(model, velocities;
+                                                filename = "velocities",
+                                                dir = output_dir,
+                                                schedule = TimeInterval(save_schedule),
+                                                overwrite_existing = overwrite_saved_output)
+
+    return nothing
+
+end
+save_velocities!(simulation, model, save_info::Tuple) =
+    save_velocities!(simulation, model, save_info...)
+    "Default function for `save_custom_output!` in `TLDNS_simulation_setup`."
+no_custom_output!(simulation, model, save_info...) = nothing
+"""
+    function checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)
+Setup a `Checkpointer` at `checkpointer_time_interval` for a `simulation`
+"""
+function checkpointer_setup!(simulation, model, output_dir,
+                             checkpointer_time_interval::Number)
+
+    checkpoint_dir = joinpath(output_dir, "model_checkpoints/")
+    isdir(checkpoint_dir) ? nothing : mkdir(checkpoint_dir)
+    schedule = TimeInterval(checkpointer_time_interval)
+    cleanup = true
+    checkpointer = Checkpointer(model; schedule, dir = checkpoint_dir, cleanup)
+    simulation.output_writers[:checkpointer] = checkpointer
+
+    return nothing
+
+end
+checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval::Nothing) = nothing
+"""
+    function simulation_progress(sim)
+Useful progress messaging for simulation runs. This function is from an
+[Oceananigans.jl example](https://clima.github.io/OceananigansDocumentation/dev/generated/horizontal_convection/#A-progress-messenger).
+"""
+simulation_progress(sim) = @printf("i: % 6d, sim time: % 1.3f, wall time: % 10s, Δt: % 1.4f, advective CFL: %.2e, diffusive CFL: %.2e\n",
+                                    iteration(sim), time(sim), prettytime(sim.run_wall_time),
+                                    sim.Δt, AdvectiveCFL(sim.Δt)(sim.model),
+                                    DiffusiveCFL(sim.Δt)(sim.model))

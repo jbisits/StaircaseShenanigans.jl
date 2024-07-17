@@ -4,9 +4,6 @@ using Oceananigans, Reexport
 using SeawaterPolynomials.TEOS10
 using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 using SeawaterPolynomials: BoussinesqEquationOfState
-using TwoLayerDirectNumericalShenanigans: save_tracers!, save_velocities!, no_custom_output!,
-                                          simulation_progress, checkpointer_setup!
-using TwoLayerDirectNumericalShenanigans: AbstractNoise, SalinityNoise, TemperatureNoise, perturb_tracer
 
 @reexport using Oceananigans, SeawaterPolynomials.TEOS10,
                 SeawaterPolynomials.SecondOrderSeawaterPolynomials

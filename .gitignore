@@ -6,7 +6,6 @@
 *.jld2
 *.nc
 *.vscode
-/Manifest.toml
 /deps/deps.jl
 /docs/Manifest.toml
 /docs/build/

@@ -223,7 +223,7 @@ function save_velocities!(simulation, model, save_schedule, save_file, output_di
 end
 save_velocities!(simulation, model, save_info::Tuple) =
     save_velocities!(simulation, model, save_info...)
-    "Default function for `save_custom_output!` in `TLDNS_simulation_setup`."
+"Default function for `save_custom_output!` in `TLDNS_simulation_setup`."
 no_custom_output!(simulation, model, save_info...) = nothing
 """
     function checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)

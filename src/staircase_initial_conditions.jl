@@ -34,6 +34,8 @@ set in the ranges:
 - z ∈ [depth_of_steps[1], 0)
 - z ∈ [depth_of_steps[i], depth_of_steps[i-1]) for i = 2:number_of_steps-1
 - z ∈ [-Lz, depth_of_steps[1]).
+
+**Not currently in use and will remove if not needed.**
 """
 function set_steps(z, C, depth_of_steps)
 

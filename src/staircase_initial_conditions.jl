@@ -10,6 +10,22 @@ struct StepInitialConditions{T} <: AbstractStaircaseInitialConditions
        salinity_values :: T
     "Temperature values in each layer"
     temperature_values :: T
+    "Initial R_ρ at each step interface"
+                   R_ρ :: T
+end
+function StepInitialConditions(number_of_steps, depth_of_steps, salinity, temperature)
+
+    ΔT = diff(temperature)
+    ΔS = diff(salinity)
+    # Constant values take from Vallis, not sure if this is the best way to calculate
+    # these but will start with this.
+    α = 1.67e-4
+    β = 7.80e-4
+
+    R_ρ = @. (β * ΔS) / (α * ΔT)
+
+    return StepInitialConditions(number_of_steps, depth_of_steps, salinity, temperature, R_ρ)
+
 end
 """
     function set_steps(z, C, depth_of_steps)
@@ -55,7 +71,8 @@ function Base.show(io::IO, sics::AbstractStaircaseInitialConditions)
         println(io, "┣━━━━ number_of_steps: $(sics.number_of_steps)")
         println(io, "┣━━━━━ depth_of_steps: $(sics.depth_of_steps)")
         println(io, "┣━━━━ salinity_values: $(sics.salinity_values)")
-        print(io,   "┗━ temperature_values: $(sics.temperature_values)")
+        println(io, "┣━ temperature_values: $(sics.temperature_values)")
+        print(io,   "┗━━━━━━━━━━━━━━━━ R_ρ: $(round.(sics.R_ρ; digits = 2))")
     elseif sics isa SmoothStepInitialConditions
         println(io, "StepInitialConditions")
         println(io, "┣━━━━ number_of_steps: $(sics.number_of_steps)")

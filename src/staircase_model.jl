@@ -19,7 +19,7 @@ StaircaseDNS(model, initial_conditions; initial_noise = nothing) =
 Base.iterate(sdns::AbstractStaircaseModel, state = 1) =
     state > length(fieldnames(sdns)) ? nothing : (getfield(sdns, state), state + 1)
 
-# Same DNS setup as in TLDNS but repeated here for easier changes that may be specific to
+# Same DNS setup as in sdns but repeated here for easier changes that may be specific to
 # setting up staircase experiments.
 """
     function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
@@ -101,7 +101,10 @@ function grid_stretching(Lz::Number, Nz::Number, refinement::Number, stretching:
     return z_faces
 
 end
-
+"""
+    function SDNS_simulation_setup
+Build a `simulation` from `sdns`.
+"""
 function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
                                 stop_time::Number, save_schedule::Number,
                                 save_custom_output!::Function=no_custom_output!;
@@ -140,7 +143,28 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
     # Checkpointer setup
     checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval)
 
+    save_R_ρ!(simulation, sdns)
+
     return simulation
+
+end
+"""
+    save_R_ρ!(simulation::Simulation, sdns::StaircaseDNS)
+To the output file.
+"""
+function save_R_ρ!(simulation::Simulation, sdns::StaircaseDNS)
+
+    if simulation.output_writers[:tracers] isa NetCDFOutputWriter
+        NCDataset(simulation.output_writers[:computed_output].filepath, "a") do ds
+            ds.attrib["Step interface R_ρ"] = sdns.initial_conditions.R_ρ
+        end
+    elseif simulation.output_writers[:tracers] isa JLD2OutputWriter
+        jldopen(simulation.output_writers[:computed_output].filepath, "a+") do f
+            f["Step interface R_ρ"] = sdns.initial_conditions.R_ρ
+        end
+    end
+
+    return nothing
 
 end
 """
@@ -153,9 +177,11 @@ function output_directory(sdns::StaircaseDNS, stop_time::Number, output_path)
     ic_type = typeof(sdns.initial_conditions)
     ic_string = ic_type <: StepInitialConditions ? "step_change" : "smoothed_step"
 
+    eos_string = is_linear_eos(sdns.model.buoyancy.model.equation_of_state.seawater_polynomial)
+
     stop_time_min = stop_time / 60 ≥ 1 ? string(round(Int, stop_time / 60)) :
                                          string(round(stop_time / 60; digits = 2))
-    expt_dir = ic_string *"_"* stop_time_min * "min"
+    expt_dir = eos_string *"_"* ic_string *"_"* stop_time_min * "min"
 
     output_dir = mkpath(joinpath(output_path, expt_dir))
     # make a simulation directory if one is not present
@@ -165,6 +191,14 @@ function output_directory(sdns::StaircaseDNS, stop_time::Number, output_path)
 
     return output_dir
 
+end
+is_linear_eos(eos::TEOS10SeawaterPolynomial) = "nonlineareos"
+function is_linear_eos(eos::SecondOrderSeawaterPolynomial)
+
+    non_linear_coefficients = (eos.R₀₁₁, eos.R₀₂₀, eos.R₁₀₁, eos.R₁₁₀, eos.R₂₀₀)
+    eos_type = all(non_linear_coefficients .== 0) ? "lineareos" : "nonlineareos"
+
+    return eos_type
 end
 """
     function save_tracers!(simulation, model, save_schedule, save_file, output_dir, overwrite_saved_output)
@@ -223,7 +257,44 @@ function save_velocities!(simulation, model, save_schedule, save_file, output_di
 end
 save_velocities!(simulation, model, save_info::Tuple) =
     save_velocities!(simulation, model, save_info...)
-"Default function for `save_custom_output!` in `TLDNS_simulation_setup`."
+    """
+    function save_computed_output!(simulation, sdns, save_schedule, save_file, output_dir,
+                                   overwrite_saved_output, reference_gp_height)
+Save selection of computed output during a `Simulation` using an `OutputWriter`.
+"""
+function save_computed_output!(simulation, sdns, save_schedule, save_file, output_dir,
+                               overwrite_saved_output, reference_gp_height)
+
+    model = sdns.model
+    σ = seawater_density(model, geopotential_height = reference_gp_height)
+    computed_outputs = Dict("σ" => σ)
+
+    oa = Dict(
+        "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(reference_gp_height)dbar",
+                    "units" => "kgm⁻³")
+        )
+
+    simulation.output_writers[:computed_output] =
+        save_file == :netcdf ? NetCDFOutputWriter(model, computed_outputs;
+                                                filename = "computed_output",
+                                                dir = output_dir,
+                                                overwrite_existing = overwrite_saved_output,
+                                                schedule = TimeInterval(save_schedule),
+                                                output_attributes = oa
+                                                ) :
+                                JLD2OutputWriter(model, computed_outputs;
+                                                filename = "computed_output",
+                                                dir = output_dir,
+                                                schedule = TimeInterval(save_schedule),
+                                                overwrite_existing = overwrite_saved_output)
+
+
+    return nothing
+
+end
+save_computed_output!(simulation, sdns, save_info::Tuple; reference_gp_height = 0) =
+    save_computed_output!(simulation, sdns, save_info..., reference_gp_height)
+"Default function for `save_custom_output!` in `sdns_simulation_setup`."
 no_custom_output!(simulation, model, save_info...) = nothing
 """
     function checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)

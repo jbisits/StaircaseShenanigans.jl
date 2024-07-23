@@ -20,8 +20,11 @@ export StepInitialConditions, SmoothStepInitialConditions, set_staircase_initial
 
 export save_computed_output!
 
+export animate_tracers, animate_density, visualise_initial_conditions, visualise_initial_density
+
 include("staircase_model.jl")
 include("staircase_initial_conditions.jl")
 include("set_staircase_initial_conditions.jl")
+include("makie_plotting_functions.jl")
 
 end

@@ -22,7 +22,8 @@ function StepInitialConditions(number_of_steps, depth_of_steps, salinity, temper
     α = 1.67e-4
     β = 7.80e-4
 
-    R_ρ = @. (β * ΔS) / (α * ΔT)
+    R_ρ = similar(depth_of_steps)
+    @. R_ρ = (β * ΔS) / (α * ΔT)
 
     return StepInitialConditions(number_of_steps, depth_of_steps, salinity, temperature, R_ρ)
 

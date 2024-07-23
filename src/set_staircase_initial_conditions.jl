@@ -14,8 +14,8 @@ function set_staircase_initial_conditions!(model, ics::StepInitialConditions)
     S₀[:, :, z .> depth_of_steps[1]] .= S[1]
     T₀[:, :, z .> depth_of_steps[1]] .= T[1]
     for i ∈ 1:length(depth_of_steps)-1
-        S₀[:, :, depth_of_steps[i+1] .≤ z .< depth_of_steps[i]] .= S[i]
-        T₀[:, :, depth_of_steps[i+1] .≤ z .< depth_of_steps[i]] .= T[i]
+        S₀[:, :, depth_of_steps[i+1] .≤ z .< depth_of_steps[i]] .= S[i+1]
+        T₀[:, :, depth_of_steps[i+1] .≤ z .< depth_of_steps[i]] .= T[i+1]
     end
     S₀[:, :, z .< depth_of_steps[end]] .= S[end]
     T₀[:, :, z .< depth_of_steps[end]] .= T[end]

@@ -99,9 +99,10 @@ function StaircaseShenanigans.animate_density(computed_output::AbstractString, v
         ax[1].ylabel = "z"
         ax[1].xaxisposition = :top
         ax[1].xticklabelrotation = π / 4
+        xlims!(ax[1], extrema(ds[variable][:, :, :, end]))
 
         colormap = cgrad(:dense)[2:end-1]
-        colorrange = (minimum(ds[variable][:, :, :, 1]), pred_max_density)
+        colorrange = extrema(ds[variable][:, :, :, end])
         lowclip = cgrad(:dense)[1]
         highclip = cgrad(:dense)[end]
         hm = heatmap!(ax[2], x, z, σ; colorrange, colormap, lowclip, highclip)

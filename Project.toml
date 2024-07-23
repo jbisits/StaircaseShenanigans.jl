@@ -12,6 +12,12 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 SeawaterPolynomials = "d496a93d-167e-4197-9f49-d3af4ff8fe40"
 
+[weakdeps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+
+[extensions]
+StaircaseShenanigansMakieExt = "CairoMakie"
+
 [compat]
 Oceananigans = "0.91"
 Reexport = "1.2"

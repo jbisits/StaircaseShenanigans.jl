@@ -20,6 +20,7 @@ StaircaseShenanigansMakieExt = "CairoMakie"
 
 [compat]
 JLD2 = "0.4"
+GibbsSeaWater = "0.1"
 Oceananigans = "0.91"
 Reexport = "1.2"
 SeawaterPolynomials = "0.3"

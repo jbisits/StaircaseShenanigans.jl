@@ -5,7 +5,11 @@ using Oceananigans: seawater_density
 using SeawaterPolynomials.TEOS10
 using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 using SeawaterPolynomials: BoussinesqEquationOfState
+using SeawaterPolynomials: thermal_expansion, haline_contraction
+using GibbsSeaWater: gsw_alpha, gsw_beta
 using NCDatasets, JLD2
+
+import SeawaterPolynomials.SecondOrderSeawaterPolynomials: RoquetSeawaterPolynomial
 
 @reexport using Oceananigans, SeawaterPolynomials.TEOS10,
                 SeawaterPolynomials.SecondOrderSeawaterPolynomials
@@ -18,6 +22,8 @@ export StaircaseDNS, DNSModel, SDNS_simulation_setup
 
 export StepInitialConditions, SmoothStepInitialConditions, set_staircase_initial_conditions!
 
+export CustomLinearRoquetSeawaterPolynomial, CustomLinearEquationOfState
+
 export save_computed_output!
 
 export animate_tracers, animate_density, visualise_initial_conditions, visualise_initial_density
@@ -25,6 +31,7 @@ export animate_tracers, animate_density, visualise_initial_conditions, visualise
 include("staircase_model.jl")
 include("staircase_initial_conditions.jl")
 include("set_staircase_initial_conditions.jl")
+include("alt_lineareos.jl")
 include("makie_plotting_functions.jl")
 
 end

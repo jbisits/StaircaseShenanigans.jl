@@ -19,6 +19,7 @@ CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 StaircaseShenanigansMakieExt = "CairoMakie"
 
 [compat]
+NCDatasets = "0.14"
 JLD2 = "0.4"
 GibbsSeaWater = "0.1"
 Oceananigans = "0.91"

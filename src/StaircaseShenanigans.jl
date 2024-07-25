@@ -2,6 +2,8 @@ module StaircaseShenanigans
 
 using Oceananigans, Reexport, Printf
 using Oceananigans: seawater_density
+using Oceananigans.BuoyancyModels: Zᶜᶜᶠ
+using Oceananigans.AbstractOperations: KernelFunctionOperation
 using SeawaterPolynomials.TEOS10
 using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 using SeawaterPolynomials: BoussinesqEquationOfState

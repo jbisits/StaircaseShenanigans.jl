@@ -1,3 +1,5 @@
+abstract type AbstractStaircaseInitialConditions <: AbstractInitialConditions end
+
 Base.iterate(sics::AbstractStaircaseInitialConditions, state = 1) =
     state > length(fieldnames(sics)) ? nothing : (getfield(sdns, state), state + 1)
 
@@ -60,6 +62,7 @@ function compute_α_and_β(salinity, temperature, depth_of_steps, eos, grid)
 
     return α, β
 end
+"Get the `geopotential_height` from the `grid` of a `model`."
 geopotential_height(grid) = KernelFunctionOperation{Center, Center, Face}(Zᶜᶜᶠ, grid)
 
 struct SmoothStepInitialConditions{T} <: AbstractStaircaseInitialConditions

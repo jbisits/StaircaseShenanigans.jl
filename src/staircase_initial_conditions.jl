@@ -17,13 +17,11 @@ struct StepInitialConditions{T} <: AbstractStaircaseInitialConditions
 end
 function StepInitialConditions(model, number_of_steps, depth_of_steps, salinity, temperature)
 
-    grid = model.grid
     eos = model.buoyancy.model.equation_of_state
     ΔT = diff(temperature)
     ΔS = diff(salinity)
 
-    step_gh_height = compute_gp_height(grid, depth_of_steps)
-    α, β = compute_α_and_β(salinity, temperature, step_gh_height, eos)
+    α, β = compute_α_and_β(salinity, temperature, depth_of_steps, eos)
 
     R_ρ = similar(depth_of_steps)
     @. R_ρ = (β * ΔS) / (α * ΔT)
@@ -38,7 +36,7 @@ The coefficients are computed as α̂ = 0.5 * (α(Sᵢ, 0.5 * (Θᵢ+Θⱼ), 0) 
 where j = i + 1. Still need to double check if there is a more accurate way to do this as
 I think this is a slight simplication of the method I am meant to be using.
 """
-function compute_α_and_β(salinity, temperature, step_gh_height, eos)
+function compute_α_and_β(salinity, temperature, depth_of_steps, eos)
 
     S1 = @view salinity[1:end-1]
     S2 = @view salinity[2:end]
@@ -50,27 +48,28 @@ function compute_α_and_β(salinity, temperature, step_gh_height, eos)
 
     eos_vec = fill(eos, length(S1))
 
-    α = 0.5 * (thermal_expansion.(Tstepmean, S1, step_gh_height, eos_vec) +
-               thermal_expansion.(Tstepmean, S2, step_gh_height, eos_vec))
+    α = 0.5 * (thermal_expansion.(Tstepmean, S1, depth_of_steps, eos_vec) +
+               thermal_expansion.(Tstepmean, S2, depth_of_steps, eos_vec))
 
-    β = 0.5 * (haline_contraction.(T1, Sstepmean, step_gh_height, eos_vec) +
-               haline_contraction.(T2, Sstepmean, step_gh_height, eos_vec))
+    β = 0.5 * (haline_contraction.(T1, Sstepmean, depth_of_steps, eos_vec) +
+               haline_contraction.(T2, Sstepmean, depth_of_steps, eos_vec))
 
     return α, β
 end
-"Get the `geopotential_height` from the `grid` of a `model`."
-geopotential_height(grid) = KernelFunctionOperation{Center, Center, Face}(Zᶜᶜᶠ, grid)
+# Would prefer to implement these when I get a chance.
+# "Get the `geopotential_height` from the `grid` of a `model`."
+# geopotential_height(grid) = KernelFunctionOperation{Center, Center, Face}(Zᶜᶜᶠ, grid)
 
-function compute_gp_height(grid, depth_of_steps)
+# function compute_gp_height(grid, depth_of_steps)
 
-    gh = Field(geopotential_height(grid))
-    compute!(gh)
+#     gh = Field(geopotential_height(grid))
+#     compute!(gh)
 
-    step_gh_idx = [findfirst(interior(gh, 1, 1, :) .≥ d) for d ∈ depth_of_steps]
-    step_gh_height = interior(gh, 1, 1, step_gh_idx)
+#     step_gh_idx = [findfirst(interior(gh, 1, 1, :) .≥ d) for d ∈ depth_of_steps]
+#     step_gh_height = interior(gh, 1, 1, step_gh_idx)
 
-    return Array(step_gh_height)
-end
+#     return Array(step_gh_height)
+# end
 
 struct SmoothStepInitialConditions{T} <: AbstractStaircaseInitialConditions
     "Number of step changes in the initial state"

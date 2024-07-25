@@ -1,17 +1,33 @@
 using StaircaseShenanigans, GibbsSeaWater
+using SeawaterPolynomials: thermal_expansion, haline_contraction
 using Test
 
 @testset "StaircaseShenanigans.jl" begin
 
-    @testset "Setting initial conditions" begin
-        include("model_ic_setup.jl")
+    include("basic_configuation.jl")
 
+    @testset "Setting initial conditions" begin
+
+        include("model_ic_setup.jl")
         @test all(unique(interior(sdns.model.tracers.S, 1, 1, :)) .== reverse(salinity))
         @test all(unique(interior(sdns.model.tracers.T, 1, 1, :)) .== reverse(temperature))
 
     end
 
+    @testset "R_ρ calculation" begin
+
+        include("R_sub_rho.jl")
+        ΔS, ΔΘ = diff(salinity[1:2]), diff(temperature[1:2])
+        Sₘ, Θₘ = (sum(salinity[1:2]) / 2), (sum(temperature[1:2]) / 2)
+        β = haline_contraction(Θₘ, Sₘ, 0, model.buoyancy.model.equation_of_state)
+        α = thermal_expansion(Θₘ, Sₘ, 0, model.buoyancy.model.equation_of_state)
+
+        @test all(sdns.initial_conditions.R_ρ .≈ (β * ΔS) / (α * ΔΘ))
+
+    end
+
     @testset "CustomLienarEquationOfState initialisation" begin
+
         for _ in 1:5
             Θ = rand(range(-1.5, 20.5, length = 20))
             S = rand(range(34.5, 34.7, length = 20))
@@ -24,6 +40,7 @@ using Test
             @test all(other_coefficients .== 0)
             @test all(linear_coefficients .== true_coefficients)
         end
+
     end
 
 end

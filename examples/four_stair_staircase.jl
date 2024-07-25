@@ -12,9 +12,9 @@ model = DNSModel(architecture, domain_extent, resolution, diffusivities)
 number_of_steps = 4
 depth_of_steps = [-0.2, -0.4, -0.6, -0.8]
 salinity = [34.57, 34.6, 34.63, 34.66, 34.69]
-temperature = [-1.5, -1.45, -1.4, -1.35, -1.3]
+temperature = [-1.5, -1.0, -0.5, 0.0, 0.5]
 
-step_ics = StepInitialConditions(number_of_steps, depth_of_steps, salinity, temperature)
+step_ics = StepInitialConditions(model, number_of_steps, depth_of_steps, salinity, temperature)
 
 sdns = StaircaseDNS(model, step_ics)
 

@@ -179,23 +179,28 @@ Compute and plot the initial density at `pressure` (either reference pressure or
 pressure). The arguments `xslice` and `yslice` are used to choose where in the domain the
 figures are from.
 """
-function StaircaseShenanigans.visualise_initial_density(sdns::StaircaseDNS, xslice::Integer,  yslice::Integer)
+function StaircaseShenanigans.visualise_initial_density(sdns::StaircaseDNS, xslice::Integer,  yslice::Integer,
+                                                        geopotential_height::Integer)
 
     model = sdns.model
 
     x = xnodes(model.grid, Center(), Center(), Center())
     z = znodes(model.grid, Center(), Center(), Center())
-    σ = interior(model.tracers.σ, :, yslice, :, 1)
+    σ = Field(seawater_density(model; geopotential_height))
+    compute!(σ)
 
+    σ_hm = interior(σ, :, yslice, :)
     fig = Figure(size = (1000, 600))
     ax = [Axis(fig[1, i]) for i ∈ 1:2]
 
-    hm = heatmap!(ax[1], x, z, σ; colormap = :dense)
+    hm = heatmap!(ax[1], x, z, σ_hm; colormap = :dense)
     ax[1].title = "Initial density (x-z)"
     ax[1].xlabel = "x (m)"
     ax[1].ylabel = "z (m)"
     Colorbar(fig[2, 1], hm, label = "ρ (kgm⁻³)", vertical = false, flipaxis = false)
-    lines!(ax[2], σ[xslice, :], z)
+
+    σ_profile = interior(σ, xslice, yslice, :)
+    lines!(ax[2], σ_profile, z)
     ax[2].title = "Initial density profile"
     ax[2].xlabel = "ρ (kgm⁻³)"
     ax[2].ylabel = "z (m)"

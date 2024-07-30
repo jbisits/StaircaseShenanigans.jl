@@ -31,8 +31,9 @@ using Test
         for _ in 1:5
             Θ = rand(range(-1.5, 20.5, length = 20))
             S = rand(range(34.5, 34.7, length = 20))
-            true_coefficients = gsw_alpha(S, Θ, 0), gsw_beta(S, Θ, 0)
-            custom_linear = CustomLinearEquationOfState(Θ, S)
+            ρ₀ = 1024.6
+            true_coefficients = ρ₀ * gsw_alpha(S, Θ, 0), ρ₀ * gsw_beta(S, Θ, 0)
+            custom_linear = CustomLinearEquationOfState(Θ, S, reference_density = ρ₀)
             sp = custom_linear.seawater_polynomial
             linear_coefficients = sp.R₀₁₀, sp.R₁₀₀
             other_coefficients = sp.R₁₀₁, sp.R₂₀₀, sp.R₀₂₀, sp.R₁₁₀

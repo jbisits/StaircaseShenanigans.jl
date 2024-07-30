@@ -3,6 +3,7 @@ abstract type AbstractStaircaseInitialConditions <: AbstractInitialConditions en
 Base.iterate(sics::AbstractStaircaseInitialConditions, state = 1) =
     state > length(fieldnames(sics)) ? nothing : (getfield(sdns, state), state + 1)
 
+"Container for initial conditions that have well mixed layers seperated by sharp step interfaces."
 struct StepInitialConditions{T} <: AbstractStaircaseInitialConditions
     "Number of step changes in the initial state"
        number_of_steps :: Int
@@ -18,59 +19,65 @@ end
 function StepInitialConditions(model, number_of_steps, depth_of_steps, salinity, temperature)
 
     eos = model.buoyancy.model.equation_of_state
-    ΔT = diff(temperature)
-    ΔS = diff(salinity)
 
-    α, β = compute_α_and_β(salinity, temperature, depth_of_steps, eos)
-
-    R_ρ = similar(depth_of_steps)
-    @. R_ρ = (β * ΔS) / (α * ΔT)
+    R_ρ = compute_R_ρ(salinity, temperature, depth_of_steps, eos)
 
     return StepInitialConditions(number_of_steps, depth_of_steps, salinity, temperature, R_ρ)
 
 end
 """
-    function compute_α_and_β(salinity, temperature, eos)
-Compute thermal expansion and haline contraction coefficients at the interface of the steps.
-The coefficients are computed as α̂ = 0.5 * (α(Sᵢ, 0.5 * (Θᵢ+Θⱼ), 0) + α(Sⱼ, 0.5 * (Θᵢ+Θⱼ), 0))
-where j = i + 1. Still need to double check if there is a more accurate way to do this as
-I think this is a slight simplication of the method I am meant to be using.
+    function compute_R_ρ(salinity, temperature, depth_of_steps, eos)
+Compute the density ratio, ``R_{\rho}``, at a diffusive interface with a non-linear equation of state
+as defined in [McDougall (1981)](https://www.sciencedirect.com/science/article/abs/pii/0079661181900021)
+equation (1) on page 92.
 """
-function compute_α_and_β(salinity, temperature, depth_of_steps, eos)
+function compute_R_ρ(salinity, temperature, depth_of_steps, eos)
 
-    S1 = @view salinity[1:end-1]
-    S2 = @view salinity[2:end]
-    Sstepmean = (S1 .+ S2) / 2
+    R_ρ = similar(depth_of_steps)
 
-    T1 = @view temperature[1:end-1]
-    T2 = @view temperature[2:end]
-    Tstepmean = (T1 .+ T2) / 2
+    if isequal(is_linear_eos(eos.seawater_polynomial),  "nonlineareos")
 
-    eos_vec = fill(eos, length(S1))
+        S_u = S_g = @view salinity[1:end-1]
+        S_l = S_f = @view salinity[2:end]
+        Θ_u = Θ_f = @view temperature[1:end-1]
+        Θ_l = Θ_g = @view temperature[2:end]
 
-    α = 0.5 * (thermal_expansion.(Tstepmean, S1, depth_of_steps, eos_vec) +
-               thermal_expansion.(Tstepmean, S2, depth_of_steps, eos_vec))
+        eos_vec = fill(eos, length(S_u))
 
-    β = 0.5 * (haline_contraction.(T1, Sstepmean, depth_of_steps, eos_vec) +
-               haline_contraction.(T2, Sstepmean, depth_of_steps, eos_vec))
+        ρ_u = ρ.(Θ_u, S_u, depth_of_steps, eos_vec)
+        ρ_l = ρ.(Θ_l, S_l, depth_of_steps, eos_vec)
+        ρ_f = ρ.(Θ_f, S_f, depth_of_steps, eos_vec)
+        ρ_g = ρ.(Θ_g, S_g, depth_of_steps, eos_vec)
 
-    return α, β
+        R_ρ = @. (0.5 * (ρ_f - ρ_u) + 0.5 * (ρ_l - ρ_g)) /
+                 (0.5 * (ρ_f - ρ_l) + 0.5 * (ρ_u - ρ_g))
+
+    else
+
+        S_u = @view salinity[1:end-1]
+        S_l = @view salinity[2:end]
+        S_m = (S_u .+ S_l) / 2
+
+        Θ_u = @view temperature[1:end-1]
+        Θ_l = @view temperature[2:end]
+        Θ_m = (Θ_u .+ Θ_l) / 2
+
+        eos_vec = fill(eos, length(depth_of_steps))
+
+        α = thermal_expansion.(Θ_m, S_m, depth_of_steps, eos_vec)
+        β = haline_contraction.(Θ_m, S_m, depth_of_steps, eos_vec)
+
+        ΔT = diff(temperature)
+        ΔS = diff(salinity)
+
+        R_ρ = @. (β * ΔS) / (α * ΔT)
+
+    end
+
+    return R_ρ
 end
-# Would prefer to implement these when I get a chance.
-# "Get the `geopotential_height` from the `grid` of a `model`."
-# geopotential_height(grid) = KernelFunctionOperation{Center, Center, Face}(Zᶜᶜᶠ, grid)
 
-# function compute_gp_height(grid, depth_of_steps)
-
-#     gh = Field(geopotential_height(grid))
-#     compute!(gh)
-
-#     step_gh_idx = [findfirst(interior(gh, 1, 1, :) .≥ d) for d ∈ depth_of_steps]
-#     step_gh_height = interior(gh, 1, 1, step_gh_idx)
-
-#     return Array(step_gh_height)
-# end
-
+"Container for initial conditions that have well mixed layers seperated by smoothed step interfaces."
 struct SmoothStepInitialConditions{T} <: AbstractStaircaseInitialConditions
     "Number of step changes in the initial state"
        number_of_steps :: Int

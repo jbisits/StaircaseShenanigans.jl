@@ -5,7 +5,7 @@ using Oceananigans: seawater_density
 using SeawaterPolynomials.TEOS10
 using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 using SeawaterPolynomials: BoussinesqEquationOfState
-using SeawaterPolynomials: thermal_expansion, haline_contraction
+using SeawaterPolynomials: thermal_expansion, haline_contraction, ρ
 using GibbsSeaWater: gsw_alpha, gsw_beta
 using NCDatasets, JLD2
 

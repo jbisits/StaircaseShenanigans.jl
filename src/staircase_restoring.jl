@@ -15,7 +15,7 @@ OuterStairMask(depth_of_steps) = OuterStairMask(depth_of_steps[1], depth_of_step
 @inline (stairs::OuterStairMask)(x, y, z) =
             z > stairs.first_stair ? 1 : z < stairs.last_stair ? 1 : 0
 
-Base.summary(oms::OuterStairMask) = "First stair mask [0, $(oms.first_stair)], last stair mask [$(oms.last_stair), end]"
+Base.summary(oms::OuterStairMask) = "First stair mask [$(oms.first_stair), 0], last stair mask [-Lz, $(oms.last_stair)]"
 """
     struct OuterStairTargets{T}
 Location and target values for `target` use in `Relaxation`.

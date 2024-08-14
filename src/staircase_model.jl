@@ -19,8 +19,6 @@ StaircaseDNS(model, initial_conditions; initial_noise = nothing) =
 Base.iterate(sdns::AbstractStaircaseModel, state = 1) =
     state > length(fieldnames(sdns)) ? nothing : (getfield(sdns, state), state + 1)
 
-# Same DNS setup as in sdns but repeated here for easier changes that may be specific to
-# setting up staircase experiments.
 """
     function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                       diffusivities::NamedTuple)
@@ -46,6 +44,10 @@ may be used.
 
 ## Keyword arguments:
 
+- `relaxation = nothing`, add a restoring value to part of the staircase. Done by passing the
+`forcing` argument to `NonhydrostaticModel`. For how to implement `Relaxation` see the relevant
+part of the
+[Oceananigans documentation](https://clima.github.io/OceananigansDocumentation/dev/model_setup/forcing_functions/#Relaxation)
 - `zgrid_stretching` stretch the grid in the `z` dimension at the bottom of domain at
 the rate `stretching`, `false` by default;
 - `refinement = 1.2` spacing near the surface in the `z` dimension;
@@ -53,6 +55,7 @@ the rate `stretching`, `false` by default;
 """
 function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                   diffusivities::NamedTuple, eos::BoussinesqEquationOfState=TEOS10EquationOfState();
+                  relaxation = nothing,
                   zgrid_stretching = false,
                   refinement = 1.05,
                   stretching = 40)
@@ -77,7 +80,10 @@ function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTupl
 
     advection = CenteredSecondOrder()
 
-    return NonhydrostaticModel(; grid, buoyancy, tracers, closure, timestepper, advection)
+    forcing = isnothing(relaxation) ? NamedTuple() : relaxation
+
+    return NonhydrostaticModel(; grid, buoyancy, tracers, closure, timestepper, advection,
+                                 forcing)
 
 end
 """

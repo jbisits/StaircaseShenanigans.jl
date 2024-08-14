@@ -22,6 +22,8 @@ export StaircaseDNS, DNSModel, SDNS_simulation_setup
 
 export StepInitialConditions, SmoothStepInitialConditions, set_staircase_initial_conditions!
 
+export OuterStairMask, OuterStairTargets
+
 export CustomLinearRoquetSeawaterPolynomial, CustomLinearEquationOfState
 
 export save_computed_output!
@@ -31,6 +33,7 @@ export animate_tracers, animate_density, visualise_initial_conditions, visualise
 include("staircase_initial_conditions.jl")
 include("staircase_model.jl")
 include("set_staircase_initial_conditions.jl")
+include("staircase_restoring.jl")
 include("alt_lineareos.jl")
 include("makie_plotting_functions.jl")
 

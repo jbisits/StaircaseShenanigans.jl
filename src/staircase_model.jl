@@ -19,8 +19,6 @@ StaircaseDNS(model, initial_conditions; initial_noise = nothing) =
 Base.iterate(sdns::AbstractStaircaseModel, state = 1) =
     state > length(fieldnames(sdns)) ? nothing : (getfield(sdns, state), state + 1)
 
-# Same DNS setup as in sdns but repeated here for easier changes that may be specific to
-# setting up staircase experiments.
 """
     function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                       diffusivities::NamedTuple)

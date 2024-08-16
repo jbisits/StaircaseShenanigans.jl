@@ -35,44 +35,19 @@ function compute_R_ρ(salinity, temperature, depth_of_steps, eos)
 
     R_ρ = similar(depth_of_steps)
 
-    if isequal(is_linear_eos(eos.seawater_polynomial),  "nonlineareos")
+    S_u = S_g = @view salinity[1:end-1]
+    S_l = S_f = @view salinity[2:end]
+    Θ_u = Θ_f = @view temperature[1:end-1]
+    Θ_l = Θ_g = @view temperature[2:end]
 
-        S_u = S_g = @view salinity[1:end-1]
-        S_l = S_f = @view salinity[2:end]
-        Θ_u = Θ_f = @view temperature[1:end-1]
-        Θ_l = Θ_g = @view temperature[2:end]
+    eos_vec = fill(eos, length(S_u))
 
-        eos_vec = fill(eos, length(S_u))
+    ρ_u = ρ.(Θ_u, S_u, depth_of_steps, eos_vec)
+    ρ_l = ρ.(Θ_l, S_l, depth_of_steps, eos_vec)
+    ρ_f = ρ.(Θ_f, S_f, depth_of_steps, eos_vec)
+    ρ_g = ρ.(Θ_g, S_g, depth_of_steps, eos_vec)
 
-        ρ_u = ρ.(Θ_u, S_u, depth_of_steps, eos_vec)
-        ρ_l = ρ.(Θ_l, S_l, depth_of_steps, eos_vec)
-        ρ_f = ρ.(Θ_f, S_f, depth_of_steps, eos_vec)
-        ρ_g = ρ.(Θ_g, S_g, depth_of_steps, eos_vec)
-
-        R_ρ = @. (0.5 * (ρ_f - ρ_u) + 0.5 * (ρ_l - ρ_g)) /
-                 (0.5 * (ρ_f - ρ_l) + 0.5 * (ρ_u - ρ_g))
-
-    else
-
-        S_u = @view salinity[1:end-1]
-        S_l = @view salinity[2:end]
-        S_m = (S_u .+ S_l) / 2
-
-        Θ_u = @view temperature[1:end-1]
-        Θ_l = @view temperature[2:end]
-        Θ_m = (Θ_u .+ Θ_l) / 2
-
-        eos_vec = fill(eos, length(depth_of_steps))
-
-        α = thermal_expansion.(Θ_m, S_m, depth_of_steps, eos_vec)
-        β = haline_contraction.(Θ_m, S_m, depth_of_steps, eos_vec)
-
-        ΔT = diff(temperature)
-        ΔS = diff(salinity)
-
-        R_ρ = @. (β * ΔS) / (α * ΔT)
-
-    end
+    R_ρ = @. (0.5 * (ρ_f - ρ_u) + 0.5 * (ρ_l - ρ_g)) / (0.5 * (ρ_f - ρ_l) + 0.5 * (ρ_u - ρ_g))
 
     return R_ρ
 end

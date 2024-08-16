@@ -12,7 +12,8 @@ salinity = [34.55, 34.60, 34.65, 34.70, 34.75]
 temperature = [-1.5, -1.0, -0.5, 0.0, 0.5]
 
 ## Setup the model
-model = DNSModel(architecture, domain_extent, resolution, diffusivities)
+eos = CustomLinearEquationOfState(0, 34.6)
+model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos)
 
 ## Set initial conditions
 step_ics = StepInitialConditions(model, number_of_steps, depth_of_steps, salinity, temperature)

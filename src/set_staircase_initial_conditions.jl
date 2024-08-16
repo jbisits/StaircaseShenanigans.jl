@@ -33,9 +33,26 @@ function set_staircase_initial_conditions!(model, ics::SmoothStepInitialConditio
 
     return nothing
 end
+set_noise!(model, noise::Nothing) = nothing
+function set_noise!(model, noise::VelocityNoise)
+
+    u, v, w = model.velocities
+    u_m, v_m, w_m = noise.u_magnitude, noise.v_magnitude, noise.w_magnitude
+    u_noise = u_m * randn(size(u))
+    v_noise = v_m * randn(size(v))
+    w_noise = w_m * randn(size(w))
+
+    set!(model, u = u_noise, v = v_noise, w = w_noise)
+
+end
+"""
+    function set_staircase_initial_conditions!(sdns::StaircaseDNS)
+Set initial staircase and noise for a `StaircaseDNS`.
+"""
 function set_staircase_initial_conditions!(sdns::StaircaseDNS)
 
     set_staircase_initial_conditions!(sdns.model, sdns.initial_conditions)
+    set_noise!(sdns.model, sdns.initial_noise)
 
     return nothing
 end

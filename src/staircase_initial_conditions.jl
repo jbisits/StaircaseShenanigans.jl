@@ -1,7 +1,7 @@
 abstract type AbstractStaircaseInitialConditions <: AbstractInitialConditions end
 
 Base.iterate(sics::AbstractStaircaseInitialConditions, state = 1) =
-    state > length(fieldnames(sics)) ? nothing : (getfield(sdns, state), state + 1)
+    state > length(fieldnames(sics)) ? nothing : (getfield(sics, state), state + 1)
 
 "Container for initial conditions that have well mixed layers seperated by sharp step interfaces."
 struct StepInitialConditions{T} <: AbstractStaircaseInitialConditions

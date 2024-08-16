@@ -8,16 +8,12 @@ resolution = (Nx = 5, Ny = 5, Nz = 50)
 ## Initial conditions
 number_of_steps = 4
 depth_of_steps = [-0.2, -0.4, -0.6, -0.8]
-salinity = [34.57, 34.60, 34.63, 34.66, 34.69]
+salinity = [34.55, 34.60, 34.65, 34.70, 34.75]
 temperature = [-1.5, -1.0, -0.5, 0.0, 0.5]
 
 ## Setup the model
-rate = 1/40
-mask = OuterStairMask(depth_of_steps)
-target = OuterStairTargets(depth_of_steps, salinity)
-S_relaxation = Relaxation(; rate, mask, target)
-relaxation = (S = S_relaxation,)
-model = DNSModel(architecture, domain_extent, resolution, diffusivities; relaxation)
+eos = CustomLinearEquationOfState(0, 34.6)
+model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos)
 
 ## Set initial conditions
 step_ics = StepInitialConditions(model, number_of_steps, depth_of_steps, salinity, temperature)

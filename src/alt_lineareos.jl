@@ -5,7 +5,7 @@ using GibbsSeaWater.jl from `Θ` and `S` (`S` is practical salinity).
 """
 function CustomLinearRoquetSeawaterPolynomial(Θ, S, reference_density, FT)
 
-    α = reference_density * gsw_alpha(S, Θ, 0)
+    α = -reference_density * gsw_alpha(S, Θ, 0)
     β = reference_density * gsw_beta(S, Θ, 0)
 
     return SecondOrderSeawaterPolynomial{FT}(R₀₁₀ = α,

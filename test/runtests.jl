@@ -20,8 +20,11 @@ using Test
         ΔS, ΔΘ = diff(salinity[1:2]), diff(temperature[1:2])
         Sₘ, Θₘ = (sum(salinity[1:2]) / 2), (sum(temperature[1:2]) / 2)
         β = haline_contraction(Θₘ, Sₘ, 0, model.buoyancy.model.equation_of_state)
-        α = thermal_expansion(Θₘ, Sₘ, 0, model.buoyancy.model.equation_of_state)
+        α = -thermal_expansion(Θₘ, Sₘ, 0, model.buoyancy.model.equation_of_state)
 
+        println(α, β)
+        println(sdns.initial_conditions.R_ρ)
+        println((β * ΔS) / (α * ΔΘ))
         @test all(sdns.initial_conditions.R_ρ .≈ (β * ΔS) / (α * ΔΘ))
 
     end
@@ -32,7 +35,7 @@ using Test
             Θ = rand(range(-1.5, 20.5, length = 20))
             S = rand(range(34.5, 34.7, length = 20))
             ρ₀ = 1024.6
-            true_coefficients = ρ₀ * gsw_alpha(S, Θ, 0), ρ₀ * gsw_beta(S, Θ, 0)
+            true_coefficients = -ρ₀ * gsw_alpha(S, Θ, 0), ρ₀ * gsw_beta(S, Θ, 0)
             custom_linear = CustomLinearEquationOfState(Θ, S, reference_density = ρ₀)
             sp = custom_linear.seawater_polynomial
             linear_coefficients = sp.R₀₁₀, sp.R₁₀₀

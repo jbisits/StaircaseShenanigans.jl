@@ -20,9 +20,9 @@ StaircaseShenanigansMakieExt = "CairoMakie"
 
 [compat]
 CairoMakie = "0.12"
-NCDatasets = "0.14"
-JLD2 = "0.4"
 GibbsSeaWater = "0.1"
+JLD2 = "0.4, 0.5"
+NCDatasets = "0.14"
 Oceananigans = "0.91"
 Reexport = "1.2"
 SeawaterPolynomials = "0.3"

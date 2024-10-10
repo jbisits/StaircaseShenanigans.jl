@@ -24,7 +24,7 @@ export StepInitialConditions, SmoothStepInitialConditions, set_staircase_initial
 
 export AbstractNoise, VelocityNoise
 
-export OuterStairMask, OuterStairTargets
+export OuterStairMask, OuterStairTargets, OuterMask, OuterTargets, ExponentialTarget
 
 export CustomLinearRoquetSeawaterPolynomial, CustomLinearEquationOfState
 

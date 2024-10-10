@@ -40,3 +40,51 @@ OuterStairTargets(depth_of_steps, initial_tracer_values) =
             z < stair_targets.last_stair ? stair_targets.last_target : 0
 
 Base.summary(ost::OuterStairTargets) = "First stair target $(ost.first_target), last stair target $(ost.last_target)"
+
+"""
+    struct OuterMask{T}
+Container with the upper and lower regions of of the domain to mask.
+"""
+struct OuterMask{T}
+    "End of upper quarter of domain, z ∈ [-upper, 0)"
+    upper :: T
+    "Start of lower quarter of domain, z ∈ [-Lz, lower)"
+    lower :: T
+end
+
+"Function to find upper and lower regions of domain."
+@inline (quarter::OuterMask)(x, y, z) = z > quarter.upper ? 1 : z < quarter.lower ? 1 : 0
+
+Base.summary(oqm::OuterMask) = "Upper masked region [$(oqm.upper), 0), lower masked region [-Lz, $(oqm.lower))"
+
+"""
+    struct OuterTargets{T}
+Target values for the upper and lower regions of domain
+"""
+struct OuterTargets{T}
+    "Upper region target value"
+    upper_target :: T
+    "Lower region target value"
+    lower_target :: T
+    "Upper region depth"
+    upper_depth :: T
+end
+Base.summary(oqt::OuterMask) = "Upper target = $(oqt.upper), lower target = $(oqt.lower)"
+
+"Convenience constructor to get the upper region of domain from an `OuterMask`"
+OuterTargets(upper_target, lower_target, mask::OuterMask) =
+    OuterTargets(upper_target, lower_target, mask.upper)
+"Restoring function"
+@inline (oqt::OuterTargets)(x, y, z, t) = z > oqt.upper_depth ? oqt.upper_target :
+                                                                oqt.lower_target
+
+"""
+    struct ExponentialTarget{T}
+Restore to the tracer ``C`` to exponetial function of the form ``C(x, y, z, t) = Aℯ⁻ᶻ``.
+"""
+struct ExponentialTarget{T}
+    A :: T
+    λ :: T
+end
+
+@inline (p::ExponentialTarget)(x, y, z, t) = p.A * exp(-p.λ * z)

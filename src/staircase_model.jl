@@ -44,10 +44,10 @@ may be used.
 
 ## Keyword arguments:
 
-- `relaxation = nothing`, add a restoring value to part of the staircase. Done by passing the
-`forcing` argument to `NonhydrostaticModel`. For how to implement `Relaxation` see the relevant
+- `forcing = nothing`, add a restoring value to part of the staircase. Done by passing the
+`forcing` argument to `NonhydrostaticModel`. For how to implement `forcing` see the relevant
 part of the
-[Oceananigans documentation](https://clima.github.io/OceananigansDocumentation/dev/model_setup/forcing_functions/#Relaxation)
+[Oceananigans documentation](https://clima.github.io/OceananigansDocumentation/dev/model_setup/forcing_functions/#forcing)
 - `zgrid_stretching` stretch the grid in the `z` dimension at the bottom of domain at
 the rate `stretching`, `false` by default;
 - `refinement = 1.2` spacing near the surface in the `z` dimension;
@@ -55,7 +55,7 @@ the rate `stretching`, `false` by default;
 """
 function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                   diffusivities::NamedTuple, eos::BoussinesqEquationOfState=TEOS10EquationOfState();
-                  relaxation = nothing,
+                  forcing = nothing,
                   zgrid_stretching = false,
                   refinement = 1.05,
                   stretching = 40)
@@ -80,7 +80,7 @@ function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTupl
 
     advection = CenteredSecondOrder()
 
-    forcing = isnothing(relaxation) ? NamedTuple() : relaxation
+    forcing = isnothing(forcing) ? NamedTuple() : forcing
 
     return NonhydrostaticModel(; grid, buoyancy, tracers, closure, timestepper, advection,
                                  forcing)

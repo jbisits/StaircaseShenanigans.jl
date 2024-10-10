@@ -19,8 +19,8 @@ S_target = OuterTargets(34.58, 34.7, mask)
 T_target = OuterTargets(-1.5, 0.5, mask)
 T_restoring = Relaxation(; rate, mask, target = T_target)
 S_restoring = Relaxation(; rate, mask, target = S_target)
-relaxation = (S = S_restoring, T = T_restoring)
-model = DNSModel(architecture, domain_extent, resolution, diffusivities; relaxation)
+forcing = (S = S_restoring, T = T_restoring)
+model = DNSModel(architecture, domain_extent, resolution, diffusivities; forcing)
 
 ## Set initial conditions
 step_ics = StepInitialConditions(model, number_of_steps, depth_of_steps, salinity, temperature)

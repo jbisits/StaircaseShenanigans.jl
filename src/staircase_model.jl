@@ -114,7 +114,8 @@ Build a `simulation` from `sdns`.
 function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
                                 stop_time::Number, save_schedule::Number,
                                 save_custom_output!::Function=no_custom_output!,
-                                save_velocities!::Function=no_velocities!;
+                                save_velocities!::Function=no_velocities!,
+                                add_tracer_region_callbacks!::Function=no_tracer_callbacks!;
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
                                 checkpointer_time_interval = nothing,
@@ -122,8 +123,7 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
                                 diffusive_cfl = 0.75,
                                 max_change = 1.2,
                                 max_Δt = 1e-1,
-                                overwrite_saved_output = true,
-                                save_velocities = false)
+                                overwrite_saved_output = true)
 
     model = sdns.model
     simulation = Simulation(model; Δt, stop_time)
@@ -142,13 +142,16 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
     save_tracers!(simulation, model, save_info)
 
     # model velocities
-    save_velocities!(simulation, model, save_info) : nothing
+    save_velocities!(simulation, model, save_info)
 
     # Custom saved output
     save_custom_output!(simulation, sdns, save_info)
 
     # Checkpointer setup
     checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval)
+
+    # S and T `Callbacks` as forcing
+    add_tracer_region_callbacks!(simulation)
 
     save_R_ρ!(simulation, sdns)
 
@@ -352,6 +355,23 @@ function checkpointer_setup!(simulation, model, output_dir,
 
 end
 checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval::Nothing) = nothing
+"""
+    function S_and_T_tracer_callbacks!(simulation)
+Add `Callback`s to the `S` and `T` fields which act as restoring using [restore_field_region!](@ref)
+"""
+function S_and_T_tracer_callbacks!(simulation)
+
+    simulation.callbacks[:T_regional_mean] = Callback(restore_field_region!, IterationInterval(1),
+                                                      parameters = (C = :T, compute_mean_region = 0.25,
+                                                      tracer_flux_placement = 0.1))
+
+    simulation.callbacks[:S_regional_mean] = Callback(restore_field_region!, IterationInterval(1),
+                                                      parameters = (C = :S, compute_mean_region = 0.25,
+                                                      tracer_flux_placement = 0.1))
+
+    return nothing
+end
+no_tracer_callbacks!(simulation) = nothing
 """
     function simulation_progress(sim)
 Useful progress messaging for simulation runs. This function is from an

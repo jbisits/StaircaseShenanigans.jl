@@ -69,7 +69,7 @@ struct OuterTargets{T}
     "Upper region depth"
     upper_depth :: T
 end
-Base.summary(oqt::OuterMask) = "Upper target = $(oqt.upper), lower target = $(oqt.lower)"
+Base.summary(oqt::OuterTargets) = "Upper target = $(oqt.upper_target), lower target = $(oqt.lower_target)"
 
 "Convenience constructor to get the upper region of domain from an `OuterMask`"
 OuterTargets(upper_target, lower_target, mask::OuterMask) =
@@ -109,13 +109,13 @@ extent of the domain, `-Lz` and the surface at 0.
 function restore_field_region!(sim, parameters)
 
     Lx, Ly, Lz = sim.model.grid.Lx, sim.model.grid.Ly, -sim.model.grid.Lz
-    Δz = zspacings(model.grid, Center())
+    Δz = zspacings(sim.model.grid, Center())
     A = Lx * Ly
     z = znodes(sim.model.grid, Center())
 
     tracer = getproperty(sim.model.tracers, parameters.C)
     cmd = parameters.compute_mean_region
-    tfr = parameters.tracer_content_placement
+    tfr = parameters.tracer_flux_placement
 
     lower_region = findall(z .≤ (1 - cmd) * Lz)
     upper_region = findall(z .≥ cmd * Lz)

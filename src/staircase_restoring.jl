@@ -53,9 +53,9 @@ struct OuterMask{T}
 end
 
 "Function to find upper and lower regions of domain."
-@inline (quarter::OuterMask)(x, y, z) = z > quarter.upper ? 1 : z < quarter.lower ? 1 : 0
+@inline (om::OuterMask)(x, y, z) = z > om.upper ? 1 : z < om.lower ? 1 : 0
 
-Base.summary(oqm::OuterMask) = "Upper masked region [$(oqm.upper), 0), lower masked region [-Lz, $(oqm.lower))"
+Base.summary(om::OuterMask) = "Upper masked region [$(om.upper), 0), lower masked region [-Lz, $(om.lower))"
 
 """
     struct OuterTargets{T}
@@ -88,3 +88,41 @@ struct ExponentialTarget{T}
 end
 
 @inline (p::ExponentialTarget)(x, y, z, t) = p.A * exp(-p.λ * z)
+
+"""
+    function restore_field_region!(sim, parameters)
+A `Callback` that is behaving as a `Forcing` but I found this was a more flexible way to do
+what I want. The `Callback` is designed to find the `mean` of a `Field` (in my case a tracer
+`Field`) over a given region to estimate the tracer content within a layer of a single
+interface simulation (e.g. take mean in upper quarter of domain and multiply by two to get
+the total tracer content in the layer). This mean concentration is then added as a flux
+in a user specified region of the domain.
+
+## Parameters
+
+The parameters container needs to know the tracer `C` as a `Symbol`, the `computed_mean_region`
+which is the region of the domain over which to compute the mean and the `tracer_flux_region`
+which is the part of the domain where the tracer flux is added. The arguments are just `Numbers`
+and the regions are computed symetrically as `lower_region` and `upper_region` from the lower
+extent of the domain, `-Lz` and the surface at 0.
+"""
+function restore_field_region!(sim, parameters)
+
+    Lx, Ly, Lz = sim.model.grid.Lx, sim.model.grid.Ly, -sim.model.grid.Lz
+    Δz = zspacings(model.grid, Center())
+    A = Lx * Ly
+    z = znodes(sim.model.grid, Center())
+
+    tracer = getproperty(sim.model.tracers, parameters.C)
+    cmd = parameters.compute_mean_region
+    tfr = parameters.tracer_content_placement
+
+    lower_region = findall(z .≤ (1 - cmd) * Lz)
+    upper_region = findall(z .≥ cmd * Lz)
+    lower_placement = findall(z .< (1 - tfr) * Lz)
+    upper_placement = findall(z .> tfr * Lz)
+
+    interior(tracer, :, :, lower_placement) .+= 2 * mean(interior(tracer, :, :, lower_region)) * A * Δz # * length(lower_placement)
+    interior(tracer, :, :, upper_placement) .+= 2 * mean(interior(tracer, :, :, upper_region)) * A * Δz # * length(upper_placement)
+    return nothing
+end

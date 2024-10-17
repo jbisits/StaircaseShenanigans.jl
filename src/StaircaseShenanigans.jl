@@ -26,6 +26,8 @@ export AbstractNoise, VelocityNoise
 
 export OuterStairMask, OuterStairTargets, OuterMask, OuterTargets, ExponentialTarget
 
+export restore_field_region!
+
 export CustomLinearRoquetSeawaterPolynomial, CustomLinearEquationOfState
 
 export save_computed_output!

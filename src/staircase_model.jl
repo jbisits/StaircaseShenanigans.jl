@@ -113,7 +113,8 @@ Build a `simulation` from `sdns`.
 """
 function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
                                 stop_time::Number, save_schedule::Number,
-                                save_custom_output!::Function=no_custom_output!;
+                                save_custom_output!::Function=no_custom_output!,
+                                save_velocities!::Function=no_velocities!;
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
                                 checkpointer_time_interval = nothing,
@@ -141,7 +142,7 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
     save_tracers!(simulation, model, save_info)
 
     # model velocities
-    save_velocities ? save_velocities!(simulation, model, save_info) : nothing
+    save_velocities!(simulation, model, save_info) : nothing
 
     # Custom saved output
     save_custom_output!(simulation, sdns, save_info)
@@ -235,11 +236,11 @@ end
 save_tracers!(simulation, model, save_info::Tuple) =
     save_tracers!(simulation, model, save_info...)
 """
-    function save_velocities!(simulation, model, save_schedule, save_file, output_dir,
+    function save_all_velocities!(simulation, model, save_schedule, save_file, output_dir,
                               overwrite_saved_output)
 Save `model.velocities` during a `Simulation` using an `OutputWriter`.
 """
-function save_velocities!(simulation, model, save_schedule, save_file, output_dir,
+function save_all_velocities!(simulation, model, save_schedule, save_file, output_dir,
                           overwrite_saved_output)
 
     u, v, w = model.velocities
@@ -261,9 +262,40 @@ function save_velocities!(simulation, model, save_schedule, save_file, output_di
     return nothing
 
 end
-save_velocities!(simulation, model, save_info::Tuple) =
-    save_velocities!(simulation, model, save_info...)
-    """
+save_all_velocities!(simulation, model, save_info::Tuple) =
+    save_all_velocities!(simulation, model, save_info...)
+"""
+    function save_vertical_velocities!(simulation, model, save_schedule, save_file, output_dir,
+                                    overwrite_saved_output)
+Only save vertical velocity.
+"""
+function save_vertical_velocities!(simulation, model, save_schedule, save_file, output_dir,
+                                    overwrite_saved_output)
+
+    w = model.velocities.w
+    velocities = Dict("w" => w)
+
+    simulation.output_writers[:velocities] =
+    save_file == :netcdf ? NetCDFOutputWriter(model, velocities;
+                                filename = "velocities",
+                                dir = output_dir,
+                                overwrite_existing = overwrite_saved_output,
+                                schedule = TimeInterval(save_schedule)
+                                ) :
+                JLD2OutputWriter(model, velocities;
+                                filename = "velocities",
+                                dir = output_dir,
+                                schedule = TimeInterval(save_schedule),
+                                overwrite_existing = overwrite_saved_output)
+
+    return nothing
+
+end
+save_vertical_velocities!(simulation, model, save_info::Tuple) =
+    save_vertical_velocities!(simulation, model, save_info...)
+"Default"
+no_velocities!(simulation, model, save_info...) = nothing
+"""
     function save_computed_output!(simulation, sdns, save_schedule, save_file, output_dir,
                                    overwrite_saved_output, reference_gp_height)
 Save selection of computed output during a `Simulation` using an `OutputWriter`.

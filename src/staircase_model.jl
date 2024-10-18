@@ -123,7 +123,9 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
                                 diffusive_cfl = 0.75,
                                 max_change = 1.2,
                                 max_Δt = 1e-1,
-                                overwrite_saved_output = true)
+                                overwrite_saved_output = true,
+                                mean_region = 0.25,
+                                flux_placement = 0.1)
 
     model = sdns.model
     simulation = Simulation(model; Δt, stop_time)
@@ -151,7 +153,7 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
     checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval)
 
     # S and T `Callbacks` as forcing
-    add_tracer_region_callbacks!(simulation)
+    add_tracer_region_callbacks!(simulation, mean_region, flux_placement)
 
     save_R_ρ!(simulation, sdns)
 
@@ -359,19 +361,21 @@ checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval::N
     function S_and_T_tracer_callbacks!(simulation)
 Add `Callback`s to the `S` and `T` fields which act as restoring using [restore_field_region!](@ref)
 """
-function S_and_T_tracer_callbacks!(simulation)
+function S_and_T_tracer_callbacks!(simulation, mean_region, flux_placement)
 
     simulation.callbacks[:T_regional_mean] = Callback(restore_field_region!, IterationInterval(1),
-                                                      parameters = (C = :T, compute_mean_region = 0.25,
-                                                      tracer_flux_placement = 0.1))
+                                                      parameters = (C = :T,
+                                                                    compute_mean_region = mean_region,
+                                                                    tracer_flux_placement = flux_placement))
 
     simulation.callbacks[:S_regional_mean] = Callback(restore_field_region!, IterationInterval(1),
-                                                      parameters = (C = :S, compute_mean_region = 0.25,
-                                                      tracer_flux_placement = 0.1))
+                                                      parameters = (C = :S,
+                                                                    compute_mean_region = mean_region,
+                                                                    tracer_flux_placement = flux_placement))
 
     return nothing
 end
-no_tracer_callbacks!(simulation) = nothing
+no_tracer_callbacks!(simulation, mean_region, flux_placement) = nothing
 """
     function simulation_progress(sim)
 Useful progress messaging for simulation runs. This function is from an

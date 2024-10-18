@@ -40,7 +40,9 @@ save_schedule = 10  # seconds
 output_path = joinpath(@__DIR__, "output")
 simulation = SDNS_simulation_setup(sdns, Δt, stop_time, save_schedule, save_computed_output!,
                                     StaircaseShenanigans.no_velocities!,
-                                    S_and_T_tracer_callbacks!; output_path, max_Δt = 5)
+                                    S_and_T_tracer_callbacks!; output_path, max_Δt = 5,
+                                    # flux_placement = 0.05
+                                    )
 
 ## Run
 run!(simulation)

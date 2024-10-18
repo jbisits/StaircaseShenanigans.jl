@@ -105,6 +105,9 @@ which is the region of the domain over which to compute the mean and the `tracer
 which is the part of the domain where the tracer flux is added. The arguments are just `Numbers`
 and the regions are computed symetrically as `lower_region` and `upper_region` from the lower
 extent of the domain, `-Lz` and the surface at 0.
+
+There is a default setup in [SDNS_simulation_setup](@ref) allows passing the kwargs
+`mean_region` and `flux_placement` to specify these these parameter
 """
 function restore_field_region!(sim, parameters)
 

@@ -90,13 +90,11 @@ end
 @inline (p::ExponentialTarget)(x, y, z, t) = p.A * exp(-p.λ * z)
 
 """
-    function restore_field_region!(sim, parameters)
+    function restore_tracer_content!(sim, parameters)
 A `Callback` that is behaving as a `Forcing` but I found this was a more flexible way to do
-what I want. The `Callback` is designed to find the `mean` of a `Field` (in my case a tracer
-`Field`) over a given region to estimate the tracer content within a layer of a single
-interface simulation (e.g. take mean in upper quarter of domain and multiply by two to get
-the total tracer content in the layer). This mean concentration is then added as a flux
-in a user specified region of the domain.
+what I want. The `Callback` is designed to maintain the tracer content within a layer of
+a thermohaline staircase. At this stage it is only appropriate to be used to models with a
+single interface.
 
 ## Parameters
 
@@ -109,23 +107,32 @@ extent of the domain, `-Lz` and the surface at 0.
 There is a default setup in [SDNS_simulation_setup](@ref) allows passing the kwargs
 `mean_region` and `flux_placement` to specify these these parameter
 """
-function restore_field_region!(sim, parameters)
+function restore_tracer_content!(sim, parameters)
 
     Lx, Ly, Lz = sim.model.grid.Lx, sim.model.grid.Ly, -sim.model.grid.Lz
-    Δz = zspacings(sim.model.grid, Center())
+    Δx, Δy, Δz = xspacings(sim.model.grid, Center()), yspacings(sim.model.grid, Center()),
+                    zspacings(sim.model.grid, Center())
+    ΔV = Δx * Δy * Δz
     A = Lx * Ly
     z = znodes(sim.model.grid, Center())
 
     tracer = getproperty(sim.model.tracers, parameters.C)
-    cmd = parameters.compute_mean_region
-    tfr = parameters.tracer_flux_placement
+    cmr = parameters.compute_mean_region
+    tfp = parameters.tracer_flux_placement
+    iuc = parameters.initial_upper_content
+    ilc = parameters.initial_lower_content
 
-    lower_region = findall(z .≤ (1 - cmd) * Lz)
-    upper_region = findall(z .≥ cmd * Lz)
-    lower_placement = findall(z .< (1 - tfr) * Lz)
-    upper_placement = findall(z .> tfr * Lz)
+    # lower_region = findall(z .≤ (1 - cmr) * Lz)
+    # est_lower_region_tracer_content = 2 * sum(interior(tracer, :, :, lower_region)) * ΔV
+    lower_tracer_content_lost = ilc - sum(interior(tracer, :, :, 26:50)) * ΔV
+    # upper_region = findall(z .≥ cmr * Lz)
+    # est_upper_region_tracer_content = 2 * sum(interior(tracer, :, :, upper_region)) * ΔV
+    upper_tracer_content_lost = iuc - sum(interior(tracer, :, :, 1:25)) * ΔV
 
-    interior(tracer, :, :, lower_placement) .+= 2 * mean(interior(tracer, :, :, lower_region)) * A * Δz # * length(lower_placement)
-    interior(tracer, :, :, upper_placement) .+= 2 * mean(interior(tracer, :, :, upper_region)) * A * Δz # * length(upper_placement)
+    lower_placement = findall(z .< (1 - tfp) * Lz)
+    upper_placement = findall(z .> tfp * Lz)
+
+    interior(tracer, :, :, lower_placement) .+= lower_tracer_content_lost * (Δz * length(lower_placement))
+    interior(tracer, :, :, upper_placement) .+= upper_tracer_content_lost * (Δz * length(upper_placement))
     return nothing
 end

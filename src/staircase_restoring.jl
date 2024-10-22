@@ -99,10 +99,9 @@ single interface.
 ## Parameters
 
 The parameters container needs to know the tracer `C` as a `Symbol`, the `computed_mean_region`
-which is the region of the domain over which to compute the mean and the `tracer_flux_region`
-which is the part of the domain where the tracer flux is added. The arguments are just `Numbers`
-and the regions are computed symetrically as `lower_region` and `upper_region` from the lower
-extent of the domain, `-Lz` and the surface at 0.
+and the `tracer_flux_placement` which is where the flux to maintain approximately equal tracer
+content is placed. Using `tracer_flux_placement` creates a `lower_region` and `upper_region`
+from the lower extent of the domain, `-Lz`, and the surface at `0` respectively.
 
 There is a default setup in [SDNS_simulation_setup](@ref) allows passing the kwargs
 `mean_region` and `flux_placement` to specify these these parameter
@@ -117,16 +116,11 @@ function restore_tracer_content!(sim, parameters)
     z = znodes(sim.model.grid, Center())
 
     tracer = getproperty(sim.model.tracers, parameters.C)
-    cmr = parameters.compute_mean_region
     tfp = parameters.tracer_flux_placement
     iuc = parameters.initial_upper_content
     ilc = parameters.initial_lower_content
 
-    # lower_region = findall(z .≤ (1 - cmr) * Lz)
-    # est_lower_region_tracer_content = 2 * sum(interior(tracer, :, :, lower_region)) * ΔV
     lower_tracer_content_lost = ilc - sum(interior(tracer, :, :, 26:50)) * ΔV
-    # upper_region = findall(z .≥ cmr * Lz)
-    # est_upper_region_tracer_content = 2 * sum(interior(tracer, :, :, upper_region)) * ΔV
     upper_tracer_content_lost = iuc - sum(interior(tracer, :, :, 1:25)) * ΔV
 
     lower_placement = findall(z .< (1 - tfp) * Lz)

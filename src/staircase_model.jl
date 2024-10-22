@@ -357,14 +357,15 @@ function checkpointer_setup!(simulation, model, output_dir,
 end
 checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval::Nothing) = nothing
 """
-    function S_and_T_tracer_callbacks!(simulation, flux_placement; iteration_frequency = 1)
+    S_and_T_tracer_restoring_callbacks!(simulation, flux_placement; iteration_frequency = 1)
 Add `Callback`s to the `S` and `T` fields which act as restoring using [restore_tracer_content!](@ref)
 """
-function S_and_T_tracer_callbacks!(simulation, flux_placement; iteration_frequency = 1)
+function S_and_T_tracer_restoring_callbacks!(simulation, flux_placement; iteration_frequency = 1)
 
     Δx, Δy, Δz = xspacings(simulation.model.grid, Center()), yspacings(simulation.model.grid, Center()),
                     zspacings(simulation.model.grid, Center())
     ΔV = Δx * Δy * Δz
+
     initial_upper_T_content = sum(interior(simulation.model.tracers.T, :, :, 26:50)) * ΔV
     initial_lower_T_content = sum(interior(simulation.model.tracers.T, :, :, 1:25)) * ΔV
 
@@ -376,6 +377,7 @@ function S_and_T_tracer_callbacks!(simulation, flux_placement; iteration_frequen
 
     initial_upper_S_content = sum(interior(simulation.model.tracers.S, :, :, 26:50)) * ΔV
     initial_lower_S_content = sum(interior(simulation.model.tracers.S, :, :, 1:25)) * ΔV
+
     simulation.callbacks[:S_restore] = Callback(restore_tracer_content!, IterationInterval(iteration_frequency),
                                                 parameters = (C = :S,
                                                               tracer_flux_placement = flux_placement,

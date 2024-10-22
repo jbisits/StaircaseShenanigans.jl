@@ -27,7 +27,7 @@ export AbstractNoise, VelocityNoise
 
 export OuterStairMask, OuterStairTargets, OuterMask, OuterTargets, ExponentialTarget
 
-export restore_field_region!, S_and_T_tracer_callbacks!
+export restore_field_region!, S_and_T_tracer_restoring_callbacks!
 
 export CustomLinearRoquetSeawaterPolynomial, CustomLinearEquationOfState
 

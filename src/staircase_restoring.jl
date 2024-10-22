@@ -10,7 +10,7 @@ struct OuterStairMask{T}
      last_stair :: T
 end
 "Convenience constructor if depth of steps is defined for use in initial condition setting"
-OuterStairMask(depth_of_steps) = OuterStairMask(depth_of_steps[1], depth_of_steps[end])
+OuterStairMask(depth_of_interfaces) = OuterStairMask(depth_of_interfaces[1], depth_of_interfaces[end])
 
 @inline (stairs::OuterStairMask)(x, y, z) =
             z > stairs.first_stair ? 1 : z < stairs.last_stair ? 1 : 0
@@ -31,9 +31,9 @@ struct OuterStairTargets{T}
     last_target :: T
 end
 "Convenience constructor for restoring to initial tracer values"
-OuterStairTargets(depth_of_steps, initial_tracer_values) =
-    OuterStairTargets(depth_of_steps[1], initial_tracer_values[1],
-                      depth_of_steps[end], initial_tracer_values[end])
+OuterStairTargets(depth_of_interfaces, initial_tracer_values) =
+    OuterStairTargets(depth_of_interfaces[1], initial_tracer_values[1],
+                      depth_of_interfaces[end], initial_tracer_values[end])
 
 @inline (stair_targets::OuterStairTargets)(x, y, z, t) =
             z > stair_targets.first_stair ? stair_targets.first_target :

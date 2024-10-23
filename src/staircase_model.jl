@@ -113,7 +113,9 @@ Build a `simulation` from `sdns`.
 """
 function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
                                 stop_time::Number, save_schedule::Number,
-                                save_custom_output!::Function=no_custom_output!;
+                                save_custom_output!::Function=no_custom_output!,
+                                save_velocities!::Function=no_velocities!,
+                                add_tracer_region_callbacks!::Function=no_tracer_callbacks!;
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
                                 checkpointer_time_interval = nothing,
@@ -122,9 +124,10 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
                                 max_change = 1.2,
                                 max_Δt = 1e-1,
                                 overwrite_saved_output = true,
-                                save_velocities = false)
+                                flux_placement = 0.1)
 
     model = sdns.model
+    ics = sdns.initial_conditions
     simulation = Simulation(model; Δt, stop_time)
 
     # time step adjustments
@@ -141,13 +144,16 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
     save_tracers!(simulation, model, save_info)
 
     # model velocities
-    save_velocities ? save_velocities!(simulation, model, save_info) : nothing
+    save_velocities!(simulation, model, save_info)
 
     # Custom saved output
     save_custom_output!(simulation, sdns, save_info)
 
     # Checkpointer setup
     checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval)
+
+    # S and T `Callbacks` as forcing
+    add_tracer_region_callbacks!(simulation, flux_placement, ics.depth_of_interfaces[1])
 
     save_R_ρ!(simulation, sdns)
 
@@ -235,11 +241,11 @@ end
 save_tracers!(simulation, model, save_info::Tuple) =
     save_tracers!(simulation, model, save_info...)
 """
-    function save_velocities!(simulation, model, save_schedule, save_file, output_dir,
+    function save_all_velocities!(simulation, model, save_schedule, save_file, output_dir,
                               overwrite_saved_output)
 Save `model.velocities` during a `Simulation` using an `OutputWriter`.
 """
-function save_velocities!(simulation, model, save_schedule, save_file, output_dir,
+function save_all_velocities!(simulation, model, save_schedule, save_file, output_dir,
                           overwrite_saved_output)
 
     u, v, w = model.velocities
@@ -261,9 +267,40 @@ function save_velocities!(simulation, model, save_schedule, save_file, output_di
     return nothing
 
 end
-save_velocities!(simulation, model, save_info::Tuple) =
-    save_velocities!(simulation, model, save_info...)
-    """
+save_all_velocities!(simulation, model, save_info::Tuple) =
+    save_all_velocities!(simulation, model, save_info...)
+"""
+    function save_vertical_velocities!(simulation, model, save_schedule, save_file, output_dir,
+                                    overwrite_saved_output)
+Only save vertical velocity.
+"""
+function save_vertical_velocities!(simulation, model, save_schedule, save_file, output_dir,
+                                    overwrite_saved_output)
+
+    w = model.velocities.w
+    velocities = Dict("w" => w)
+
+    simulation.output_writers[:velocities] =
+    save_file == :netcdf ? NetCDFOutputWriter(model, velocities;
+                                filename = "velocities",
+                                dir = output_dir,
+                                overwrite_existing = overwrite_saved_output,
+                                schedule = TimeInterval(save_schedule)
+                                ) :
+                JLD2OutputWriter(model, velocities;
+                                filename = "velocities",
+                                dir = output_dir,
+                                schedule = TimeInterval(save_schedule),
+                                overwrite_existing = overwrite_saved_output)
+
+    return nothing
+
+end
+save_vertical_velocities!(simulation, model, save_info::Tuple) =
+    save_vertical_velocities!(simulation, model, save_info...)
+"Default"
+no_velocities!(simulation, model, save_info...) = nothing
+"""
     function save_computed_output!(simulation, sdns, save_schedule, save_file, output_dir,
                                    overwrite_saved_output, reference_gp_height)
 Save selection of computed output during a `Simulation` using an `OutputWriter`.
@@ -320,6 +357,43 @@ function checkpointer_setup!(simulation, model, output_dir,
 
 end
 checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval::Nothing) = nothing
+"""
+    S_and_T_tracer_restoring_callbacks!(simulation, flux_placement, interface_depth; iteration_frequency = 1)
+Add `Callback`s to the `S` and `T` fields which act as restoring using [restore_tracer_content!](@ref).
+**Note:** this is currently only appropriate for single interface models.
+"""
+function S_and_T_tracer_restoring_callbacks!(simulation, flux_placement, interface_depth)
+
+    z = znodes(simulation.model.grid, Center())
+    upper_layer = findall(z .> interface_depth + 0.1) #Not all the way to interface
+    lower_layer = findall(z .< interface_depth - 0.1) #Not all the way to interface
+    Δx, Δy, Δz = xspacings(simulation.model.grid, Center()), yspacings(simulation.model.grid, Center()),
+                    zspacings(simulation.model.grid, Center())
+    ΔV = Δx * Δy * Δz
+
+    initial_upper_T_content = sum(interior(simulation.model.tracers.T, :, :, upper_layer)) * ΔV
+    initial_lower_T_content = sum(interior(simulation.model.tracers.T, :, :, lower_layer)) * ΔV
+
+    simulation.callbacks[:T_restore] = Callback(restore_tracer_content!, TimeInterval(1),
+                                                parameters = (C = :T,
+                                                              interface_depth,
+                                                              tracer_flux_placement = flux_placement,
+                                                              initial_upper_content = initial_upper_T_content,
+                                                              initial_lower_content = initial_lower_T_content))
+
+    initial_upper_S_content = sum(interior(simulation.model.tracers.S, :, :, upper_layer)) * ΔV
+    initial_lower_S_content = sum(interior(simulation.model.tracers.S, :, :, lower_layer)) * ΔV
+
+    simulation.callbacks[:S_restore] = Callback(restore_tracer_content!, TimeInterval(1),
+                                                parameters = (C = :S,
+                                                              interface_depth,
+                                                              tracer_flux_placement = flux_placement,
+                                                              initial_upper_content = initial_upper_S_content,
+                                                              initial_lower_content = initial_lower_S_content))
+
+    return nothing
+end
+no_tracer_callbacks!(simulation, mean_region, interface_depth) = nothing
 """
     function simulation_progress(sim)
 Useful progress messaging for simulation runs. This function is from an

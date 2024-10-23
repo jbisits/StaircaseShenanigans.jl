@@ -8,6 +8,7 @@ using SeawaterPolynomials: BoussinesqEquationOfState
 using SeawaterPolynomials: thermal_expansion, haline_contraction, ρ
 using GibbsSeaWater: gsw_alpha, gsw_beta
 using NCDatasets, JLD2
+using Statistics
 
 import SeawaterPolynomials.SecondOrderSeawaterPolynomials: RoquetSeawaterPolynomial
 
@@ -25,6 +26,8 @@ export StepInitialConditions, SmoothStepInitialConditions, set_staircase_initial
 export AbstractNoise, VelocityNoise
 
 export OuterStairMask, OuterStairTargets, OuterMask, OuterTargets, ExponentialTarget
+
+export restore_field_region!, S_and_T_tracer_restoring_callbacks!
 
 export CustomLinearRoquetSeawaterPolynomial, CustomLinearEquationOfState
 

@@ -10,7 +10,7 @@ temperature = [-1.5, 0.5]
 
 model = DNSModel(architecture, domain_extent, resolution, diffusivities)
 
-step_ics = StepInitialConditions(model, number_of_steps, depth_of_steps, salinity, temperature)
+step_ics = StepInitialConditions(model, number_of_interfaces, depth_of_interfaces, salinity, temperature)
 
 sdns = StaircaseDNS(model, step_ics)
 
@@ -21,8 +21,14 @@ set_staircase_initial_conditions!(sdns)
 
 ΔV = Δx * Δy * Δz
 
+z = znodes(model.grid, Center())
+upper = findall(z .> step_ics.depth_of_interfaces[1] + 0.1)
+lower = findall(z .< step_ics.depth_of_interfaces[1] - 0.1)
+
 initial_upper_T_content = sum(interior(sdns.model.tracers.T, :, :, upper)) * ΔV
 initial_lower_T_content = sum(interior(sdns.model.tracers.T, :, :, lower)) * ΔV
+initial_upper_S_content = sum(interior(sdns.model.tracers.S, :, :, upper)) * ΔV
+initial_lower_S_content = sum(interior(sdns.model.tracers.S, :, :, lower)) * ΔV
 
 Δt = 1e-1
 stop_time = 50 * 60 # seconds
@@ -37,3 +43,5 @@ run!(simulation)
 
 post_upper_T_content = sum(interior(simulation.model.tracers.T, :, :, upper)) * ΔV
 post_lower_T_content = sum(interior(simulation.model.tracers.T, :, :, lower)) * ΔV
+post_upper_S_content = sum(interior(simulation.model.tracers.S, :, :, upper)) * ΔV
+post_lower_S_content = sum(interior(simulation.model.tracers.S, :, :, lower)) * ΔV

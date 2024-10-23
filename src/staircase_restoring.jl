@@ -109,24 +109,30 @@ There is a default setup in [SDNS_simulation_setup](@ref) allows passing the kwa
 function restore_tracer_content!(sim, parameters)
 
     Lx, Ly, Lz = sim.model.grid.Lx, sim.model.grid.Ly, -sim.model.grid.Lz
+    A = Lx * Ly
+    V = Lx * Ly * abs(Lz)
     Δx, Δy, Δz = xspacings(sim.model.grid, Center()), yspacings(sim.model.grid, Center()),
                     zspacings(sim.model.grid, Center())
     ΔV = Δx * Δy * Δz
-    A = Lx * Ly
     z = znodes(sim.model.grid, Center())
 
     tracer = getproperty(sim.model.tracers, parameters.C)
     tfp = parameters.tracer_flux_placement
-    iuc = parameters.initial_upper_content
+    id = parameters.interface_depth
     ilc = parameters.initial_lower_content
+    iuc = parameters.initial_upper_content
 
-    lower_tracer_content_lost = ilc - sum(interior(tracer, :, :, 26:50)) * ΔV
-    upper_tracer_content_lost = iuc - sum(interior(tracer, :, :, 1:25)) * ΔV
+    lower_layer = findall(z .< id-0.1) #Not all the way to interface
+    upper_layer = findall(z .> id+0.1) #Not all the way to interface
+
+    lower_tracer_content_lost = ilc - sum(interior(tracer, :, :, lower_layer)) * ΔV
+    upper_tracer_content_lost = iuc - sum(interior(tracer, :, :, upper_layer)) * ΔV
 
     lower_placement = findall(z .< (1 - tfp) * Lz)
     upper_placement = findall(z .> tfp * Lz)
 
-    interior(tracer, :, :, lower_placement) .+= lower_tracer_content_lost * (Δz * length(lower_placement))
-    interior(tracer, :, :, upper_placement) .+= upper_tracer_content_lost * (Δz * length(upper_placement))
+    interior(tracer, :, :, lower_placement) .+= (lower_tracer_content_lost / (2*V/5)) * (A * Δz * length(lower_placement))
+    interior(tracer, :, :, upper_placement) .+= (upper_tracer_content_lost / (2*V/5)) * (A * Δz * length(upper_placement))
+
     return nothing
 end

@@ -47,4 +47,10 @@ using Test
 
     end
 
+    @testset "Tracer content restoring" begin
+        include("single_interface_restoring.jl")
+        @test round(initial_upper_T_content, sigdigits = 1) ≈ round(post_upper_T_content, sigdigits = 1)
+        @test round(initial_upper_S_content, sigdigits = 1) ≈ round(post_upper_S_content, sigdigits = 1)
+    end
+
 end

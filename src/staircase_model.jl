@@ -187,7 +187,7 @@ Create an `output_directory` for saved output based on the `initial_conditions` 
 function output_directory(sdns::StaircaseDNS, stop_time::Number, output_path)
 
     ic_type = typeof(sdns.initial_conditions)
-    ic_string = ic_type <: StepInitialConditions ? "step_change" : "smoothed_step"
+    ic_string = ic_type <: STStaircaseInitialConditions ? "step_change" : "single_interface"
 
     eos_string = is_linear_eos(sdns.model.buoyancy.model.equation_of_state.seawater_polynomial)
 

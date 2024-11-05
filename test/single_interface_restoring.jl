@@ -10,7 +10,7 @@ temperature = [-1.5, 0.5]
 
 model = DNSModel(architecture, domain_extent, resolution, diffusivities)
 
-step_ics = StepInitialConditions(model, number_of_interfaces, depth_of_interfaces, salinity, temperature)
+step_ics = StaircaseICs(model, number_of_interfaces, depth_of_interfaces, salinity, temperature)
 
 sdns = StaircaseDNS(model, step_ics)
 

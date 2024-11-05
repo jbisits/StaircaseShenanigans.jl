@@ -56,6 +56,7 @@ the rate `stretching`, `false` by default;
 function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                   diffusivities::NamedTuple, eos::BoussinesqEquationOfState=TEOS10EquationOfState();
                   forcing = nothing,
+                  boundary_conditions = nothing,
                   zgrid_stretching = false,
                   refinement = 1.05,
                   stretching = 40)
@@ -82,8 +83,10 @@ function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTupl
 
     forcing = isnothing(forcing) ? NamedTuple() : forcing
 
+    boundary_conditions = isnothing(boundary_conditions) ? NamedTuple() : boundary_conditions
+
     return NonhydrostaticModel(; grid, buoyancy, tracers, closure, timestepper, advection,
-                                 forcing)
+                                 forcing, boundary_conditions)
 
 end
 """

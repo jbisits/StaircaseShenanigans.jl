@@ -1,7 +1,8 @@
 using StaircaseShenanigans
+using StaircaseShenanigans: Oceananigans.Operators.ℑzᵃᵃᶠ
 
 architecture = CPU() # or GPU()
-diffusivities = (ν = 1e-5, κ = (S = 1e-8, T = 1e-6))
+diffusivities = (ν = 1e-5, κ = (S = 1e-7, T = 1e-5))
 domain_extent = (Lx = 0.1, Ly = 0.1, Lz = -1.0)
 resolution = (Nx = 5, Ny = 5, Nz = 50)
 
@@ -23,37 +24,30 @@ eos = CustomLinearEquationOfState(-0.5, 34.6)
 # S_restoring = Relaxation(; rate, mask, target = S_target)
 # forcing = (S = S_restoring, T = T_restoring)
 
-# discrete forcing
-T= model.tracers.T
-upper_region(i, j, k, grid, T) = k < grid.Nz * 0.4
-lower_region(i, j, k, grid, T) = k > grid.Nz * 0.6
-T_upper = condition_operand(T, upper_region, 0)
-∫T_upper = Field(Integral(T_upper))
-compute!(∫T_upper)
-T_lower = condition_operand(T, lower_region, 0)
-∫T_lower = Field(Integral(T_upper))
-compute!(∫T_lower)
-initial_T_content = (upper = ∫T_upper.data[1, 1, 1], lower = ∫T_lower.data[1, 1, 1])
+# @inline tracer_flux_change(i, j, grid, clock, model_fields, ΔC) =
+#     @inbounds - ΔC * (model_fields.w[i, j, grid.Nz] * ℑzᵃᵃᶠ(model_fields.T[i, j, grid.Nz])) /
+#                     volume(i, j, k, grid)
 
-function T_forcing_func(i, j, k, grid, clock, model_fields, initial_T_content)
+@inline tracer_flux_change(i, j, grid, clock, model_fields, ΔT) =
+    @inbounds + ΔT + model_fields.T[i, j, grid.Nz] #ℑzᵃᵃᶠ(i, j, grid.Nz, model_fields.T)
 
-    T = model_fields.T
-    upper_region(i, j, k, grid, T) = k < grid.Nz * 0.4
-    lower_region(i, j, k, grid, T) = k > grid.Nz * 0.6
-    T_upper = condition_operand(T, upper_region, 0)
-    ∫T_upper = Field(Integral(T_upper))
-    ΔT_upper = initial_T_content.upper[1, 1, 1] - ∫T_upper[1, 1, 1]
-    T_lower = condition_operand(T, lower_region, 0)
-    ∫T_lower = Field(Integral(T_lower))
-    ΔT_lower = initial_T_content.lower[1, 1, 1] - ∫T_lower[1, 1, 1]
-    return k < grid.Nz * 0.1 ? 0.1 * ΔT_upper[1, 1, 1] / 1024 : k > grid.Nz * 0.9 ?
-                                                                0.1 * ΔT_lower[1, 1, 1] / 1024 : 0
-end
-T_forcing = Forcing(T_forcing_func, discrete_form = true, parameters = initial_T_content)
-forcing = (T = T_forcing, )
 
+@inline w_top_bottom(i, j, grid, clock, model_fields) =
+    @inbounds model_fields.w[i, j, 1]
+@inline w_bottom_top(i, j, grid, clock, model_fields) =
+    @inbounds model_fields.w[i, j, grid.Nz+1]
+
+ΔT = 2
+T_reentry = ValueBoundaryCondition(tracer_flux_change, discrete_form=true, parameters = ΔT)
+T_bcs = FieldBoundaryConditions(bottom = T_reentry)
+w_top = OpenBoundaryCondition(w_top_bottom, discrete_form=true)
+w_bottom = OpenBoundaryCondition(w_bottom_top, discrete_form=true)
+# w_top = OpenBoundaryCondition(1e-5)
+# w_bottom = OpenBoundaryCondition(1e-5)
+w_bcs = FieldBoundaryConditions(top = w_top,  bottom = w_bottom)
+boundary_conditions = (T=T_bcs, w= w_bcs)
 ## model
-model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos; forcing)
+model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos; boundary_conditions)
 
 ## Set initial conditions
 step_ics = StepInitialConditions(model, number_of_interfaces, depth_of_interfaces, salinity, temperature)
@@ -62,13 +56,25 @@ sdns = StaircaseDNS(model, step_ics)
 
 set_staircase_initial_conditions!(sdns)
 
+w_noise = randn(size(sdns.model.velocities.w)) * 1e-7
+set!(sdns.model, w = w_noise)
+
 ## Build simulation
 Δt = 1e-1
 stop_time = 50 * 60 # seconds
 save_schedule = 10  # seconds
 output_path = joinpath(@__DIR__, "output")
-simulation = SDNS_simulation_setup(sdns, Δt, stop_time, save_schedule, save_computed_output!; output_path, max_Δt = 5,
+simulation = SDNS_simulation_setup(sdns, Δt, stop_time, save_schedule, save_computed_output!, StaircaseShenanigans.save_vertical_velocities!; output_path, max_Δt = 5,
                                     )
 
+# ##
+# function modify_halo!(simulation, parameters)
+
+#     T = simulation.model.tracers.T
+#     T[1:5, 1:5, -2:1] .+= parameters.ΔT
+#     T[1:5, 1:5, 50:53] .-= parameters.ΔT
+#     return nothing
+# end
+# simulation.callbacks[:T_bc_restore] = Callback(modify_halo!, parameters = (ΔT = 2,))
 ## Run
 run!(simulation)

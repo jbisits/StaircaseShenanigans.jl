@@ -2,7 +2,7 @@
     function set_staircase_initial_conditions!(model, ics)
 Set initial salinity and temperature staircases in `model`.
 """
-function set_staircase_initial_conditions!(model, ics::StepInitialConditions)
+function set_staircase_initial_conditions!(model, ics::STStaircaseInitialConditions)
 
     depth_of_interfaces = ics.depth_of_interfaces
     z = znodes(model.grid, Center())
@@ -24,10 +24,10 @@ function set_staircase_initial_conditions!(model, ics::StepInitialConditions)
 
     return nothing
 end
-function set_staircase_initial_conditions!(model, ics::SmoothStepInitialConditions)
+function set_staircase_initial_conditions!(model, ics::SmoothSTStaircaseInitialConditions)
 
     # TODO: write methods to set smooth changes using the function provied in
-    # `ics::SmoothStepInitialConditions`. I can use something like the above
+    # `ics::SmoothSTStaircaseInitialConditions`. I can use something like the above
     # normalise then set with the smoothing function
     #set!(model, S = initial_S_steps, T = initial_T_steps)
 

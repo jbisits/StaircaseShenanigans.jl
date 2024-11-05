@@ -4,7 +4,7 @@ Base.iterate(sics::AbstractStaircaseInitialConditions, state = 1) =
     state > length(fieldnames(sics)) ? nothing : (getfield(sics, state), state + 1)
 
 "Container for initial conditions that have well mixed layers seperated by sharp step interfaces."
-struct StepInitialConditions{T} <: AbstractStaircaseInitialConditions
+struct STStaircaseInitialConditions{T} <: AbstractStaircaseInitialConditions
     "Number of interfaces in the initial state"
        number_of_interfaces :: Int
     "The depth of the interfaces, note length(depth_of_interfaces) == number_of_interfaces"
@@ -16,13 +16,13 @@ struct StepInitialConditions{T} <: AbstractStaircaseInitialConditions
     "Initial R_ρ at each step interface"
                    R_ρ :: T
 end
-function StepInitialConditions(model, number_of_interfaces, depth_of_interfaces, salinity, temperature)
+function STStaircaseInitialConditions(model, number_of_interfaces, depth_of_interfaces, salinity, temperature)
 
     eos = model.buoyancy.model.equation_of_state
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interfaces, eos)
 
-    return StepInitialConditions(number_of_interfaces, depth_of_interfaces, salinity, temperature, R_ρ)
+    return STStaircaseInitialConditions(number_of_interfaces, depth_of_interfaces, salinity, temperature, R_ρ)
 
 end
 """
@@ -53,7 +53,7 @@ function compute_R_ρ(salinity, temperature, depth_of_interfaces, eos)
 end
 
 "Container for initial conditions that have well mixed layers seperated by smoothed step interfaces."
-struct SmoothStepInitialConditions{T} <: AbstractStaircaseInitialConditions
+struct SmoothSTStaircaseInitialConditions{T} <: AbstractStaircaseInitialConditions
     "Number of interfaces in the initial state"
        number_of_interfaces :: Int
     "The depth of the interfaces, **note:** length (depth_of_interfaces) == number_of_interfaces"
@@ -66,15 +66,15 @@ struct SmoothStepInitialConditions{T} <: AbstractStaircaseInitialConditions
     smoothing_funciton :: Function
 end
 function Base.show(io::IO, sics::AbstractStaircaseInitialConditions)
-    if sics isa StepInitialConditions
-        println(io, "StepInitialConditions")
+    if sics isa STStaircaseInitialConditions
+        println(io, "STStaircaseInitialConditions")
         println(io, "┣━━━━ number_of_interfaces: $(sics.number_of_interfaces)")
         println(io, "┣━━━━━ depth_of_interfaces: $(sics.depth_of_interfaces)")
         println(io, "┣━━━━ salinity_values: $(sics.salinity_values)")
         println(io, "┣━ temperature_values: $(sics.temperature_values)")
         print(io,   "┗━━━━━━━━━━━━━━━━ R_ρ: $(round.(sics.R_ρ; digits = 2))")
-    elseif sics isa SmoothStepInitialConditions
-        println(io, "StepInitialConditions")
+    elseif sics isa SmoothSTStaircaseInitialConditions
+        println(io, "STStaircaseInitialConditions")
         println(io, "┣━━━━ number_of_interfaces: $(sics.number_of_interfaces)")
         println(io, "┣━━━━━ depth_of_interfaces: $(sics.depth_of_interfaces)")
         println(io, "┣━━━━ salinity_values: $(sics.salinity_values)")

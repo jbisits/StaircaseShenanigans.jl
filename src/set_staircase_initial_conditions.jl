@@ -24,6 +24,24 @@ function set_staircase_initial_conditions!(model, ics::STStaircaseInitialConditi
 
     return nothing
 end
+function set_staircase_initial_conditions!(model, ics::STSingleInterfaceInitialConditions)
+
+    depth_of_interface = ics.depth_of_interface
+    z = znodes(model.grid, Center())
+    S = ics.salinity_values
+    T = ics.temperature_values
+
+    S₀ = similar(interior(model.tracers.S, :, :, :))
+    T₀ = similar(interior(model.tracers.T, :, :, :))
+    S₀[:, :, z .> depth_of_interface[1]] .= S[1]
+    T₀[:, :, z .> depth_of_interface[1]] .= T[1]
+    S₀[:, :, z .< depth_of_interface[end]] .= S[2]
+    T₀[:, :, z .< depth_of_interface[end]] .= T[2]
+
+    set!(model, S = S₀, T = T₀)
+
+    return nothing
+end
 function set_staircase_initial_conditions!(model, ics::SmoothSTStaircaseInitialConditions)
 
     # TODO: write methods to set smooth changes using the function provied in
@@ -34,6 +52,10 @@ function set_staircase_initial_conditions!(model, ics::SmoothSTStaircaseInitialC
     return nothing
 end
 set_noise!(model, noise::Nothing) = nothing
+"""
+    function set_noise!(model, noise::VelocityNoise)
+Add initial noise the velocity field.
+"""
 function set_noise!(model, noise::VelocityNoise)
 
     u, v, w = model.velocities

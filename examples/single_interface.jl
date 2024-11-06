@@ -1,5 +1,4 @@
 using StaircaseShenanigans
-using StaircaseShenanigans: Oceananigans.Operators.ℑzᵃᵃᶠ
 
 architecture = CPU() # or GPU()
 diffusivities = (ν = 1e-5, κ = (S = 1e-7, T = 1e-5))
@@ -14,49 +13,15 @@ temperature = [-1.5, 0.5]
 ## Setup the model
 eos = CustomLinearEquationOfState(-0.5, 34.6)
 
-## restoring
-# rate = 1/10
-# mask = OuterMask(-0.25, -0.75)
-# S_target = OuterTargets(34.58, 34.7, mask)
-# T_target = OuterTargets(-1.5, 0.5, mask)
-# T_restoring = Relaxation(; rate, mask, target = T_target)
-# S_restoring = Relaxation(; rate, mask, target = S_target)
-# forcing = (S = S_restoring, T = T_restoring)
-
-# @inline tracer_flux_change(i, j, grid, clock, model_fields, ΔC) =
-#     @inbounds - ΔC * (model_fields.w[i, j, grid.Nz] * ℑzᵃᵃᶠ(model_fields.T[i, j, grid.Nz])) /
-#                     volume(i, j, k, grid)
-
-@inline tracer_flux_change(i, j, grid, clock, model_fields, ΔT) =
-    @inbounds + ΔT + model_fields.T[i, j, grid.Nz] #ℑzᵃᵃᶠ(i, j, grid.Nz, model_fields.T)
-
-
-@inline w_top_bottom(i, j, grid, clock, model_fields) =
-    @inbounds model_fields.w[i, j, 1]
-@inline w_bottom_top(i, j, grid, clock, model_fields) =
-    @inbounds model_fields.w[i, j, grid.Nz+1]
-
-ΔT = 2
-T_reentry = ValueBoundaryCondition(tracer_flux_change, discrete_form=true, parameters = ΔT)
-T_bcs = FieldBoundaryConditions(bottom = T_reentry)
-w_top = OpenBoundaryCondition(w_top_bottom, discrete_form=true)
-w_bottom = OpenBoundaryCondition(w_bottom_top, discrete_form=true)
-# w_top = OpenBoundaryCondition(1e-5)
-# w_bottom = OpenBoundaryCondition(1e-5)
-w_bcs = FieldBoundaryConditions(top = w_top,  bottom = w_bottom)
-boundary_conditions = (T=T_bcs, w= w_bcs)
 ## model
-model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos; boundary_conditions)
+model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos)
 
 ## Set initial conditions
-step_ics = SingleInterfaceICs(model, depth_of_interface, salinity, temperature)
-
-sdns = StaircaseDNS(model, step_ics)
+interface_ics = SingleInterfaceICs(model, depth_of_interface, salinity, temperature, maintain_interface = true)
+velocity_noise = VelocityNoise(0.0, 0.0, 1e-7)
+sdns = StaircaseDNS(model, interface_ics)
 
 set_staircase_initial_conditions!(sdns)
-
-w_noise = randn(size(sdns.model.velocities.w)) * 1e-7
-set!(sdns.model, w = w_noise)
 
 ## Build simulation
 Δt = 1e-1

@@ -88,3 +88,51 @@ struct ExponentialTarget{T}
 end
 
 @inline (p::ExponentialTarget)(x, y, z, t) = p.A * exp(-p.λ * z)
+
+# The following functions are to be used as `BoundaryConditions` so that tracers can
+# re-enter the domain with the initial gradient added effectively allowing the gradient to
+# be maintained. Another option is to add background tracer fields and only evolve the anomaly
+
+"""
+    T_reentry(i, j, grid, clock, model_fields, ΔT)
+Discrete boundary condition to set the temperature on a vertical boundary to tracer value at
+the **top** of the domain and adds ΔT. That is a reentrant T condition to be used on the
+**bottom** of the domain.
+"""
+@inline T_reentry(i, j, grid, clock, model_fields, ΔT) =
+    @inbounds ℑzᵃᵃᶠ(i, j, grid.Nz+1, model_fields.T) + ΔT
+"""
+    S_reentry(i, j, grid, clock, model_fields, ΔS)
+As for [T_reentry](@ref) but using salinity tracer instead.
+"""
+@inline S_reentry(i, j, grid, clock, model_fields, ΔS) =
+    @inbounds ℑzᵃᵃᶠ(i, j, grid.Nz+1, model_fields.S) + ΔS
+
+"Access velocity field at the _bottom_ of the domain for use as `BoundaryCondition`."
+@inline _w_bottom(i, j, grid, clock, model_fields) = @inbounds model_fields.w[i, j, 1]
+"Access velocity field at the _top_ of the domain for use as `BoundaryCondition`."
+@inline _w_top(i, j, grid, clock, model_fields) = @inbounds model_fields.w[i, j, grid.Nz+1]
+
+"Interpolated velocity between top and bottom (vertical) faces of domain."
+@inline w_top_bottom_interpolate(i, j, grid, clock, model_fields) =
+    @inbounds 0.5 * (model_fields.w[i, j, 1] + model_fields.w[i, j, grid.Nz+1])
+
+function add_reentrant_boundary_conditions!(model, ics::STSingleInterfaceInitialConditions)
+
+    if ics.maintain_interface
+        ΔT = diff(ics.temperature_values)[1]
+        ΔS = diff(ics.salinity_values)[1]
+        T_bottom_reentry = ValueBoundaryCondition(T_reentry, discrete_form=true, parameters = ΔT)
+        S_bottom_reentry = ValueBoundaryCondition(S_reentry, discrete_form=true, parameters = ΔS)
+        T_bcs = FieldBoundaryConditions(bottom = T_bottom_reentry)
+        S_bcs = FieldBoundaryConditions(bottom = S_bottom_reentry)
+        w_top = OpenBoundaryCondition(_w_bottom, discrete_form=true)
+        w_bottom = OpenBoundaryCondition(_w_top, discrete_form=true)
+
+        w_bcs = FieldBoundaryConditions(top = w_top,  bottom = w_bottom)
+        bcs = (T=T_bcs, S=S_bcs, w=w_bcs)
+        update_boundary_condition!(bcs, model)
+
+    end
+    return nothing
+end

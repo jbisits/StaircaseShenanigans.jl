@@ -75,6 +75,7 @@ function set_staircase_initial_conditions!(sdns::StaircaseDNS)
 
     set_staircase_initial_conditions!(sdns.model, sdns.initial_conditions)
     set_noise!(sdns.model, sdns.initial_noise)
+    add_reentrant_boundary_conditions!(sdns.model, sdns.initial_conditions)
 
     return nothing
 end

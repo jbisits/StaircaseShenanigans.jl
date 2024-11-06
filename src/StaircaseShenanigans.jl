@@ -2,6 +2,8 @@ module StaircaseShenanigans
 
 using Oceananigans, Reexport, Printf
 using Oceananigans: seawater_density
+using Oceananigans.BoundaryConditions: update_boundary_condition!
+using Oceananigans.Operators: ℑzᵃᵃᶠ
 using SeawaterPolynomials.TEOS10
 using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 using SeawaterPolynomials: BoussinesqEquationOfState
@@ -29,7 +31,7 @@ export AbstractNoise, VelocityNoise
 
 export OuterStairMask, OuterStairTargets, OuterMask, OuterTargets, ExponentialTarget
 
-export restore_field_region!, S_and_T_tracer_restoring_callbacks!
+# export S_reentry, T_reentry, _w_top, _w_bottom
 
 export CustomLinearRoquetSeawaterPolynomial, CustomLinearEquationOfState
 

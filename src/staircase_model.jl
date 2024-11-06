@@ -156,7 +156,7 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
     checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval)
 
     # S and T `Callbacks` as forcing
-    add_tracer_region_callbacks!(simulation, flux_placement, ics.depth_of_interfaces[1])
+    add_tracer_region_callbacks!(simulation, flux_placement, ics.depth_of_interface)
 
     save_R_ρ!(simulation, sdns)
 

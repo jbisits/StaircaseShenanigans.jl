@@ -12,14 +12,18 @@ struct STSingleInterfaceInitialConditions{T, A} <: AbstractStaircaseInitialCondi
     temperature_values :: A
      "Initial R_ρ at the interface"
                    R_ρ :: T
+    "Boolean whether or not to set reentrant boundary condtions to approximately maintain the initial
+    interface gradients"
+    maintain_interface :: Bool
 end
-function STSingleInterfaceInitialConditions(model, depth_of_interface, salinity, temperature)
+function STSingleInterfaceInitialConditions(model, depth_of_interface, salinity, temperature;
+                                            maintain_interface = false)
 
     eos = model.buoyancy.model.equation_of_state
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
 
-    return STSingleInterfaceInitialConditions(depth_of_interface, salinity, temperature, R_ρ)
+    return STSingleInterfaceInitialConditions(depth_of_interface, salinity, temperature, R_ρ, maintain_interface)
 
 end
 const SingleInterfaceICs = STSingleInterfaceInitialConditions # alias

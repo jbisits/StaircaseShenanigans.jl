@@ -7,8 +7,7 @@ domain_extent = (Lx = 0.1, Ly = 0.1, Lz = -1.0)
 resolution = (Nx = 5, Ny = 5, Nz = 50)
 
 ## Initial conditions
-number_of_interfaces = 1
-depth_of_interfaces = [-0.5]
+depth_of_interface = -0.5
 salinity = [34.58, 34.70]
 temperature = [-1.5, 0.5]
 
@@ -50,7 +49,7 @@ boundary_conditions = (T=T_bcs, w= w_bcs)
 model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos; boundary_conditions)
 
 ## Set initial conditions
-step_ics = StepInitialConditions(model, number_of_interfaces, depth_of_interfaces, salinity, temperature)
+step_ics = SingleInterfaceICs(model, depth_of_interface, salinity, temperature)
 
 sdns = StaircaseDNS(model, step_ics)
 

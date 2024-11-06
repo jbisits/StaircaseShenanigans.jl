@@ -21,7 +21,9 @@ abstract type AbstractNoise end
 
 export StaircaseDNS, DNSModel, SDNS_simulation_setup
 
-export StepInitialConditions, SmoothStepInitialConditions, set_staircase_initial_conditions!
+export STStaircaseInitialConditions, StaircaseICs, SmoothSTStaircaseInitialConditions,
+       STSingleInterfaceInitialConditions, SingleInterfaceICs,
+       set_staircase_initial_conditions!
 
 export AbstractNoise, VelocityNoise
 

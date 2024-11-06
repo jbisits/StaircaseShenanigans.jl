@@ -9,9 +9,10 @@ using Test
     @testset "Setting initial conditions" begin
 
         include("model_ic_setup.jl")
-        @test all(unique(interior(sdns.model.tracers.S, 1, 1, :)) .== reverse(salinity))
-        @test all(unique(interior(sdns.model.tracers.T, 1, 1, :)) .== reverse(temperature))
-
+        @test all(unique(interior(sdns_staircase.model.tracers.S, 1, 1, :)) .== reverse(salinity_staircase))
+        @test all(unique(interior(sdns_staircase.model.tracers.T, 1, 1, :)) .== reverse(temperature_staircase))
+        @test all(unique(interior(sdns_interface.model.tracers.S, 1, 1, :)) .== reverse(salinity))
+        @test all(unique(interior(sdns_interface.model.tracers.T, 1, 1, :)) .== reverse(temperature))
     end
 
     @testset "R_ρ calculation" begin
@@ -22,10 +23,8 @@ using Test
         β = haline_contraction(Θₘ, Sₘ, 0, model.buoyancy.model.equation_of_state)
         α = -thermal_expansion(Θₘ, Sₘ, 0, model.buoyancy.model.equation_of_state)
 
-        println(α, β)
-        println(sdns.initial_conditions.R_ρ)
-        println((β * ΔS) / (α * ΔΘ))
-        @test all(sdns.initial_conditions.R_ρ .≈ (β * ΔS) / (α * ΔΘ))
+        @test all(step_ics.R_ρ .≈ (β * ΔS) / (α * ΔΘ))
+        @test (interface_ics.R_ρ ≈ vec((β * ΔS) / (α * ΔΘ))[1])
 
     end
 

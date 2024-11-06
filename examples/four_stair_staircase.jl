@@ -16,7 +16,7 @@ eos = CustomLinearEquationOfState(0, 34.6)
 model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos)
 
 ## Set initial conditions
-step_ics = StepInitialConditions(model, number_of_interfaces, depth_of_interfaces, salinity, temperature)
+step_ics = StaircaseICs(model, number_of_interfaces, depth_of_interfaces, salinity, temperature)
 
 sdns = StaircaseDNS(model, step_ics)
 

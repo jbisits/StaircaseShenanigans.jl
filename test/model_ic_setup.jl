@@ -1,15 +1,29 @@
-## Random initial conditions
+## Random initial conditions, staircase
 random_no_interfaces = 3:10
 number_of_interfaces = rand(random_no_interfaces)
 depth_of_interfaces = reverse(Array(range(domain_extent.Lz+0.2, -0.1, length = number_of_interfaces)))
-salinity = Array(range(34.57, 34.7, length = number_of_interfaces+1))
-temperature = Array(range(-1.5, -1.0, length = number_of_interfaces+1))
+salinity_staircase = Array(range(34.57, 34.7, length = number_of_interfaces+1))
+temperature_staircase = Array(range(-1.5, -1.0, length = number_of_interfaces+1))
 
-## Setup the model
 model = DNSModel(architecture, domain_extent, resolution, diffusivities)
 
-step_ics = StepInitialConditions(model, number_of_interfaces, depth_of_interfaces, salinity, temperature)
+step_ics = STStaircaseInitialConditions(model, number_of_interfaces, depth_of_interfaces,
+                                        salinity_staircase, temperature_staircase)
 
-sdns = StaircaseDNS(model, step_ics)
+sdns_staircase = StaircaseDNS(model, step_ics)
 
-set_staircase_initial_conditions!(sdns)
+set_staircase_initial_conditions!(sdns_staircase)
+
+## Random initial conditions, interface
+z = range(domain_extent.Lz, -0.0, length = 20)
+depth_of_interface = rand(z)
+salinity = Array(range(34.57, 34.7, length = 2))
+temperature = Array(range(-1.5, -1.0, length = 2))
+
+model = DNSModel(architecture, domain_extent, resolution, diffusivities)
+
+singel_interface_ics = STSingleInterfaceInitialConditions(model, depth_of_interface, salinity, temperature)
+
+sdns_interface = StaircaseDNS(model, singel_interface_ics)
+
+set_staircase_initial_conditions!(sdns_interface)

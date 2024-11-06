@@ -63,17 +63,8 @@ set!(sdns.model, w = w_noise)
 stop_time = 50 * 60 # seconds
 save_schedule = 10  # seconds
 output_path = joinpath(@__DIR__, "output")
-simulation = SDNS_simulation_setup(sdns, Δt, stop_time, save_schedule, save_computed_output!, StaircaseShenanigans.save_vertical_velocities!; output_path, max_Δt = 5,
+simulation = SDNS_simulation_setup(sdns, Δt, stop_time, save_schedule, save_computed_output!,
+                                    StaircaseShenanigans.save_vertical_velocities!; output_path, max_Δt = 5,
                                     )
-
-# ##
-# function modify_halo!(simulation, parameters)
-
-#     T = simulation.model.tracers.T
-#     T[1:5, 1:5, -2:1] .+= parameters.ΔT
-#     T[1:5, 1:5, 50:53] .-= parameters.ΔT
-#     return nothing
-# end
-# simulation.callbacks[:T_bc_restore] = Callback(modify_halo!, parameters = (ΔT = 2,))
 ## Run
 run!(simulation)

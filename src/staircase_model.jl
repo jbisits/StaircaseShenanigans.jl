@@ -360,42 +360,7 @@ function checkpointer_setup!(simulation, model, output_dir,
 
 end
 checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval::Nothing) = nothing
-"""
-    S_and_T_tracer_restoring_callbacks!(simulation, flux_placement, interface_depth; iteration_frequency = 1)
-Add `Callback`s to the `S` and `T` fields which act as restoring using [restore_tracer_content!](@ref).
-**Note:** this is currently only appropriate for single interface models.
-"""
-function S_and_T_tracer_restoring_callbacks!(simulation, flux_placement, interface_depth)
-
-    z = znodes(simulation.model.grid, Center())
-    upper_layer = findall(z .> interface_depth + 0.1) #Not all the way to interface
-    lower_layer = findall(z .< interface_depth - 0.1) #Not all the way to interface
-    Δx, Δy, Δz = xspacings(simulation.model.grid, Center()), yspacings(simulation.model.grid, Center()),
-                    zspacings(simulation.model.grid, Center())
-    ΔV = Δx * Δy * Δz
-
-    initial_upper_T_content = sum(interior(simulation.model.tracers.T, :, :, upper_layer)) * ΔV
-    initial_lower_T_content = sum(interior(simulation.model.tracers.T, :, :, lower_layer)) * ΔV
-
-    simulation.callbacks[:T_restore] = Callback(restore_tracer_content!, TimeInterval(1),
-                                                parameters = (C = :T,
-                                                              interface_depth,
-                                                              tracer_flux_placement = flux_placement,
-                                                              initial_upper_content = initial_upper_T_content,
-                                                              initial_lower_content = initial_lower_T_content))
-
-    initial_upper_S_content = sum(interior(simulation.model.tracers.S, :, :, upper_layer)) * ΔV
-    initial_lower_S_content = sum(interior(simulation.model.tracers.S, :, :, lower_layer)) * ΔV
-
-    simulation.callbacks[:S_restore] = Callback(restore_tracer_content!, TimeInterval(1),
-                                                parameters = (C = :S,
-                                                              interface_depth,
-                                                              tracer_flux_placement = flux_placement,
-                                                              initial_upper_content = initial_upper_S_content,
-                                                              initial_lower_content = initial_lower_S_content))
-
-    return nothing
-end
+# Can add tracer callbacks if need be
 no_tracer_callbacks!(simulation, mean_region, interface_depth) = nothing
 """
     function simulation_progress(sim)

@@ -340,7 +340,10 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
                                overwrite_saved_output, reference_gp_height)
 
     model = sdns.model
-    σ = seawater_density(model, geopotential_height = reference_gp_height)
+    ics = sdns.initial_conditions
+    S = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.S + model.tracers.S) : model.tracers.S
+    T = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.T + model.tracers.T) : model.tracers.T
+    σ = seawater_density(model, temperature = T, salinity = S, geopotential_height = reference_gp_height)
     computed_outputs = Dict("σ" => σ)
 
     oa = Dict(

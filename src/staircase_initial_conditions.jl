@@ -3,6 +3,13 @@ abstract type AbstractStaircaseInitialConditions <: AbstractInitialConditions en
 Base.iterate(sics::AbstractStaircaseInitialConditions, state = 1) =
     state > length(fieldnames(sics)) ? nothing : (getfield(sics, state), state + 1)
 
+"""
+    struct STSingleInterfaceInitialConditions
+Initial conditions for a single interface (i.e. two layers with uniform `S` and `T` seperated
+by a step change). The property `maintain_interface` is a `Boolean` which if set to `true` will
+set [reentrant_boundary_conditions](@ref) so that the interface will be maintained (by not
+letting the system run down).
+"""
 struct STSingleInterfaceInitialConditions{T, A} <: AbstractStaircaseInitialConditions
     "The depth of the interface"
     depth_of_interface :: T
@@ -36,6 +43,11 @@ return STSingleInterfaceInitialConditions(depth_of_interface, salinity, temperat
 end
 const SingleInterfaceICs = STSingleInterfaceInitialConditions # alias
 
+"""
+    struct PeriodicSTSingleInterfaceInitialConditions
+Sets a `BackgroundField` according to `background_State` and uses a triply periodic domain
+to evolve salinity and temperature anomalies about the background state.
+"""
 struct PeriodicSTSingleInterfaceInitialConditions{T, A} <: AbstractStaircaseInitialConditions
     "The depth of the interface"
     depth_of_interface :: T

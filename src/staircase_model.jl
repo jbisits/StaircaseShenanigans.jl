@@ -155,12 +155,9 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
                                 diffusive_cfl = 0.75,
                                 max_change = 1.2,
                                 max_Δt = 1e-1,
-                                overwrite_saved_output = true,
-                                flux_placement = 0.1)
+                                overwrite_saved_output = true)
 
-    model = sdns.model
-    ics = sdns.initial_conditions
-    simulation = Simulation(model; Δt, stop_time)
+    simulation = Simulation(sdns.model; Δt, stop_time)
 
     # time step adjustments
     wizard = TimeStepWizard(; cfl, diffusive_cfl, max_change, max_Δt)
@@ -173,19 +170,16 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
     save_info = (save_schedule, save_file, output_dir, overwrite_saved_output)
 
     # model tracers
-    save_tracers!(simulation, model, save_info)
+    save_tracers!(simulation, sdns, save_info)
 
     # model velocities
-    save_velocities!(simulation, model, save_info)
+    save_velocities!(simulation, sdns, save_info)
 
     # Custom saved output
     save_custom_output!(simulation, sdns, save_info)
 
     # Checkpointer setup
-    checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval)
-
-    # S and T `Callbacks` as forcing
-    add_tracer_region_callbacks!(simulation, flux_placement, ics.depth_of_interface)
+    checkpointer_setup!(simulation, sdns, output_dir, checkpointer_time_interval)
 
     save_R_ρ!(simulation, sdns)
 
@@ -245,13 +239,17 @@ function is_linear_eos(eos::SecondOrderSeawaterPolynomial)
     return eos_type
 end
 """
-    function save_tracers!(simulation, model, save_schedule, save_file, output_dir, overwrite_saved_output)
+    function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir, overwrite_saved_output)
 Save `model.tracers` during a `Simulation` using an `OutputWriter`.
 """
-function save_tracers!(simulation, model, save_schedule, save_file, output_dir,
+function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
                        overwrite_saved_output)
 
-    S, T = model.tracers.S, model.tracers.T
+    model  = sdns.model
+    ics = sdns.initial_conditions
+    T = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.T + model.tracers.T) : model.tracers.T
+    S = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.S + model.tracers.S) : model.tracers.S
+    T = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.T + model.tracers.T) : model.tracers.T
     tracers = Dict("S" => S, "T" => T)
 
     simulation.output_writers[:tracers] =
@@ -270,16 +268,17 @@ function save_tracers!(simulation, model, save_schedule, save_file, output_dir,
     return nothing
 
 end
-save_tracers!(simulation, model, save_info::Tuple) =
-    save_tracers!(simulation, model, save_info...)
+save_tracers!(simulation, sdns, save_info::Tuple) =
+    save_tracers!(simulation, sdns, save_info...)
 """
     function save_all_velocities!(simulation, model, save_schedule, save_file, output_dir,
                               overwrite_saved_output)
 Save `model.velocities` during a `Simulation` using an `OutputWriter`.
 """
-function save_all_velocities!(simulation, model, save_schedule, save_file, output_dir,
+function save_all_velocities!(simulation, sdns, save_schedule, save_file, output_dir,
                           overwrite_saved_output)
 
+    model = sdns.model
     u, v, w = model.velocities
     velocities = Dict("u" => u, "v" => v, "w" => w)
 
@@ -299,16 +298,17 @@ function save_all_velocities!(simulation, model, save_schedule, save_file, outpu
     return nothing
 
 end
-save_all_velocities!(simulation, model, save_info::Tuple) =
-    save_all_velocities!(simulation, model, save_info...)
+save_all_velocities!(simulation, sdns, save_info::Tuple) =
+    save_all_velocities!(simulation, sdns, save_info...)
 """
-    function save_vertical_velocities!(simulation, model, save_schedule, save_file, output_dir,
+    function save_vertical_velocities!(simulation, sdns, save_schedule, save_file, output_dir,
                                     overwrite_saved_output)
 Only save vertical velocity.
 """
-function save_vertical_velocities!(simulation, model, save_schedule, save_file, output_dir,
+function save_vertical_velocities!(simulation, sdns, save_schedule, save_file, output_dir,
                                     overwrite_saved_output)
 
+    model = sdns.model
     w = model.velocities.w
     velocities = Dict("w" => w)
 
@@ -328,10 +328,10 @@ function save_vertical_velocities!(simulation, model, save_schedule, save_file, 
     return nothing
 
 end
-save_vertical_velocities!(simulation, model, save_info::Tuple) =
-    save_vertical_velocities!(simulation, model, save_info...)
+save_vertical_velocities!(simulation, sdns, save_info::Tuple) =
+    save_vertical_velocities!(simulation, sdns, save_info...)
 "Default"
-no_velocities!(simulation, model, save_info...) = nothing
+no_velocities!(simulation, sdns, save_info...) = nothing
 """
     function save_computed_output!(simulation, sdns, save_schedule, save_file, output_dir,
                                    overwrite_saved_output, reference_gp_height)
@@ -370,27 +370,25 @@ end
 save_computed_output!(simulation, sdns, save_info::Tuple; reference_gp_height = 0) =
     save_computed_output!(simulation, sdns, save_info..., reference_gp_height)
 "Default function for `save_custom_output!` in `sdns_simulation_setup`."
-no_custom_output!(simulation, model, save_info...) = nothing
+no_custom_output!(simulation, sdns, save_info...) = nothing
 """
     function checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)
 Setup a `Checkpointer` at `checkpointer_time_interval` for a `simulation`
 """
-function checkpointer_setup!(simulation, model, output_dir,
+function checkpointer_setup!(simulation, sdns, output_dir,
                              checkpointer_time_interval::Number)
 
     checkpoint_dir = joinpath(output_dir, "model_checkpoints/")
     isdir(checkpoint_dir) ? nothing : mkdir(checkpoint_dir)
     schedule = TimeInterval(checkpointer_time_interval)
     cleanup = true
-    checkpointer = Checkpointer(model; schedule, dir = checkpoint_dir, cleanup)
+    checkpointer = Checkpointer(sdns.model; schedule, dir = checkpoint_dir, cleanup)
     simulation.output_writers[:checkpointer] = checkpointer
 
     return nothing
 
 end
-checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval::Nothing) = nothing
-# Can add tracer callbacks if need be
-no_tracer_callbacks!(simulation, mean_region, interface_depth) = nothing
+checkpointer_setup!(simulation, sdns, output_dir, checkpointer_time_interval::Nothing) = nothing
 """
     function simulation_progress(sim)
 Useful progress messaging for simulation runs. This function is from an

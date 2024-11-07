@@ -147,7 +147,6 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
                                 stop_time::Number, save_schedule::Number,
                                 save_custom_output!::Function=no_custom_output!,
                                 save_velocities!::Function=no_velocities!,
-                                add_tracer_region_callbacks!::Function=no_tracer_callbacks!;
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
                                 checkpointer_time_interval = nothing,

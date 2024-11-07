@@ -14,7 +14,6 @@ function Base.show(io::IO, sdns::StaircaseDNS)
     println(io, "┣━━━ initial_conditions: $(typeof(sdns.initial_conditions))")
     print(io,   "┗━━━━━━━━ initial_noise: $(typeof(sdns.initial_noise))")
 end
-
 "Initialise by passing a `model` that has already been built."
 StaircaseDNS(model, initial_conditions; initial_noise = nothing) =
     StaircaseDNS(model, initial_conditions, initial_noise)
@@ -26,6 +25,19 @@ function StaircaseDNS(model_setup::NamedTuple, initial_conditions, initial_noise
     boundary_conditions = reentrant_boundary_conditions(initial_conditions)
     architecture, diffusivities, domain_extent, resolution, eos =  model_setup
     model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos; boundary_conditions)
+
+    return StaircaseDNS(model, initial_conditions, initial_noise)
+end
+
+"`StaircaseDNS` that is `Periodic` in z direction and evoloves an anomaly around a
+background state."
+function StaircaseDNS(model_setup::NamedTuple, initial_conditions::PeriodoicSingleInterfaceICs, initial_noise)
+
+    background_fields = S_and_T_background_fields(initial_conditions)
+    architecture, diffusivities, domain_extent, resolution, eos =  model_setup
+    z_topology = Periodic
+    model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos;
+                     z_topology, background_fields)
 
     return StaircaseDNS(model, initial_conditions, initial_noise)
 end
@@ -70,8 +82,9 @@ function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTupl
                   diffusivities::NamedTuple, eos::BoussinesqEquationOfState=TEOS10EquationOfState();
                   forcing = nothing,
                   boundary_conditions = nothing,
-                  zgrid_stretching = false,
+                  background_fields = nothing,
                   z_topology = Bounded,
+                  zgrid_stretching = false,
                   refinement = 1.05,
                   stretching = 40)
 
@@ -99,8 +112,10 @@ function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTupl
 
     boundary_conditions = isnothing(boundary_conditions) ? NamedTuple() : boundary_conditions
 
+    background_fields = isnothing(background_fields) ? NamedTuple() : background_fields
+
     return NonhydrostaticModel(; grid, buoyancy, tracers, closure, timestepper, advection,
-                                 forcing, boundary_conditions)
+                                 forcing, boundary_conditions, background_fields)
 
 end
 """
@@ -204,7 +219,7 @@ Create an `output_directory` for saved output based on the `initial_conditions` 
 function output_directory(sdns::StaircaseDNS, stop_time::Number, output_path)
 
     ic_type = typeof(sdns.initial_conditions)
-    ic_string = ic_type <: STStaircaseInitialConditions ? "step_change" : "single_interface"
+    ic_string = ic_type <: STStaircaseInitialConditions ? "staircase" : "single_interface"
 
     eos_string = is_linear_eos(sdns.model.buoyancy.model.equation_of_state.seawater_polynomial)
 

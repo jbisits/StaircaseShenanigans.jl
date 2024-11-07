@@ -36,6 +36,27 @@ return STSingleInterfaceInitialConditions(depth_of_interface, salinity, temperat
 end
 const SingleInterfaceICs = STSingleInterfaceInitialConditions # alias
 
+struct PeriodicSTSingleInterfaceInitialConditions{T, A} <: AbstractStaircaseInitialConditions
+    "The depth of the interface"
+    depth_of_interface :: T
+    "Salinity values in each layer"
+       salinity_values :: A
+     "Temperature values in each layer"
+    temperature_values :: A
+     "Initial R_ρ at the interface"
+                   R_ρ :: T
+    "Function used to define the background state about which an anomaly is evolved."
+     background_state :: Function
+end
+function PeriodicSTSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface, salinity, temperature, background_state)
+
+    R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
+
+    return PeriodicSTSingleInterfaceInitialConditions(depth_of_interface, salinity, temperature, R_ρ, background_state)
+
+end
+const PeriodoicSingleInterfaceICs = PeriodicSTSingleInterfaceInitialConditions # alias
+
 "Container for initial conditions that have well mixed layers seperated by sharp step interfaces."
 struct STStaircaseInitialConditions{T} <: AbstractStaircaseInitialConditions
     "Number of interfaces in the initial state"

@@ -117,6 +117,14 @@ As for [T_reentry](@ref) but using salinity tracer instead.
 @inline w_top_bottom_interpolate(i, j, grid, clock, model_fields) =
     @inbounds 0.5 * (model_fields.w[i, j, 1] + model_fields.w[i, j, grid.Nz+1])
 
+""""
+    function reentrant_boundary_conditions(ics::SingleInterfaceICs)
+Setup boundary conditions to maintain a gradient (ΔC) between the two layers of a
+`SingleInterface` model. The boundary conditions for the tracers are re-entrant from top to
+bottom with ΔC added to maintain a ΔC difference between the top and bottom layer. The
+vertical velocitiy field also has modified vertical boundary conditions where the velocity
+on the bottom face is set to the velocity on the top face and vice versa.
+"""
 function reentrant_boundary_conditions(ics::SingleInterfaceICs)
 
     bcs = if ics.maintain_interface
@@ -138,3 +146,24 @@ function reentrant_boundary_conditions(ics::SingleInterfaceICs)
 
     return bcs
 end
+
+"""
+    function S_and_T_background_fields(initial_conditions)
+Set background fields for the `S` and `T` tracer fields where the domain is triply periodic.
+"""
+function S_and_T_background_fields(ics::PeriodicSTSingleInterfaceInitialConditions)
+
+    z_interface = ics.depth_of_interface
+    ΔT = diff(ics.temperature_values)[1]
+    Tₗ = ics.temperature_values[2]
+    T_parameters = (Cₗ = Tₗ, ΔC = ΔT, z_interface = z_interface)
+
+    ΔS = diff(ics.salinity_values)[1]
+    Sₗ = ics.salinity_values[2]
+    S_parameters = (Cₗ = Sₗ, ΔC = ΔS, z_interface = z_interface)
+    S_background = BackgroundField(ics.background_state, parameters=S_parameters)
+    T_background = BackgroundField(ics.background_state, parameters=T_parameters)
+    return (S = S_background, T = T_background)
+end
+tanh_background(x, y, z, t, p) =  p.Cₗ + 0.5 * p.ΔC * (1  + tanh(0.01 *(z - p.z_interface)))
+# linear_background(x, y, z, t, p) =

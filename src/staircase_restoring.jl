@@ -151,19 +151,22 @@ end
     function S_and_T_background_fields(initial_conditions)
 Set background fields for the `S` and `T` tracer fields where the domain is triply periodic.
 """
-function S_and_T_background_fields(ics::PeriodicSTSingleInterfaceInitialConditions)
+function S_and_T_background_fields(ics::PeriodicSTSingleInterfaceInitialConditions, Lz, τ)
 
     z_interface = ics.depth_of_interface
     ΔT = diff(ics.temperature_values)[1]
-    Tₗ = ics.temperature_values[2]
-    T_parameters = (Cₗ = Tₗ, ΔC = ΔT, z_interface = z_interface)
+    Tᵤ, Tₗ = ics.temperature_values
+    T_parameters = (Cᵤ = Tᵤ, Cₗ = Tₗ, ΔC = ΔT, Lz = abs(Lz), z_interface, τ)
 
     ΔS = diff(ics.salinity_values)[1]
-    Sₗ = ics.salinity_values[2]
-    S_parameters = (Cₗ = Sₗ, ΔC = ΔS, z_interface = z_interface)
+    Sᵤ, Sₗ = ics.salinity_values
+    S_parameters = (Sᵤ = Sᵤ, Cₗ = Sₗ, ΔC = ΔS, Lz = abs(Lz), z_interface, τ)
     S_background = BackgroundField(ics.background_state, parameters=S_parameters)
     T_background = BackgroundField(ics.background_state, parameters=T_parameters)
+
     return (S = S_background, T = T_background)
 end
-tanh_background(x, y, z, t, p) =  p.Cₗ + 0.5 * p.ΔC * (1  + tanh(0.01 *(z - p.z_interface)))
-# linear_background(x, y, z, t, p) =
+"Sets a background state that is hyperbolic tangent. The scaling `τ` is set by
+the diffusivity ratio κₛ / κₜ ."
+tanh_background(x, y, z, t, p) =  p.Cₗ - 0.5 * p.ΔC * (1  + tanh(round(1 / p.τ) * (z - p.z_interface) / p.Lz))
+linear_background(x, y, z, t, p) = p.Cᵤ - p.ΔC * z / p.Lz

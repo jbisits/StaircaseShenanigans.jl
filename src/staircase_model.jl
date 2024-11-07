@@ -33,9 +33,10 @@ end
 background state."
 function StaircaseDNS(model_setup::NamedTuple, initial_conditions::PeriodoicSingleInterfaceICs, initial_noise)
 
-    background_fields = S_and_T_background_fields(initial_conditions)
-    architecture, diffusivities, domain_extent, resolution, eos =  model_setup
+    architecture, diffusivities, domain_extent, resolution, eos = model_setup
     z_topology = Periodic
+    τ = diffusivities.κ.S / diffusivities.κ.T
+    background_fields = S_and_T_background_fields(initial_conditions, domain_extent.Lz, τ)
     model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos;
                      z_topology, background_fields)
 
@@ -146,7 +147,7 @@ Build a `simulation` from `sdns`.
 function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
                                 stop_time::Number, save_schedule::Number,
                                 save_custom_output!::Function=no_custom_output!,
-                                save_velocities!::Function=no_velocities!,
+                                save_velocities!::Function=no_velocities!;
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
                                 checkpointer_time_interval = nothing,
@@ -246,9 +247,8 @@ function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
 
     model  = sdns.model
     ics = sdns.initial_conditions
-    T = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.T + model.tracers.T) : model.tracers.T
-    S = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.S + model.tracers.S) : model.tracers.S
-    T = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.T + model.tracers.T) : model.tracers.T
+    S = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.S + model.tracers.S) : model.tracers.S
+    T = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.T + model.tracers.T) : model.tracers.T
     tracers = Dict("S" => S, "T" => T)
 
     simulation.output_writers[:tracers] =

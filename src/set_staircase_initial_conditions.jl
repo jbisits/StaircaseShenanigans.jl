@@ -45,8 +45,8 @@ end
 function set_staircase_initial_conditions!(model, ics::PeriodoicSingleInterfaceICs)
 
     grid_size = size(model.grid)
-    S₀ = randn(grid_size) * 1e-7
-    T₀ = randn(grid_size) * 1e-5
+    S₀ = randn(grid_size) * 2e-4
+    T₀ = randn(grid_size) * 2e-4
 
     set!(model, S = S₀, T = T₀)
 

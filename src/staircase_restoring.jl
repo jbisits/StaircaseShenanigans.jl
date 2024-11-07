@@ -117,22 +117,24 @@ As for [T_reentry](@ref) but using salinity tracer instead.
 @inline w_top_bottom_interpolate(i, j, grid, clock, model_fields) =
     @inbounds 0.5 * (model_fields.w[i, j, 1] + model_fields.w[i, j, grid.Nz+1])
 
-function add_reentrant_boundary_conditions!(model, ics::STSingleInterfaceInitialConditions)
+function reentrant_boundary_conditions(ics::SingleInterfaceICs)
 
-    if ics.maintain_interface
-        ΔT = diff(ics.temperature_values)[1]
-        ΔS = diff(ics.salinity_values)[1]
-        T_bottom_reentry = ValueBoundaryCondition(T_reentry, discrete_form=true, parameters = ΔT)
-        S_bottom_reentry = ValueBoundaryCondition(S_reentry, discrete_form=true, parameters = ΔS)
-        T_bcs = FieldBoundaryConditions(bottom = T_bottom_reentry)
-        S_bcs = FieldBoundaryConditions(bottom = S_bottom_reentry)
-        w_top = OpenBoundaryCondition(_w_bottom, discrete_form=true)
-        w_bottom = OpenBoundaryCondition(_w_top, discrete_form=true)
+    bcs = if ics.maintain_interface
+            ΔT = diff(ics.temperature_values)[1]
+            ΔS = diff(ics.salinity_values)[1]
+            T_bottom_reentry = ValueBoundaryCondition(T_reentry, discrete_form=true, parameters = ΔT)
+            S_bottom_reentry = ValueBoundaryCondition(S_reentry, discrete_form=true, parameters = ΔS)
+            T_bcs = FieldBoundaryConditions(bottom = T_bottom_reentry)
+            S_bcs = FieldBoundaryConditions(bottom = S_bottom_reentry)
 
-        w_bcs = FieldBoundaryConditions(top = w_top,  bottom = w_bottom)
-        bcs = (T=T_bcs, S=S_bcs, w=w_bcs)
-        update_boundary_condition!(bcs, model)
+            w_top = OpenBoundaryCondition(_w_bottom, discrete_form=true)
+            w_bottom = OpenBoundaryCondition(_w_top, discrete_form=true)
+            w_bcs = FieldBoundaryConditions(top = w_top, bottom = w_bottom)
 
-    end
-    return nothing
+            (T=T_bcs, S=S_bcs, w=w_bcs)
+        else
+            NamedTuple()
+        end
+
+    return bcs
 end

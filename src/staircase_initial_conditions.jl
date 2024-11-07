@@ -26,6 +26,14 @@ function STSingleInterfaceInitialConditions(model, depth_of_interface, salinity,
     return STSingleInterfaceInitialConditions(depth_of_interface, salinity, temperature, R_ρ, maintain_interface)
 
 end
+function STSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface, salinity, temperature;
+                                            maintain_interface = false)
+
+    R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
+
+return STSingleInterfaceInitialConditions(depth_of_interface, salinity, temperature, R_ρ, maintain_interface)
+
+end
 const SingleInterfaceICs = STSingleInterfaceInitialConditions # alias
 
 "Container for initial conditions that have well mixed layers seperated by sharp step interfaces."
@@ -109,9 +117,10 @@ end
 function Base.show(io::IO, sics::AbstractStaircaseInitialConditions)
     if sics isa STSingleInterfaceInitialConditions
         println(io, "STSingleInterfaceInitialConditions")
-        println(io, "┣━━depth_of_interface: $(sics.depth_of_interface)")
+        println(io, "┣━ depth_of_interface: $(sics.depth_of_interface)")
         println(io, "┣━━━━ salinity_values: $(sics.salinity_values)")
         println(io, "┣━ temperature_values: $(sics.temperature_values)")
+        println(io, "┣━ maintain_interface: $(round.(sics.maintain_interface))")
         print(io,   "┗━━━━━━━━━━━━━━━━ R_ρ: $(round.(sics.R_ρ; digits = 2))")
     elseif sics isa STStaircaseInitialConditions
         println(io, "STStaircaseInitialConditions")

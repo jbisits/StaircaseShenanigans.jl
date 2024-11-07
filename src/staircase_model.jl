@@ -14,8 +14,21 @@ function Base.show(io::IO, sdns::StaircaseDNS)
     println(io, "┣━━━ initial_conditions: $(typeof(sdns.initial_conditions))")
     print(io,   "┗━━━━━━━━ initial_noise: $(typeof(sdns.initial_noise))")
 end
+
+"Initialise by passing a `model` that has already been built."
 StaircaseDNS(model, initial_conditions; initial_noise = nothing) =
     StaircaseDNS(model, initial_conditions, initial_noise)
+
+"Build the model from `model_setup` then return a `StaircaseDNS`, mainly used to build
+the `model` with [reentrant_boundary_conditions](@ref) `boundary_conditions` from `initial_conditions`."
+function StaircaseDNS(model_setup::NamedTuple, initial_conditions, initial_noise)
+
+    boundary_conditions = reentrant_boundary_conditions(initial_conditions)
+    architecture, diffusivities, domain_extent, resolution, eos =  model_setup
+    model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos; boundary_conditions)
+
+    return StaircaseDNS(model, initial_conditions, initial_noise)
+end
 Base.iterate(sdns::AbstractStaircaseModel, state = 1) =
     state > length(fieldnames(sdns)) ? nothing : (getfield(sdns, state), state + 1)
 
@@ -58,6 +71,7 @@ function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTupl
                   forcing = nothing,
                   boundary_conditions = nothing,
                   zgrid_stretching = false,
+                  z_topology = Bounded,
                   refinement = 1.05,
                   stretching = 40)
 
@@ -66,7 +80,7 @@ function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTupl
     zgrid = zgrid_stretching ? grid_stretching(-Lz, Nz, refinement, stretching) : (Lz, 0)
 
     grid = RectilinearGrid(architecture,
-                           topology = (Periodic, Periodic, Bounded),
+                           topology = (Periodic, Periodic, z_topology),
                            size = (Nx, Ny, Nz),
                            x = (-Lx/2, Lx/2),
                            y = (-Ly/2, Ly/2),

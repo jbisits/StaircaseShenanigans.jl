@@ -4,22 +4,18 @@ architecture = CPU() # or GPU()
 diffusivities = (ν = 1e-5, κ = (S = 1e-7, T = 1e-5))
 domain_extent = (Lx = 0.1, Ly = 0.1, Lz = -1.0)
 resolution = (Nx = 5, Ny = 5, Nz = 50)
+eos = CustomLinearEquationOfState(-0.5, 34.6)
+model_setup = (;architecture, diffusivities, domain_extent, resolution, eos)
 
 ## Initial conditions
 depth_of_interface = -0.5
 salinity = [34.58, 34.70]
 temperature = [-1.5, 0.5]
-
-## Setup the model
-eos = CustomLinearEquationOfState(-0.5, 34.6)
-
-## model
-model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos)
-
-## Set initial conditions
-interface_ics = SingleInterfaceICs(model, depth_of_interface, salinity, temperature, maintain_interface = true)
+interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature, maintain_interface = true)
 velocity_noise = VelocityNoise(0.0, 0.0, 1e-7)
-sdns = StaircaseDNS(model, interface_ics)
+
+## setup model
+sdns = StaircaseDNS(model_setup, interface_ics, velocity_noise)
 
 set_staircase_initial_conditions!(sdns)
 

@@ -31,8 +31,6 @@ export AbstractNoise, VelocityNoise
 
 export OuterStairMask, OuterStairTargets, OuterMask, OuterTargets, ExponentialTarget
 
-# export S_reentry, T_reentry, _w_top, _w_bottom
-
 export CustomLinearRoquetSeawaterPolynomial, CustomLinearEquationOfState
 
 export save_computed_output!

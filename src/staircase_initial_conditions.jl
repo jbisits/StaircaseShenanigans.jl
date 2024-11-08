@@ -3,6 +3,13 @@ abstract type AbstractStaircaseInitialConditions <: AbstractInitialConditions en
 Base.iterate(sics::AbstractStaircaseInitialConditions, state = 1) =
     state > length(fieldnames(sics)) ? nothing : (getfield(sics, state), state + 1)
 
+"""
+    struct STSingleInterfaceInitialConditions
+Initial conditions for a single interface (i.e. two layers with uniform `S` and `T` seperated
+by a step change). The property `maintain_interface` is a `Boolean` which if set to `true` will
+set [reentrant_boundary_conditions](@ref) so that the interface will be maintained (by not
+letting the system run down).
+"""
 struct STSingleInterfaceInitialConditions{T, A} <: AbstractStaircaseInitialConditions
     "The depth of the interface"
     depth_of_interface :: T
@@ -12,17 +19,55 @@ struct STSingleInterfaceInitialConditions{T, A} <: AbstractStaircaseInitialCondi
     temperature_values :: A
      "Initial R_ρ at the interface"
                    R_ρ :: T
+    "Boolean whether or not to set reentrant boundary condtions to approximately maintain the initial
+    interface gradients"
+    maintain_interface :: Bool
 end
-function STSingleInterfaceInitialConditions(model, depth_of_interface, salinity, temperature)
+function STSingleInterfaceInitialConditions(model, depth_of_interface, salinity, temperature;
+                                            maintain_interface = false)
 
     eos = model.buoyancy.model.equation_of_state
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
 
-    return STSingleInterfaceInitialConditions(depth_of_interface, salinity, temperature, R_ρ)
+    return STSingleInterfaceInitialConditions(depth_of_interface, salinity, temperature, R_ρ, maintain_interface)
+
+end
+function STSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface, salinity, temperature;
+                                            maintain_interface = false)
+
+    R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
+
+return STSingleInterfaceInitialConditions(depth_of_interface, salinity, temperature, R_ρ, maintain_interface)
 
 end
 const SingleInterfaceICs = STSingleInterfaceInitialConditions # alias
+
+"""
+    struct PeriodicSTSingleInterfaceInitialConditions
+Sets a `BackgroundField` according to `background_State` and uses a triply periodic domain
+to evolve salinity and temperature anomalies about the background state.
+"""
+struct PeriodicSTSingleInterfaceInitialConditions{T, A} <: AbstractStaircaseInitialConditions
+    "The depth of the interface"
+    depth_of_interface :: T
+    "Salinity values in each layer"
+       salinity_values :: A
+     "Temperature values in each layer"
+    temperature_values :: A
+     "Initial R_ρ at the interface"
+                   R_ρ :: T
+    "Function used to define the background state about which an anomaly is evolved."
+     background_state :: Function
+end
+function PeriodicSTSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface, salinity, temperature, background_state)
+
+    R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
+
+    return PeriodicSTSingleInterfaceInitialConditions(depth_of_interface, salinity, temperature, R_ρ, background_state)
+
+end
+const PeriodoicSingleInterfaceICs = PeriodicSTSingleInterfaceInitialConditions # alias
 
 "Container for initial conditions that have well mixed layers seperated by sharp step interfaces."
 struct STStaircaseInitialConditions{T} <: AbstractStaircaseInitialConditions
@@ -105,9 +150,10 @@ end
 function Base.show(io::IO, sics::AbstractStaircaseInitialConditions)
     if sics isa STSingleInterfaceInitialConditions
         println(io, "STSingleInterfaceInitialConditions")
-        println(io, "┣━━depth_of_interface: $(sics.depth_of_interface)")
+        println(io, "┣━ depth_of_interface: $(sics.depth_of_interface)")
         println(io, "┣━━━━ salinity_values: $(sics.salinity_values)")
         println(io, "┣━ temperature_values: $(sics.temperature_values)")
+        println(io, "┣━ maintain_interface: $(round.(sics.maintain_interface))")
         print(io,   "┗━━━━━━━━━━━━━━━━ R_ρ: $(round.(sics.R_ρ; digits = 2))")
     elseif sics isa STStaircaseInitialConditions
         println(io, "STStaircaseInitialConditions")

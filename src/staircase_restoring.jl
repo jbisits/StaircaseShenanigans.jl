@@ -89,50 +89,84 @@ end
 
 @inline (p::ExponentialTarget)(x, y, z, t) = p.A * exp(-p.λ * z)
 
+# The following functions are to be used as `BoundaryConditions` so that tracers can
+# re-enter the domain with the initial gradient added effectively allowing the gradient to
+# be maintained. Another option is to add background tracer fields and only evolve the anomaly
+
 """
-    function restore_tracer_content!(sim, parameters)
-A `Callback` that is behaving as a `Forcing` but I found this was a more flexible way to do
-what I want. The `Callback` is designed to maintain the tracer content within a layer of
-a thermohaline staircase. At this stage it is only appropriate to be used to models with a
-single interface.
-
-## Parameters
-
-The parameters container needs to know the tracer `C` as a `Symbol`, the `computed_mean_region`
-and the `tracer_flux_placement` which is where the flux to maintain approximately equal tracer
-content is placed. Using `tracer_flux_placement` creates a `lower_region` and `upper_region`
-from the lower extent of the domain, `-Lz`, and the surface at `0` respectively.
-
-There is a default setup in [SDNS_simulation_setup](@ref) allows passing the kwargs
-`mean_region` and `flux_placement` to specify these these parameter
+    T_reentry(i, j, grid, clock, model_fields, ΔT)
+Discrete boundary condition to set the temperature on a vertical boundary to tracer value at
+the **top** of the domain and adds ΔT. That is a reentrant T condition to be used on the
+**bottom** of the domain.
 """
-function restore_tracer_content!(sim, parameters)
+@inline T_reentry(i, j, grid, clock, model_fields, ΔT) =
+    @inbounds ℑzᵃᵃᶠ(i, j, grid.Nz+1, model_fields.T) + ΔT
+"""
+    S_reentry(i, j, grid, clock, model_fields, ΔS)
+As for [T_reentry](@ref) but using salinity tracer instead.
+"""
+@inline S_reentry(i, j, grid, clock, model_fields, ΔS) =
+    @inbounds ℑzᵃᵃᶠ(i, j, grid.Nz+1, model_fields.S) + ΔS
 
-    Lx, Ly, Lz = sim.model.grid.Lx, sim.model.grid.Ly, -sim.model.grid.Lz
-    A = Lx * Ly
-    V = Lx * Ly * abs(Lz)
-    Δx, Δy, Δz = xspacings(sim.model.grid, Center()), yspacings(sim.model.grid, Center()),
-                    zspacings(sim.model.grid, Center())
-    ΔV = Δx * Δy * Δz
-    z = znodes(sim.model.grid, Center())
+"Access velocity field at the _bottom_ of the domain for use as `BoundaryCondition`."
+@inline _w_bottom(i, j, grid, clock, model_fields) = @inbounds model_fields.w[i, j, 1]
+"Access velocity field at the _top_ of the domain for use as `BoundaryCondition`."
+@inline _w_top(i, j, grid, clock, model_fields) = @inbounds model_fields.w[i, j, grid.Nz+1]
 
-    tracer = getproperty(sim.model.tracers, parameters.C)
-    tfp = parameters.tracer_flux_placement
-    id = parameters.interface_depth
-    ilc = parameters.initial_lower_content
-    iuc = parameters.initial_upper_content
+"Interpolated velocity between top and bottom (vertical) faces of domain."
+@inline w_top_bottom_interpolate(i, j, grid, clock, model_fields) =
+    @inbounds 0.5 * (model_fields.w[i, j, 1] + model_fields.w[i, j, grid.Nz+1])
 
-    lower_layer = findall(z .< id-0.1) #Not all the way to interface
-    upper_layer = findall(z .> id+0.1) #Not all the way to interface
+""""
+    function reentrant_boundary_conditions(ics::SingleInterfaceICs)
+Setup boundary conditions to maintain a gradient (ΔC) between the two layers of a
+`SingleInterface` model. The boundary conditions for the tracers are re-entrant from top to
+bottom with ΔC added to maintain a ΔC difference between the top and bottom layer. The
+vertical velocitiy field also has modified vertical boundary conditions where the velocity
+on the bottom face is set to the velocity on the top face and vice versa.
+"""
+function reentrant_boundary_conditions(ics::SingleInterfaceICs)
 
-    lower_tracer_content_lost = ilc - sum(interior(tracer, :, :, lower_layer)) * ΔV
-    upper_tracer_content_lost = iuc - sum(interior(tracer, :, :, upper_layer)) * ΔV
+    bcs = if ics.maintain_interface
+            ΔT = diff(ics.temperature_values)[1]
+            ΔS = diff(ics.salinity_values)[1]
+            T_bottom_reentry = ValueBoundaryCondition(T_reentry, discrete_form=true, parameters = ΔT)
+            S_bottom_reentry = ValueBoundaryCondition(S_reentry, discrete_form=true, parameters = ΔS)
+            T_bcs = FieldBoundaryConditions(bottom = T_bottom_reentry)
+            S_bcs = FieldBoundaryConditions(bottom = S_bottom_reentry)
 
-    lower_placement = findall(z .< (1 - tfp) * Lz)
-    upper_placement = findall(z .> tfp * Lz)
+            w_top = OpenBoundaryCondition(_w_bottom, discrete_form=true)
+            w_bottom = OpenBoundaryCondition(_w_top, discrete_form=true)
+            w_bcs = FieldBoundaryConditions(top = w_top, bottom = w_bottom)
 
-    interior(tracer, :, :, lower_placement) .+= (lower_tracer_content_lost / (2*V/5)) * (A * Δz * length(lower_placement))
-    interior(tracer, :, :, upper_placement) .+= (upper_tracer_content_lost / (2*V/5)) * (A * Δz * length(upper_placement))
+            (T=T_bcs, S=S_bcs, w=w_bcs)
+        else
+            NamedTuple()
+        end
 
-    return nothing
+    return bcs
 end
+
+"""
+    function S_and_T_background_fields(initial_conditions)
+Set background fields for the `S` and `T` tracer fields where the domain is triply periodic.
+"""
+function S_and_T_background_fields(ics::PeriodicSTSingleInterfaceInitialConditions, Lz, τ)
+
+    z_interface = ics.depth_of_interface
+    ΔT = diff(ics.temperature_values)[1]
+    Tᵤ, Tₗ = ics.temperature_values
+    T_parameters = (Cᵤ = Tᵤ, Cₗ = Tₗ, ΔC = ΔT, Lz = abs(Lz), z_interface, τ)
+
+    ΔS = diff(ics.salinity_values)[1]
+    Sᵤ, Sₗ = ics.salinity_values
+    S_parameters = (Sᵤ = Sᵤ, Cₗ = Sₗ, ΔC = ΔS, Lz = abs(Lz), z_interface, τ)
+    S_background = BackgroundField(ics.background_state, parameters=S_parameters)
+    T_background = BackgroundField(ics.background_state, parameters=T_parameters)
+
+    return (S = S_background, T = T_background)
+end
+"Sets a background state that is hyperbolic tangent. The scaling `τ` is set by
+the diffusivity ratio κₛ / κₜ ."
+tanh_background(x, y, z, t, p) =  p.Cₗ - 0.5 * p.ΔC * (1  + tanh(round(1 / p.τ) * (z - p.z_interface) / p.Lz))
+linear_background(x, y, z, t, p) = p.Cᵤ - p.ΔC * z / p.Lz

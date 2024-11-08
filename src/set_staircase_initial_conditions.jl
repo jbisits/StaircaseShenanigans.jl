@@ -24,7 +24,7 @@ function set_staircase_initial_conditions!(model, ics::STStaircaseInitialConditi
 
     return nothing
 end
-function set_staircase_initial_conditions!(model, ics::STSingleInterfaceInitialConditions)
+function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs)
 
     depth_of_interface = ics.depth_of_interface
     z = znodes(model.grid, Center())
@@ -37,6 +37,16 @@ function set_staircase_initial_conditions!(model, ics::STSingleInterfaceInitialC
     T₀[:, :, z .> depth_of_interface[1]] .= T[1]
     S₀[:, :, z .< depth_of_interface[end]] .= S[2]
     T₀[:, :, z .< depth_of_interface[end]] .= T[2]
+
+    set!(model, S = S₀, T = T₀)
+
+    return nothing
+end
+function set_staircase_initial_conditions!(model, ics::PeriodoicSingleInterfaceICs)
+
+    grid_size = size(model.grid)
+    S₀ = randn(grid_size) * 2e-4
+    T₀ = randn(grid_size) * 2e-4
 
     set!(model, S = S₀, T = T₀)
 

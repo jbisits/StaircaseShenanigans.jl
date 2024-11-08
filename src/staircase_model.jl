@@ -14,8 +14,34 @@ function Base.show(io::IO, sdns::StaircaseDNS)
     println(io, "┣━━━ initial_conditions: $(typeof(sdns.initial_conditions))")
     print(io,   "┗━━━━━━━━ initial_noise: $(typeof(sdns.initial_noise))")
 end
+"Initialise by passing a `model` that has already been built."
 StaircaseDNS(model, initial_conditions; initial_noise = nothing) =
     StaircaseDNS(model, initial_conditions, initial_noise)
+
+"Build the model from `model_setup` then return a `StaircaseDNS`, mainly used to build
+the `model` with [reentrant_boundary_conditions](@ref) `boundary_conditions` from `initial_conditions`."
+function StaircaseDNS(model_setup::NamedTuple, initial_conditions, initial_noise)
+
+    boundary_conditions = reentrant_boundary_conditions(initial_conditions)
+    architecture, diffusivities, domain_extent, resolution, eos =  model_setup
+    model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos; boundary_conditions)
+
+    return StaircaseDNS(model, initial_conditions, initial_noise)
+end
+
+"`StaircaseDNS` that is `Periodic` in z direction and evoloves an anomaly around a
+background state."
+function StaircaseDNS(model_setup::NamedTuple, initial_conditions::PeriodoicSingleInterfaceICs, initial_noise)
+
+    architecture, diffusivities, domain_extent, resolution, eos = model_setup
+    z_topology = Periodic
+    τ = diffusivities.κ.S / diffusivities.κ.T
+    background_fields = S_and_T_background_fields(initial_conditions, domain_extent.Lz, τ)
+    model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos;
+                     z_topology, background_fields)
+
+    return StaircaseDNS(model, initial_conditions, initial_noise)
+end
 Base.iterate(sdns::AbstractStaircaseModel, state = 1) =
     state > length(fieldnames(sdns)) ? nothing : (getfield(sdns, state), state + 1)
 
@@ -56,6 +82,9 @@ the rate `stretching`, `false` by default;
 function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                   diffusivities::NamedTuple, eos::BoussinesqEquationOfState=TEOS10EquationOfState();
                   forcing = nothing,
+                  boundary_conditions = nothing,
+                  background_fields = nothing,
+                  z_topology = Bounded,
                   zgrid_stretching = false,
                   refinement = 1.05,
                   stretching = 40)
@@ -65,7 +94,7 @@ function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTupl
     zgrid = zgrid_stretching ? grid_stretching(-Lz, Nz, refinement, stretching) : (Lz, 0)
 
     grid = RectilinearGrid(architecture,
-                           topology = (Periodic, Periodic, Bounded),
+                           topology = (Periodic, Periodic, z_topology),
                            size = (Nx, Ny, Nz),
                            x = (-Lx/2, Lx/2),
                            y = (-Ly/2, Ly/2),
@@ -82,8 +111,12 @@ function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTupl
 
     forcing = isnothing(forcing) ? NamedTuple() : forcing
 
+    boundary_conditions = isnothing(boundary_conditions) ? NamedTuple() : boundary_conditions
+
+    background_fields = isnothing(background_fields) ? NamedTuple() : background_fields
+
     return NonhydrostaticModel(; grid, buoyancy, tracers, closure, timestepper, advection,
-                                 forcing)
+                                 forcing, boundary_conditions, background_fields)
 
 end
 """
@@ -114,8 +147,7 @@ Build a `simulation` from `sdns`.
 function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
                                 stop_time::Number, save_schedule::Number,
                                 save_custom_output!::Function=no_custom_output!,
-                                save_velocities!::Function=no_velocities!,
-                                add_tracer_region_callbacks!::Function=no_tracer_callbacks!;
+                                save_velocities!::Function=no_velocities!;
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
                                 checkpointer_time_interval = nothing,
@@ -123,12 +155,9 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
                                 diffusive_cfl = 0.75,
                                 max_change = 1.2,
                                 max_Δt = 1e-1,
-                                overwrite_saved_output = true,
-                                flux_placement = 0.1)
+                                overwrite_saved_output = true)
 
-    model = sdns.model
-    ics = sdns.initial_conditions
-    simulation = Simulation(model; Δt, stop_time)
+    simulation = Simulation(sdns.model; Δt, stop_time)
 
     # time step adjustments
     wizard = TimeStepWizard(; cfl, diffusive_cfl, max_change, max_Δt)
@@ -141,19 +170,16 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
     save_info = (save_schedule, save_file, output_dir, overwrite_saved_output)
 
     # model tracers
-    save_tracers!(simulation, model, save_info)
+    save_tracers!(simulation, sdns, save_info)
 
     # model velocities
-    save_velocities!(simulation, model, save_info)
+    save_velocities!(simulation, sdns, save_info)
 
     # Custom saved output
     save_custom_output!(simulation, sdns, save_info)
 
     # Checkpointer setup
-    checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval)
-
-    # S and T `Callbacks` as forcing
-    add_tracer_region_callbacks!(simulation, flux_placement, ics.depth_of_interfaces[1])
+    checkpointer_setup!(simulation, sdns, output_dir, checkpointer_time_interval)
 
     save_R_ρ!(simulation, sdns)
 
@@ -187,7 +213,7 @@ Create an `output_directory` for saved output based on the `initial_conditions` 
 function output_directory(sdns::StaircaseDNS, stop_time::Number, output_path)
 
     ic_type = typeof(sdns.initial_conditions)
-    ic_string = ic_type <: STStaircaseInitialConditions ? "step_change" : "single_interface"
+    ic_string = ic_type <: STStaircaseInitialConditions ? "staircase" : "single_interface"
 
     eos_string = is_linear_eos(sdns.model.buoyancy.model.equation_of_state.seawater_polynomial)
 
@@ -213,13 +239,16 @@ function is_linear_eos(eos::SecondOrderSeawaterPolynomial)
     return eos_type
 end
 """
-    function save_tracers!(simulation, model, save_schedule, save_file, output_dir, overwrite_saved_output)
+    function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir, overwrite_saved_output)
 Save `model.tracers` during a `Simulation` using an `OutputWriter`.
 """
-function save_tracers!(simulation, model, save_schedule, save_file, output_dir,
+function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
                        overwrite_saved_output)
 
-    S, T = model.tracers.S, model.tracers.T
+    model  = sdns.model
+    ics = sdns.initial_conditions
+    S = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.S + model.tracers.S) : model.tracers.S
+    T = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.T + model.tracers.T) : model.tracers.T
     tracers = Dict("S" => S, "T" => T)
 
     simulation.output_writers[:tracers] =
@@ -238,16 +267,17 @@ function save_tracers!(simulation, model, save_schedule, save_file, output_dir,
     return nothing
 
 end
-save_tracers!(simulation, model, save_info::Tuple) =
-    save_tracers!(simulation, model, save_info...)
+save_tracers!(simulation, sdns, save_info::Tuple) =
+    save_tracers!(simulation, sdns, save_info...)
 """
     function save_all_velocities!(simulation, model, save_schedule, save_file, output_dir,
                               overwrite_saved_output)
 Save `model.velocities` during a `Simulation` using an `OutputWriter`.
 """
-function save_all_velocities!(simulation, model, save_schedule, save_file, output_dir,
+function save_all_velocities!(simulation, sdns, save_schedule, save_file, output_dir,
                           overwrite_saved_output)
 
+    model = sdns.model
     u, v, w = model.velocities
     velocities = Dict("u" => u, "v" => v, "w" => w)
 
@@ -267,16 +297,17 @@ function save_all_velocities!(simulation, model, save_schedule, save_file, outpu
     return nothing
 
 end
-save_all_velocities!(simulation, model, save_info::Tuple) =
-    save_all_velocities!(simulation, model, save_info...)
+save_all_velocities!(simulation, sdns, save_info::Tuple) =
+    save_all_velocities!(simulation, sdns, save_info...)
 """
-    function save_vertical_velocities!(simulation, model, save_schedule, save_file, output_dir,
+    function save_vertical_velocities!(simulation, sdns, save_schedule, save_file, output_dir,
                                     overwrite_saved_output)
 Only save vertical velocity.
 """
-function save_vertical_velocities!(simulation, model, save_schedule, save_file, output_dir,
+function save_vertical_velocities!(simulation, sdns, save_schedule, save_file, output_dir,
                                     overwrite_saved_output)
 
+    model = sdns.model
     w = model.velocities.w
     velocities = Dict("w" => w)
 
@@ -296,10 +327,10 @@ function save_vertical_velocities!(simulation, model, save_schedule, save_file, 
     return nothing
 
 end
-save_vertical_velocities!(simulation, model, save_info::Tuple) =
-    save_vertical_velocities!(simulation, model, save_info...)
+save_vertical_velocities!(simulation, sdns, save_info::Tuple) =
+    save_vertical_velocities!(simulation, sdns, save_info...)
 "Default"
-no_velocities!(simulation, model, save_info...) = nothing
+no_velocities!(simulation, sdns, save_info...) = nothing
 """
     function save_computed_output!(simulation, sdns, save_schedule, save_file, output_dir,
                                    overwrite_saved_output, reference_gp_height)
@@ -309,7 +340,10 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
                                overwrite_saved_output, reference_gp_height)
 
     model = sdns.model
-    σ = seawater_density(model, geopotential_height = reference_gp_height)
+    ics = sdns.initial_conditions
+    S = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.S + model.tracers.S) : model.tracers.S
+    T = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.T + model.tracers.T) : model.tracers.T
+    σ = seawater_density(model, temperature = T, salinity = S, geopotential_height = reference_gp_height)
     computed_outputs = Dict("σ" => σ)
 
     oa = Dict(
@@ -338,62 +372,25 @@ end
 save_computed_output!(simulation, sdns, save_info::Tuple; reference_gp_height = 0) =
     save_computed_output!(simulation, sdns, save_info..., reference_gp_height)
 "Default function for `save_custom_output!` in `sdns_simulation_setup`."
-no_custom_output!(simulation, model, save_info...) = nothing
+no_custom_output!(simulation, sdns, save_info...) = nothing
 """
     function checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)
 Setup a `Checkpointer` at `checkpointer_time_interval` for a `simulation`
 """
-function checkpointer_setup!(simulation, model, output_dir,
+function checkpointer_setup!(simulation, sdns, output_dir,
                              checkpointer_time_interval::Number)
 
     checkpoint_dir = joinpath(output_dir, "model_checkpoints/")
     isdir(checkpoint_dir) ? nothing : mkdir(checkpoint_dir)
     schedule = TimeInterval(checkpointer_time_interval)
     cleanup = true
-    checkpointer = Checkpointer(model; schedule, dir = checkpoint_dir, cleanup)
+    checkpointer = Checkpointer(sdns.model; schedule, dir = checkpoint_dir, cleanup)
     simulation.output_writers[:checkpointer] = checkpointer
 
     return nothing
 
 end
-checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval::Nothing) = nothing
-"""
-    S_and_T_tracer_restoring_callbacks!(simulation, flux_placement, interface_depth; iteration_frequency = 1)
-Add `Callback`s to the `S` and `T` fields which act as restoring using [restore_tracer_content!](@ref).
-**Note:** this is currently only appropriate for single interface models.
-"""
-function S_and_T_tracer_restoring_callbacks!(simulation, flux_placement, interface_depth)
-
-    z = znodes(simulation.model.grid, Center())
-    upper_layer = findall(z .> interface_depth + 0.1) #Not all the way to interface
-    lower_layer = findall(z .< interface_depth - 0.1) #Not all the way to interface
-    Δx, Δy, Δz = xspacings(simulation.model.grid, Center()), yspacings(simulation.model.grid, Center()),
-                    zspacings(simulation.model.grid, Center())
-    ΔV = Δx * Δy * Δz
-
-    initial_upper_T_content = sum(interior(simulation.model.tracers.T, :, :, upper_layer)) * ΔV
-    initial_lower_T_content = sum(interior(simulation.model.tracers.T, :, :, lower_layer)) * ΔV
-
-    simulation.callbacks[:T_restore] = Callback(restore_tracer_content!, TimeInterval(1),
-                                                parameters = (C = :T,
-                                                              interface_depth,
-                                                              tracer_flux_placement = flux_placement,
-                                                              initial_upper_content = initial_upper_T_content,
-                                                              initial_lower_content = initial_lower_T_content))
-
-    initial_upper_S_content = sum(interior(simulation.model.tracers.S, :, :, upper_layer)) * ΔV
-    initial_lower_S_content = sum(interior(simulation.model.tracers.S, :, :, lower_layer)) * ΔV
-
-    simulation.callbacks[:S_restore] = Callback(restore_tracer_content!, TimeInterval(1),
-                                                parameters = (C = :S,
-                                                              interface_depth,
-                                                              tracer_flux_placement = flux_placement,
-                                                              initial_upper_content = initial_upper_S_content,
-                                                              initial_lower_content = initial_lower_S_content))
-
-    return nothing
-end
-no_tracer_callbacks!(simulation, mean_region, interface_depth) = nothing
+checkpointer_setup!(simulation, sdns, output_dir, checkpointer_time_interval::Nothing) = nothing
 """
     function simulation_progress(sim)
 Useful progress messaging for simulation runs. This function is from an

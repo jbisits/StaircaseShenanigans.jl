@@ -42,16 +42,9 @@ function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs)
 
     return nothing
 end
-function set_staircase_initial_conditions!(model, ics::PeriodoicSingleInterfaceICs)
-
-    grid_size = size(model.grid)
-    S₀ = randn(grid_size) * 2e-4
-    T₀ = randn(grid_size) * 2e-4
-
-    set!(model, S = S₀, T = T₀)
-
-    return nothing
-end
+"Here the `BackgroundField` behaves as the `initial_condition` and noise is added to the
+tracer fields to create an instability."
+set_staircase_initial_conditions!(model, ics::PeriodoicSingleInterfaceICs) = nothing
 function set_staircase_initial_conditions!(model, ics::SmoothSTStaircaseInitialConditions)
 
     # TODO: write methods to set smooth changes using the function provied in
@@ -64,17 +57,29 @@ end
 set_noise!(model, noise::Nothing) = nothing
 """
     function set_noise!(model, noise::VelocityNoise)
-Add initial noise the velocity field.
+Add initial noise the `velocity` fields.
 """
 function set_noise!(model, noise::VelocityNoise)
 
     u, v, w = model.velocities
-    u_m, v_m, w_m = noise.u_magnitude, noise.v_magnitude, noise.w_magnitude
-    u_noise = u_m * randn(size(u))
-    v_noise = v_m * randn(size(v))
-    w_noise = w_m * randn(size(w))
+    u_noise = noise.u_magnitude * randn(size(u))
+    v_noise = noise.v_magnitude * randn(size(v))
+    w_noise = noise.w_magnitude * randn(size(w))
 
     set!(model, u = u_noise, v = v_noise, w = w_noise)
+
+end
+"""
+    function set_noise!(model, noise::TracerNoise)
+Add initial noise the `tracer` fields.
+"""
+function set_noise!(model, noise::TracerNoise)
+
+    S, T = model.tracers
+    S_noise = noise.S_magnitude * randn(size(S))
+    T_noise = noise.T_magnitude * randn(size(T))
+
+    set!(model, S = S_noise, T = T_noise)
 
 end
 """

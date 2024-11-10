@@ -38,7 +38,7 @@ function STSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, dept
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
 
-return STSingleInterfaceInitialConditions(depth_of_interface, salinity, temperature, R_ρ, maintain_interface)
+    return STSingleInterfaceInitialConditions(depth_of_interface, salinity, temperature, R_ρ, maintain_interface)
 
 end
 const SingleInterfaceICs = STSingleInterfaceInitialConditions # alias

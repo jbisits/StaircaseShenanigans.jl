@@ -14,23 +14,41 @@ function Base.show(io::IO, sdns::StaircaseDNS)
     println(io, "┣━━━ initial_conditions: $(typeof(sdns.initial_conditions))")
     print(io,   "┗━━━━━━━━ initial_noise: $(typeof(sdns.initial_noise))")
 end
-"Initialise by passing a `model` that has already been built."
-StaircaseDNS(model, initial_conditions; initial_noise = nothing) =
-    StaircaseDNS(model, initial_conditions, initial_noise)
+"""
+    function StaircaseDNS(model, initial_conditions; initial_noise = nothing)
+Initialise by passing a `model` that has already been built and set the initial conditions.
+"""
+function StaircaseDNS(model, initial_conditions; initial_noise = nothing)
 
-"Build the model from `model_setup` then return a `StaircaseDNS`, mainly used to build
-the `model` with [reentrant_boundary_conditions](@ref) `boundary_conditions` from `initial_conditions`."
+    sdns = StaircaseDNS(model, initial_conditions, initial_noise)
+    set_staircase_initial_conditions!(sdns)
+
+    return sdns
+end
+
+"""
+    function StaircaseDNS(model_setup::NamedTuple, initial_conditions, initial_noise)
+Build the model from `model_setup` then return a `StaircaseDNS`, mainly used to build
+the `model` with [reentrant_boundary_conditions](@ref) `boundary_conditions` from `initial_conditions`.
+The initial conditions are set after building the `model`.
+"""
 function StaircaseDNS(model_setup::NamedTuple, initial_conditions, initial_noise)
 
     boundary_conditions = reentrant_boundary_conditions(initial_conditions)
     architecture, diffusivities, domain_extent, resolution, eos =  model_setup
     model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos; boundary_conditions)
 
-    return StaircaseDNS(model, initial_conditions, initial_noise)
+    sdns = StaircaseDNS(model, initial_conditions, initial_noise)
+    set_staircase_initial_conditions!(sdns)
+
+    return sdns
 end
 
-"`StaircaseDNS` that is `Periodic` in z direction and evoloves an anomaly around a
-background state."
+"""
+    function StaircaseDNS(model_setup::NamedTuple, initial_conditions, initial_noise)
+`StaircaseDNS` that is `Periodic` in z direction and evoloves an anomaly around a
+background state. The initial conditions are set after building the `model`.
+"""
 function StaircaseDNS(model_setup::NamedTuple, initial_conditions::PeriodoicSingleInterfaceICs, initial_noise)
 
     architecture, diffusivities, domain_extent, resolution, eos = model_setup
@@ -40,8 +58,13 @@ function StaircaseDNS(model_setup::NamedTuple, initial_conditions::PeriodoicSing
     model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos;
                      z_topology, background_fields)
 
-    return StaircaseDNS(model, initial_conditions, initial_noise)
+    sdns = StaircaseDNS(model, initial_conditions, initial_noise)
+    set_staircase_initial_conditions!(sdns)
+
+    return sdns
 end
+# TODO: create methods that use either triple periodic or some kind of restoring for
+# `STStaircaseInitialConditions`.
 Base.iterate(sdns::AbstractStaircaseModel, state = 1) =
     state > length(fieldnames(sdns)) ? nothing : (getfield(sdns, state), state + 1)
 
@@ -107,7 +130,7 @@ function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTupl
 
     timestepper = :RungeKutta3
 
-    advection = CenteredSecondOrder()
+    advection = Centered(order = 2)
 
     forcing = isnothing(forcing) ? NamedTuple() : forcing
 

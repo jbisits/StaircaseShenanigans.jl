@@ -30,7 +30,7 @@ export STStaircaseInitialConditions, StaircaseICs, SmoothSTStaircaseInitialCondi
 
 export tanh_background
 
-export AbstractNoise, VelocityNoise
+export AbstractNoise, VelocityNoise, TracerNoise
 
 export OuterStairMask, OuterStairTargets, OuterMask, OuterTargets, ExponentialTarget
 

@@ -272,7 +272,14 @@ function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
     ics = sdns.initial_conditions
     S = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.S + model.tracers.S) : model.tracers.S
     T = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.T + model.tracers.T) : model.tracers.T
-    tracers = Dict("S" => S, "T" => T)
+
+    Sᵤ_mean = Average(condition_operand(identity, S, upper_quarter, 0))
+    Sₗ_mean = Average(condition_operand(identity, S, lower_quarter, 0))
+    Tᵤ_mean = Average(condition_operand(identity, T, upper_quarter, 0))
+    Tₗ_mean = Average(condition_operand(identity, T, lower_quarter, 0))
+
+    tracers = Dict("S" => S, "Sᵤ_mean" => Sᵤ_mean, "Sₗ_mean" => Sₗ_mean,
+                   "T" => T, "Tᵤ_mean" => Tᵤ_mean, "Tₗ_mean" => Tₗ_mean)
 
     simulation.output_writers[:tracers] =
         save_file == :netcdf ? NetCDFOutputWriter(model, tracers;
@@ -366,11 +373,12 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
     ics = sdns.initial_conditions
     S = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.S + model.tracers.S) : model.tracers.S
     T = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.T + model.tracers.T) : model.tracers.T
-    σ = seawater_density(model, temperature = T, salinity = S, geopotential_height = reference_gp_height)
-    computed_outputs = Dict("σ" => σ)
 
+    σ = seawater_density(model, temperature = T, salinity = S, geopotential_height = reference_gp_height)
+
+    computed_outputs = Dict("σ" => σ)
     oa = Dict(
-        "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(reference_gp_height)dbar",
+        "σ" => Dict("longname" => "Seawater potential density calculated using equation of state in model.",
                     "units" => "kgm⁻³")
         )
 

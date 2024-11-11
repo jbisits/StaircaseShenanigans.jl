@@ -104,15 +104,15 @@ function compute_R_ρ(salinity, temperature, depth_of_interfaces::Array, eos)
 
     S_u = S_g = @view salinity[1:end-1]
     S_l = S_f = @view salinity[2:end]
-    Θ_u = Θ_f = @view temperature[1:end-1]
-    Θ_l = Θ_g = @view temperature[2:end]
+    T_u = T_f = @view temperature[1:end-1]
+    T_l = T_g = @view temperature[2:end]
 
     eos_vec = fill(eos, length(S_u))
 
-    ρ_u = ρ.(Θ_u, S_u, depth_of_interfaces, eos_vec)
-    ρ_l = ρ.(Θ_l, S_l, depth_of_interfaces, eos_vec)
-    ρ_f = ρ.(Θ_f, S_f, depth_of_interfaces, eos_vec)
-    ρ_g = ρ.(Θ_g, S_g, depth_of_interfaces, eos_vec)
+    ρ_u = ρ.(T_u, S_u, depth_of_interfaces, eos_vec)
+    ρ_l = ρ.(T_l, S_l, depth_of_interfaces, eos_vec)
+    ρ_f = ρ.(T_f, S_f, depth_of_interfaces, eos_vec)
+    ρ_g = ρ.(T_g, S_g, depth_of_interfaces, eos_vec)
 
     R_ρ = @. (0.5 * (ρ_f - ρ_u) + 0.5 * (ρ_l - ρ_g)) / (0.5 * (ρ_f - ρ_l) + 0.5 * (ρ_u - ρ_g))
 
@@ -122,13 +122,13 @@ function compute_R_ρ(salinity, temperature, depth_of_interfaces::Number, eos)
 
     S_u = S_g = salinity[1]
     S_l = S_f = salinity[2]
-    Θ_u = Θ_f = temperature[1]
-    Θ_l = Θ_g = temperature[2]
+    T_u = T_f = temperature[1]
+    T_l = T_g = temperature[2]
 
-    ρ_u = ρ(Θ_u, S_u, depth_of_interfaces, eos)
-    ρ_l = ρ(Θ_l, S_l, depth_of_interfaces, eos)
-    ρ_f = ρ(Θ_f, S_f, depth_of_interfaces, eos)
-    ρ_g = ρ(Θ_g, S_g, depth_of_interfaces, eos)
+    ρ_u = ρ(T_u, S_u, depth_of_interfaces, eos)
+    ρ_l = ρ(T_l, S_l, depth_of_interfaces, eos)
+    ρ_f = ρ(T_f, S_f, depth_of_interfaces, eos)
+    ρ_g = ρ(T_g, S_g, depth_of_interfaces, eos)
 
     return (0.5 * (ρ_f - ρ_u) + 0.5 * (ρ_l - ρ_g)) / (0.5 * (ρ_f - ρ_l) + 0.5 * (ρ_u - ρ_g))
 end

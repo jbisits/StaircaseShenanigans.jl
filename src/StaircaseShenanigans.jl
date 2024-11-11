@@ -4,6 +4,7 @@ using Oceananigans, Reexport, Printf
 using Oceananigans: seawater_density
 using Oceananigans.BoundaryConditions: update_boundary_condition!
 using Oceananigans.Operators: ℑzᵃᵃᶠ
+using Oceananigans.Fields: condition_operand
 using SeawaterPolynomials.TEOS10
 using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 using SeawaterPolynomials: BoussinesqEquationOfState
@@ -36,12 +37,15 @@ export OuterStairMask, OuterStairTargets, OuterMask, OuterTargets, ExponentialTa
 
 export CustomLinearRoquetSeawaterPolynomial, CustomLinearEquationOfState
 
-export save_computed_output!
+export save_computed_output!, save_all_velocities!, save_vertical_velocities!
+
+export compute_R_ρ!
 
 export animate_tracers, animate_density, visualise_initial_conditions, visualise_initial_density
 
 include("staircase_initial_conditions.jl")
 include("staircase_noise.jl")
+include("staircase_diagnostics.jl")
 include("staircase_model.jl")
 include("set_staircase_initial_conditions.jl")
 include("staircase_restoring.jl")

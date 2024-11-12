@@ -16,7 +16,7 @@ set_staircase_initial_conditions!(sdns_staircase)
 
 ## Random initial conditions, interface
 z = range(domain_extent.Lz, -0.0, length = 20)
-depth_of_interface = rand(z)
+depth_of_interface = rand(z[5:15]) # ensures interface is not at extremity of boundary
 salinity = Array(range(34.57, 34.7, length = 2))
 temperature = Array(range(-1.5, -1.0, length = 2))
 

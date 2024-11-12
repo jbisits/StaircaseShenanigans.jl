@@ -29,7 +29,7 @@ export STStaircaseInitialConditions, StaircaseICs, SmoothSTStaircaseInitialCondi
        PeriodicSTSingleInterfaceInitialConditions, PeriodoicSingleInterfaceICs,
        set_staircase_initial_conditions!
 
-export tanh_background
+export tanh_background, linear_background
 
 export AbstractNoise, VelocityNoise, TracerNoise
 

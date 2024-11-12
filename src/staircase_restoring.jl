@@ -160,7 +160,7 @@ function S_and_T_background_fields(ics::PeriodicSTSingleInterfaceInitialConditio
 
     ΔS = diff(ics.salinity_values)[1]
     Sᵤ, Sₗ = ics.salinity_values
-    S_parameters = (Sᵤ = Sᵤ, Cₗ = Sₗ, ΔC = ΔS, Lz = abs(Lz), z_interface, τ)
+    S_parameters = (Cᵤ = Sᵤ, Cₗ = Sₗ, ΔC = ΔS, Lz = abs(Lz), z_interface, τ)
     S_background = BackgroundField(ics.background_state, parameters=S_parameters)
     T_background = BackgroundField(ics.background_state, parameters=T_parameters)
 

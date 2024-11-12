@@ -24,6 +24,15 @@ function set_staircase_initial_conditions!(model, ics::STStaircaseInitialConditi
 
     return nothing
 end
+function set_staircase_initial_conditions!(model, ics::SmoothSTStaircaseInitialConditions)
+
+    # TODO: write methods to set smooth changes using the function provied in
+    # `ics::SmoothSTStaircaseInitialConditions`. I can use something like the above
+    # normalise then set with the smoothing function
+    #set!(model, S = initial_S_steps, T = initial_T_steps)
+
+    return nothing
+end
 function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs)
 
     depth_of_interface = ics.depth_of_interface
@@ -45,15 +54,8 @@ end
 "Here the `BackgroundField` behaves as the `initial_condition` and noise is added to the
 tracer fields to create an instability."
 set_staircase_initial_conditions!(model, ics::PeriodoicSingleInterfaceICs) = nothing
-function set_staircase_initial_conditions!(model, ics::SmoothSTStaircaseInitialConditions)
 
-    # TODO: write methods to set smooth changes using the function provied in
-    # `ics::SmoothSTStaircaseInitialConditions`. I can use something like the above
-    # normalise then set with the smoothing function
-    #set!(model, S = initial_S_steps, T = initial_T_steps)
-
-    return nothing
-end
+"Fallback --- don't set any noise."
 set_noise!(model, noise::Nothing) = nothing
 """
     function set_noise!(model, noise::VelocityNoise)

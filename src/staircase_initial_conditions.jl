@@ -10,7 +10,7 @@ by a step change). The property `maintain_interface` is a `Boolean` which if set
 set [reentrant_boundary_conditions](@ref) so that the interface will be maintained (by not
 letting the system run down).
 """
-struct STSingleInterfaceInitialConditions{T, A} <: AbstractStaircaseInitialConditions
+struct STSingleInterfaceInitialConditions{T, A, B} <: AbstractStaircaseInitialConditions
     "The depth of the interface"
     depth_of_interface :: T
     "Salinity values in each layer"
@@ -21,7 +21,7 @@ struct STSingleInterfaceInitialConditions{T, A} <: AbstractStaircaseInitialCondi
                    R_ρ :: T
     "Boolean whether or not to set reentrant boundary condtions to approximately maintain the initial
     interface gradients"
-    maintain_interface :: Bool
+    maintain_interface :: B
 end
 function STSingleInterfaceInitialConditions(model, depth_of_interface, salinity, temperature;
                                             maintain_interface = false)
@@ -48,7 +48,7 @@ const SingleInterfaceICs = STSingleInterfaceInitialConditions # alias
 Sets a `BackgroundField` according to `background_State` and uses a triply periodic domain
 to evolve salinity and temperature anomalies about the background state.
 """
-struct PeriodicSTSingleInterfaceInitialConditions{T, A} <: AbstractStaircaseInitialConditions
+struct PeriodicSTSingleInterfaceInitialConditions{T, A, F} <: AbstractStaircaseInitialConditions
     "The depth of the interface"
     depth_of_interface :: T
     "Salinity values in each layer"
@@ -58,7 +58,7 @@ struct PeriodicSTSingleInterfaceInitialConditions{T, A} <: AbstractStaircaseInit
      "Initial R_ρ at the interface"
                    R_ρ :: T
     "Function used to define the background state about which an anomaly is evolved."
-      background_state :: Function
+      background_state :: F
 end
 function PeriodicSTSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface, salinity, temperature, background_state)
 

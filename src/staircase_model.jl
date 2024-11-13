@@ -280,6 +280,12 @@ function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
     tracers = Dict("S" => S, "Sᵤ_mean" => Sᵤ_mean, "Sₗ_mean" => Sₗ_mean,
                    "T" => T, "Tᵤ_mean" => Tᵤ_mean, "Tₗ_mean" => Tₗ_mean)
 
+    if ics isa PeriodoicSingleInterfaceICs
+        anomalies = Dict("S′" => model.tracers.S, "T′" => model.tracers.T)
+        merge!(tracers, anomalies)
+    end
+
+
     simulation.output_writers[:tracers] =
         save_file == :netcdf ? NetCDFOutputWriter(model, tracers;
                                                   filename = "tracers",

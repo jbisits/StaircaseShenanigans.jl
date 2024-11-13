@@ -53,8 +53,7 @@ function StaircaseDNS(model_setup::NamedTuple, initial_conditions::PeriodoicSing
 
     architecture, diffusivities, domain_extent, resolution, eos = model_setup
     z_topology = Periodic
-    τ = diffusivities.κ.S / diffusivities.κ.T
-    background_fields = S_and_T_background_fields(initial_conditions, domain_extent.Lz, τ)
+    background_fields = S_and_T_background_fields(initial_conditions, domain_extent.Lz)
     model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos;
                      z_topology, background_fields)
 

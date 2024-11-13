@@ -5,6 +5,7 @@ using Oceananigans: seawater_density
 using Oceananigans.BoundaryConditions: update_boundary_condition!
 using Oceananigans.Operators: ℑzᵃᵃᶠ
 using Oceananigans.Fields: condition_operand
+import Oceananigans.BackgroundField
 using SeawaterPolynomials.TEOS10
 using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 using SeawaterPolynomials: BoussinesqEquationOfState
@@ -29,7 +30,7 @@ export STStaircaseInitialConditions, StaircaseICs, SmoothSTStaircaseInitialCondi
        PeriodicSTSingleInterfaceInitialConditions, PeriodoicSingleInterfaceICs,
        set_staircase_initial_conditions!
 
-export tanh_background, linear_background
+export BackgroundTanh, BackgroundLinear, tanh_background, linear_background
 
 export AbstractNoise, VelocityNoise, TracerNoise
 

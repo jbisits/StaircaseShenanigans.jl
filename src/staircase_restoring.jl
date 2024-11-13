@@ -1,3 +1,140 @@
+abstract type BackgroundFunction end
+
+Oceananigans.BackgroundField(bf::BackgroundFunction) =
+    BackgroundField(bf.func, parameters = bf.parameters)
+"""
+    mutable struct BackgroundTanh{F, T, P}
+Container for a tanh background field.
+"""
+mutable struct BackgroundTanh{F, T} <: BackgroundFunction
+    "tanh function"
+          func :: F
+    "Scale the steepness of the `tanh` change"
+         scale :: T
+    "Parameters for the tanh background field"
+    parameters :: Any
+end
+BackgroundTanh() = BackgroundTanh(tanh_background, 100, NamedTuple())
+BackgroundTanh(scale) = BackgroundTanh(tanh_background, scale, NamedTuple())
+function Base.show(io, bt::BackgroundTanh)
+    println(io, "BackgroundTanh")
+    println(io, "┣━━━ function: $(bt.func)")
+    println(io, "┣━━━━━━ scale: $(bt.scale)")
+      print(io, "┗━ parameters: $(bt.parameters)")
+end
+"""
+    mutable struct BackgroundLinear{F, P}
+Container for a linear background field.
+"""
+mutable struct BackgroundLinear{F} <: BackgroundFunction
+    "Linear function"
+          func :: F
+    "Parameters for the tanh background field"
+    parameters :: Any
+end
+BackgroundLinear() = BackgroundLinear(linear_background, NamedTuple())
+function Base.show(io, bl::BackgroundLinear)
+    println(io, "BackgroundLinear")
+    println(io, "┣━━━ function: $(bl.func)")
+      print(io, "┗━ parameters: $(bl.parameters)")
+end
+"""
+    function S_and_T_background_fields(initial_conditions)
+Set background fields for the `S` and `T` tracer fields where the domain is triply periodic.
+"""
+function S_and_T_background_fields(ics::PeriodicSTSingleInterfaceInitialConditions, Lz)
+
+    get_parameters!(ics, :salinity_values, Lz)
+    S_background = BackgroundField(ics.background_state)
+    get_parameters!(ics, :temperature_values, Lz)
+    T_background = BackgroundField(ics.background_state)
+
+    return (S = S_background, T = T_background)
+end
+"Sets a background state that is hyperbolic tangent. The scaling `τ` is set by
+the diffusivity ratio κₛ / κₜ ."
+  tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.Lz))
+linear_background(x, y, z, t, p) = p.Cᵤ - p.ΔC * z / p.Lz
+
+function get_parameters!(ics::PeriodicSTSingleInterfaceInitialConditions, tracer::Symbol, Lz)
+
+    z_interface = ics.depth_of_interface
+    C = getproperty(ics, tracer)
+    ΔC = diff(C)[1]
+    Cᵤ, Cₗ = C
+    update_parameters!(ics.background_state, ΔC, Cᵤ, Cₗ, abs(Lz), z_interface)
+
+    return nothing
+end
+
+function update_parameters!(backgound_state::BackgroundTanh, ΔC, Cᵤ, Cₗ, Lz, z_interface)
+
+    backgound_state.parameters = (; ΔC, Cᵤ, Cₗ, Lz, z_interface, D = backgound_state.scale)
+    return nothing
+end
+function update_parameters!(backgound_state::BackgroundLinear, ΔC, Cᵤ, Lz, z_interface)
+
+    backgound_state.parameters = (; ΔC, Cᵤ, Lz)
+    return nothing
+end
+
+# The following functions are to be used as `BoundaryConditions` so that tracers can
+# re-enter the domain with the initial gradient added effectively allowing the gradient to
+# be maintained. Another option is to add background tracer fields and only evolve the anomaly
+
+"""
+    T_reentry(i, j, grid, clock, model_fields, ΔT)
+Discrete boundary condition to set the temperature on a vertical boundary to tracer value at
+the **top** of the domain and adds ΔT. That is a reentrant T condition to be used on the
+**bottom** of the domain.
+"""
+@inline T_reentry(i, j, grid, clock, model_fields, ΔT) =
+    @inbounds ℑzᵃᵃᶠ(i, j, grid.Nz+1, model_fields.T) + ΔT
+"""
+    S_reentry(i, j, grid, clock, model_fields, ΔS)
+As for [T_reentry](@ref) but using salinity tracer instead.
+"""
+@inline S_reentry(i, j, grid, clock, model_fields, ΔS) =
+    @inbounds ℑzᵃᵃᶠ(i, j, grid.Nz+1, model_fields.S) + ΔS
+
+"Access velocity field at the _bottom_ of the domain for use as `BoundaryCondition`."
+@inline _w_bottom(i, j, grid, clock, model_fields) = @inbounds model_fields.w[i, j, 1]
+"Access velocity field at the _top_ of the domain for use as `BoundaryCondition`."
+@inline _w_top(i, j, grid, clock, model_fields) = @inbounds model_fields.w[i, j, grid.Nz+1]
+
+"Interpolated velocity between top and bottom (vertical) faces of domain."
+@inline w_top_bottom_interpolate(i, j, grid, clock, model_fields) =
+    @inbounds 0.5 * (model_fields.w[i, j, 1] + model_fields.w[i, j, grid.Nz+1])
+
+""""
+    function reentrant_boundary_conditions(ics::SingleInterfaceICs)
+Setup boundary conditions to maintain a gradient (ΔC) between the two layers of a
+`SingleInterface` model. The boundary conditions for the tracers are re-entrant from top to
+bottom with ΔC added to maintain a ΔC difference between the top and bottom layer. The
+vertical velocitiy field also has modified vertical boundary conditions where the velocity
+on the bottom face is set to the velocity on the top face and vice versa.
+"""
+function reentrant_boundary_conditions(ics::SingleInterfaceICs)
+
+    bcs = if ics.maintain_interface
+            ΔT = diff(ics.temperature_values)[1]
+            ΔS = diff(ics.salinity_values)[1]
+            T_bottom_reentry = ValueBoundaryCondition(T_reentry, discrete_form=true, parameters = ΔT)
+            S_bottom_reentry = ValueBoundaryCondition(S_reentry, discrete_form=true, parameters = ΔS)
+            T_bcs = FieldBoundaryConditions(bottom = T_bottom_reentry)
+            S_bcs = FieldBoundaryConditions(bottom = S_bottom_reentry)
+
+            w_top = OpenBoundaryCondition(_w_bottom, discrete_form=true)
+            w_bottom = OpenBoundaryCondition(_w_top, discrete_form=true)
+            w_bcs = FieldBoundaryConditions(top = w_top, bottom = w_bottom)
+
+            (T=T_bcs, S=S_bcs, w=w_bcs)
+        else
+            NamedTuple()
+        end
+
+    return bcs
+end
 """
     struct OuterStairMask{T}
 Container for location of first and last stair for `mask` in `Relaxation`. This need not be
@@ -88,85 +225,3 @@ struct ExponentialTarget{T}
 end
 
 @inline (p::ExponentialTarget)(x, y, z, t) = p.A * exp(-p.λ * z)
-
-# The following functions are to be used as `BoundaryConditions` so that tracers can
-# re-enter the domain with the initial gradient added effectively allowing the gradient to
-# be maintained. Another option is to add background tracer fields and only evolve the anomaly
-
-"""
-    T_reentry(i, j, grid, clock, model_fields, ΔT)
-Discrete boundary condition to set the temperature on a vertical boundary to tracer value at
-the **top** of the domain and adds ΔT. That is a reentrant T condition to be used on the
-**bottom** of the domain.
-"""
-@inline T_reentry(i, j, grid, clock, model_fields, ΔT) =
-    @inbounds ℑzᵃᵃᶠ(i, j, grid.Nz+1, model_fields.T) + ΔT
-"""
-    S_reentry(i, j, grid, clock, model_fields, ΔS)
-As for [T_reentry](@ref) but using salinity tracer instead.
-"""
-@inline S_reentry(i, j, grid, clock, model_fields, ΔS) =
-    @inbounds ℑzᵃᵃᶠ(i, j, grid.Nz+1, model_fields.S) + ΔS
-
-"Access velocity field at the _bottom_ of the domain for use as `BoundaryCondition`."
-@inline _w_bottom(i, j, grid, clock, model_fields) = @inbounds model_fields.w[i, j, 1]
-"Access velocity field at the _top_ of the domain for use as `BoundaryCondition`."
-@inline _w_top(i, j, grid, clock, model_fields) = @inbounds model_fields.w[i, j, grid.Nz+1]
-
-"Interpolated velocity between top and bottom (vertical) faces of domain."
-@inline w_top_bottom_interpolate(i, j, grid, clock, model_fields) =
-    @inbounds 0.5 * (model_fields.w[i, j, 1] + model_fields.w[i, j, grid.Nz+1])
-
-""""
-    function reentrant_boundary_conditions(ics::SingleInterfaceICs)
-Setup boundary conditions to maintain a gradient (ΔC) between the two layers of a
-`SingleInterface` model. The boundary conditions for the tracers are re-entrant from top to
-bottom with ΔC added to maintain a ΔC difference between the top and bottom layer. The
-vertical velocitiy field also has modified vertical boundary conditions where the velocity
-on the bottom face is set to the velocity on the top face and vice versa.
-"""
-function reentrant_boundary_conditions(ics::SingleInterfaceICs)
-
-    bcs = if ics.maintain_interface
-            ΔT = diff(ics.temperature_values)[1]
-            ΔS = diff(ics.salinity_values)[1]
-            T_bottom_reentry = ValueBoundaryCondition(T_reentry, discrete_form=true, parameters = ΔT)
-            S_bottom_reentry = ValueBoundaryCondition(S_reentry, discrete_form=true, parameters = ΔS)
-            T_bcs = FieldBoundaryConditions(bottom = T_bottom_reentry)
-            S_bcs = FieldBoundaryConditions(bottom = S_bottom_reentry)
-
-            w_top = OpenBoundaryCondition(_w_bottom, discrete_form=true)
-            w_bottom = OpenBoundaryCondition(_w_top, discrete_form=true)
-            w_bcs = FieldBoundaryConditions(top = w_top, bottom = w_bottom)
-
-            (T=T_bcs, S=S_bcs, w=w_bcs)
-        else
-            NamedTuple()
-        end
-
-    return bcs
-end
-
-"""
-    function S_and_T_background_fields(initial_conditions)
-Set background fields for the `S` and `T` tracer fields where the domain is triply periodic.
-"""
-function S_and_T_background_fields(ics::PeriodicSTSingleInterfaceInitialConditions, Lz, τ)
-
-    z_interface = ics.depth_of_interface
-    ΔT = diff(ics.temperature_values)[1]
-    Tᵤ, Tₗ = ics.temperature_values
-    T_parameters = (Cᵤ = Tᵤ, Cₗ = Tₗ, ΔC = ΔT, Lz = abs(Lz), z_interface, τ)
-
-    ΔS = diff(ics.salinity_values)[1]
-    Sᵤ, Sₗ = ics.salinity_values
-    S_parameters = (Cᵤ = Sᵤ, Cₗ = Sₗ, ΔC = ΔS, Lz = abs(Lz), z_interface, τ)
-    S_background = BackgroundField(ics.background_state, parameters=S_parameters)
-    T_background = BackgroundField(ics.background_state, parameters=T_parameters)
-
-    return (S = S_background, T = T_background)
-end
-"Sets a background state that is hyperbolic tangent. The scaling `τ` is set by
-the diffusivity ratio κₛ / κₜ ."
-tanh_background(x, y, z, t, p) =  p.Cₗ - 0.5 * p.ΔC * (1  + tanh(round(1 / p.τ) * (z - p.z_interface) / p.Lz))
-linear_background(x, y, z, t, p) = p.Cᵤ - p.ΔC * z / p.Lz

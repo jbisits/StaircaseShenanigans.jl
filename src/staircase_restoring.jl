@@ -51,10 +51,12 @@ function S_and_T_background_fields(ics::PeriodicSTSingleInterfaceInitialConditio
 
     return (S = S_background, T = T_background)
 end
-"Sets a background state that is hyperbolic tangent. The scaling `τ` is set by
-the diffusivity ratio κₛ / κₜ ."
-  tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.Lz))
+"Sets a background state that is hyperbolic tangent. There is also a method to save an
+`Array` of this backgorund state to output."
+tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.Lz))
+tanh_background(z, ΔC, Cᵤ, Cₗ, Lz, z_interface, D) = Cₗ - 0.5 * ΔC * (1  + tanh(D * (z - z_interface) / Lz))
 linear_background(x, y, z, t, p) = p.Cᵤ - p.ΔC * z / p.Lz
+linear_background(z, ΔC, Cᵤ, Lz) = Cᵤ - ΔC * z / Lz
 
 function get_parameters!(ics::PeriodicSTSingleInterfaceInitialConditions, tracer::Symbol, Lz)
 
@@ -78,6 +80,55 @@ function update_parameters!(backgound_state::BackgroundLinear, ΔC, Cᵤ, Lz, z_
     return nothing
 end
 
+"""
+    function save_background_state!(simulation, sdns)
+Where there is `BackgroundField` (currently this assumes that is for periodic simulations)
+save the background state for the tracers and density so this can be used later
+"""
+save_background_state!(simulation, sdns) = save_background_state!(simulation, sdns.model, sdns.initial_conditions)
+save_background_state!(simulation, model, initial_conditions) = nothing
+function save_background_state!(simulation, model, initial_conditions::PeriodoicSingleInterfaceICs)
+
+    S_background = Field(model.background_fields.tracers.S)
+    compute!(S_background)
+    T_background = Field(model.background_fields.tracers.T)
+    compute!(T_background)
+    σ_background = Field(seawater_density(model, temperature = T_background, salinity = S_background,
+                                         geopotential_height = 0))
+    compute!(σ_background)
+
+    if simulation.output_writers[:tracers] isa NetCDFOutputWriter
+
+        NCDataset(simulation.output_writers[:tracers].filepath, "a") do ds
+            defVar(ds, "S_background", S_background, ("xC", "yC", "zC"),
+                  attrib = Dict("longname" => "Background field for salinity",
+                                "units" => "gkg⁻¹"))
+            defVar(ds, "T_background", T_background, ("xC", "yC", "zC"),
+                  attrib =  Dict("longname" => "Background field for temperature",
+                                 "units" => "°C"))
+        end
+
+        NCDataset(simulation.output_writers[:computed_output].filepath, "a") do ds
+            defVar(ds, "σ_background", σ_background, ("xC", "yC", "zC"),
+                  attrib = Dict("longname" => "Background field for potential density (0dbar) computed from the `S` and `T` background fields",
+                                "units" => "kgm⁻³"))
+        end
+
+    elseif simulation.output_writers[:tracers] isa JLD2OutputWriter
+
+        jldopen(simulation.output_writers[:tracers].filepath, "a+") do f
+            f["S_background"] = S_background
+            f["T_background"] = T_background
+        end
+
+        jldopen(simulation.output_writers[:computed_output].filepath, "a+") do f
+            f["σ_background"] = σ_background
+        end
+
+    end
+
+    return nothing
+end
 # The following functions are to be used as `BoundaryConditions` so that tracers can
 # re-enter the domain with the initial gradient added effectively allowing the gradient to
 # be maintained. Another option is to add background tracer fields and only evolve the anomaly

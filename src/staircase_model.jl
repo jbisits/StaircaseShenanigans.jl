@@ -205,6 +205,8 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
 
     save_R_ρ!(simulation, sdns)
 
+    save_background_state!(simulation, sdns)
+
     return simulation
 
 end

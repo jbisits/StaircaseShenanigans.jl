@@ -73,6 +73,82 @@ function StaircaseShenanigans.animate_tracers(tracers::AbstractString; xslice = 
     return nothing
 end
 """
+    function StaircaseShenanigans.animate_tracers_anomaly(tracers::AbstractString)
+Animate the salinity and temperature `tracers` anomalies from saved `.nc` output.
+"""
+function StaircaseShenanigans.animate_tracers_anomaly(tracers::AbstractString; xslice = 52, yslice = 52)
+
+    NCDataset(tracers) do ds
+
+        x = ds["xC"][:]
+        z = ds["zC"][:]
+        t = ds["time"][:]
+
+        n = Observable(1)
+        S = @lift ds[:S′][:, yslice, :, $n]
+        S_profile = @lift ds[:S′][xslice, yslice, :, $n]
+        Θ = @lift ds[:T′][:, yslice, :, $n]
+        Θ_profile = @lift ds[:T′][xslice, yslice, :, $n]
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (1000, 1000))
+        ax = [Axis(fig[j, i], title = (i == 1 && j == 1) ? time_title : "") for i ∈ 1:2, j ∈ 1:2]
+
+        # Salinity
+        Srange = extrema(ds[:S′][:, :, :, end])
+        lines!(ax[1], S_profile, z)
+        ax[1].xlabel = "S′ gkg⁻¹"
+        ax[1].ylabel = "z (m)"
+        ax[1].xaxisposition = :top
+        xlims!(ax[1], Srange)
+
+        Scmap = cgrad(:haline)[2:end-1]
+        Slow = cgrad(:haline)[1]
+        Shigh = cgrad(:haline)[end]
+        hmS = heatmap!(ax[2], x, z, S, colorrange = Srange, colormap = Scmap,
+                        lowclip = Slow, highclip = Shigh)
+
+        ax[2].xlabel = "x (m)"
+        ax[2].ylabel = "z (m)"
+        Colorbar(fig[1, 3], hmS, label = "S′ gkg⁻¹")
+
+        linkyaxes!(ax[1], ax[2])
+        hideydecorations!(ax[2], ticks = false)
+
+        # Temperature
+        Θrange = extrema(ds[:T′][:, :, :, end])
+        lines!(ax[3], Θ_profile, z)
+        ax[3].xlabel = "Θ°C"
+        ax[3].ylabel = "z (m)"
+        ax[3].xaxisposition = :top
+        xlims!(ax[3], Θrange)
+
+        Θcmap = cgrad(:thermal)[2:end-1]
+        Θlow = cgrad(:thermal)[1]
+        Θhigh = cgrad(:thermal)[end]
+        hmΘ = heatmap!(ax[4], x, z, Θ, colorrange = Θrange, colormap = Θcmap,
+                        lowclip = Θlow, highclip = Θhigh)
+
+        ax[4].xlabel = "x (m)"
+        ax[4].ylabel = "z (m)"
+        Colorbar(fig[2, 3], hmΘ, label = "Θ°C")
+
+        linkyaxes!(ax[3], ax[4])
+        hideydecorations!(ax[4], ticks = false)
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "tracers.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
+
+    end
+
+    return nothing
+end
+"""
     function animate_density(computed_output::AbstractString, variable::AbstractString=σ;
                                      xslice = 52, yslice = 52)
 Animate the density variable in `computed_output`.
@@ -110,6 +186,63 @@ function StaircaseShenanigans.animate_density(computed_output::AbstractString, v
         ax[2].xlabel = "x (m)"
         ax[2].ylabel = "z (m)"
         Colorbar(fig[1, 3], hm, label = "σ₀ kgm⁻³")
+
+        linkyaxes!(ax[1], ax[2])
+        hideydecorations!(ax[2], ticks = false)
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "density.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
+
+    end
+
+    return nothing
+end
+"""
+    function animate_density_anomaly(computed_output::AbstractString, variable::AbstractString=σ;
+                                     xslice = 52, yslice = 52)
+Animate the density anomaly from `variable` and the background `variable` in `computed_output`.
+"""
+function StaircaseShenanigans.animate_density_anomaly(computed_output::AbstractString, variable::AbstractString;
+                               xslice = 52, yslice = 52)
+
+    NCDataset(computed_output) do ds
+
+        x = ds["xC"][:]
+        z = ds["zC"][:]
+        t = ds["time"][:]
+
+        n = Observable(1)
+        σ_backgroud = ds[variable*"_background"][:, yslice, :]
+        σ = @lift ds[variable][:, yslice, :, $n] .- σ_backgroud
+        σ_backgroud_profile =  ds[variable*"_background"][xslice, yslice, :]
+        σ_profile = @lift ds[variable][xslice, yslice, :, $n] .- σ_backgroud_profile
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (1000, 500))
+        ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
+
+        colorrange = extrema(ds[variable][:, :, :, end] .- ds[variable*"_background"][:, :, :])
+
+        lines!(ax[1], σ_profile, z)
+        ax[1].xlabel = "σ₀′ kgm⁻³"
+        ax[1].ylabel = "z"
+        ax[1].xaxisposition = :top
+        ax[1].xticklabelrotation = π / 4
+        xlims!(ax[1], colorrange)
+
+        colormap = cgrad(:dense)[2:end-1]
+        lowclip = cgrad(:dense)[1]
+        highclip = cgrad(:dense)[end]
+        hm = heatmap!(ax[2], x, z, σ; colorrange, colormap, lowclip, highclip)
+
+        ax[2].xlabel = "x (m)"
+        ax[2].ylabel = "z (m)"
+        Colorbar(fig[1, 3], hm, label = "σ₀′ kgm⁻³")
 
         linkyaxes!(ax[1], ax[2])
         hideydecorations!(ax[2], ticks = false)

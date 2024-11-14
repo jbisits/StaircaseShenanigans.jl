@@ -154,7 +154,7 @@ function Base.show(io::IO, sics::AbstractStaircaseInitialConditions)
         println(io, "┣━━━━ salinity_values: $(sics.salinity_values)")
         println(io, "┣━ temperature_values: $(sics.temperature_values)")
         println(io, "┣━━━━━━━━━━━━━━━━ R_ρ: $(round.(sics.R_ρ; digits = 2))")
-        println(io, "┗━━━ background_state: $(typeof(sics.background_state))")
+        println(io, "┗━━━ background_state: $(summary(sics.background_state))")
     elseif sics isa STSingleInterfaceInitialConditions
         println(io, "STSingleInterfaceInitialConditions")
         println(io, "┣━ depth_of_interface: $(sics.depth_of_interface)")

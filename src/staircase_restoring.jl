@@ -54,14 +54,14 @@ end
 "Sets a background state that is hyperbolic tangent. There is also a method to save an
 `Array` of this backgorund state to output."
 tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.Lz))
-tanh_background(z, ΔC, Cᵤ, Cₗ, Lz, z_interface, D) = Cₗ - 0.5 * ΔC * (1  + tanh(D * (z - z_interface) / Lz))
+tanh_background(z, ΔC, Cₗ, Lz, z_interface, D) = Cₗ - 0.5 * ΔC * (1  + tanh(D * (z - z_interface) / Lz))
 linear_background(x, y, z, t, p) = p.Cᵤ - p.ΔC * z / p.Lz
 linear_background(z, ΔC, Cᵤ, Lz) = Cᵤ - ΔC * z / Lz
 
 function get_parameters!(ics::PeriodicSTSingleInterfaceInitialConditions, tracer::Symbol, Lz)
 
     z_interface = ics.depth_of_interface
-    C = getproperty(ics, tracer)
+    C = Array(getproperty(ics, tracer))
     ΔC = diff(C)[1]
     Cᵤ, Cₗ = C
     update_parameters!(ics.background_state, ΔC, Cᵤ, Cₗ, abs(Lz), z_interface)
@@ -74,7 +74,7 @@ function update_parameters!(backgound_state::BackgroundTanh, ΔC, Cᵤ, Cₗ, Lz
     backgound_state.parameters = (; ΔC, Cᵤ, Cₗ, Lz, z_interface, D = backgound_state.scale)
     return nothing
 end
-function update_parameters!(backgound_state::BackgroundLinear, ΔC, Cᵤ, Lz, z_interface)
+function update_parameters!(backgound_state::BackgroundLinear, ΔC, Cᵤ, Cₗ, Lz, z_interface)
 
     backgound_state.parameters = (; ΔC, Cᵤ, Lz)
     return nothing

@@ -137,7 +137,7 @@ function StaircaseShenanigans.animate_tracers_anomaly(tracers::AbstractString; x
         hideydecorations!(ax[4], ticks = false)
 
         frames = eachindex(t)
-        record(fig, joinpath(pwd(), "tracers.mp4"),
+        record(fig, joinpath(pwd(), "tracers_anomaly.mp4"),
             frames, framerate=8) do i
             msg = string("Plotting frame ", i, " of ", frames[end])
             print(msg * " \r")
@@ -248,7 +248,7 @@ function StaircaseShenanigans.animate_density_anomaly(computed_output::AbstractS
         hideydecorations!(ax[2], ticks = false)
 
         frames = eachindex(t)
-        record(fig, joinpath(pwd(), "density.mp4"),
+        record(fig, joinpath(pwd(), "density_anomaly.mp4"),
             frames, framerate=8) do i
             msg = string("Plotting frame ", i, " of ", frames[end])
             print(msg * " \r")

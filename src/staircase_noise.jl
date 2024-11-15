@@ -30,13 +30,13 @@ Base.summary(noise::TracerNoise) = "Random noise magnitude in S and T fields $(n
 function Base.show(io::IO, noise::AbstractNoise)
     if noise isa VelocityNoise
         println(io, "VelocityNoise")
-        println(io, "┣━━ u_noise_magnitude: $(noise.u_magnitude)")
-        println(io, "┣━━ v_noise_magnitude: $(noise.v_magnitude)")
-        print(io,   "┗━━ w_noise_magnitude: $(noise.w_magnitude)")
+        println(io, "┣━ u_noise_magnitude: $(noise.u_magnitude)")
+        println(io, "┣━ v_noise_magnitude: $(noise.v_magnitude)")
+        print(io,   "┗━ w_noise_magnitude: $(noise.w_magnitude)")
     elseif noise isa TracerNoise
         println(io, "TracerNoise")
-        println(io, "┣━━ S_noise_magnitude: $(noise.S_magnitude)")
-        print(io,   "┗━━ T_noise_magnitude: $(noise.T_magnitude)")
+        println(io, "┣━ S_noise_magnitude: $(noise.S_magnitude)")
+        print(io,   "┗━ T_noise_magnitude: $(noise.T_magnitude)")
     end
 end
 "Convenience for all noise at same magnitude `c`, default behaviour is 1e-4"

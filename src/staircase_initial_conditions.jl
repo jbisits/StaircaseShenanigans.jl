@@ -174,10 +174,10 @@ function Base.show(io::IO, sics::AbstractStaircaseInitialConditions)
         print(io,   "┗━━━━━━━━━━━━━━━━━━ R_ρ: $(round.(sics.R_ρ; digits = 2))")
     elseif sics isa SmoothSTStaircaseInitialConditions
         println(io, "STStaircaseInitialConditions")
-        println(io, "┣━━━━ number_of_interfaces: $(sics.number_of_interfaces)")
-        println(io, "┣━━━━━ depth_of_interfaces: $(sics.depth_of_interfaces)")
-        println(io, "┣━━━━ salinity_values: $(sics.salinity_values)")
-        println(io, "┣━ temperature_values: $(sics.temperature_values)")
-        print(io,   "┗━ smoothing_funciton: $(sics.smoothing_funciton)")
+        println(io, "┣━ number_of_interfaces: $(sics.number_of_interfaces)")
+        println(io, "┣━━ depth_of_interfaces: $(sics.depth_of_interfaces)")
+        println(io, "┣━━━━━━ salinity_values: $(sics.salinity_values)")
+        println(io, "┣━━━ temperature_values: $(sics.temperature_values)")
+        print(io,   "┗━━━ smoothing_funciton: $(sics.smoothing_funciton)")
     end
 end

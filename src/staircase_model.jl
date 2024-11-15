@@ -164,19 +164,21 @@ function grid_stretching(Lz::Number, Nz::Number, refinement::Number, stretching:
 end
 """
     function SDNS_simulation_setup
-Build a `simulation` from `sdns`.
+Build a `simulation` from `sdns`. Only required arguments are the `sdns` and `stop_time`.
+All other `kwargs` have defaults (that can be changed).
 """
-function SDNS_simulation_setup(sdns::StaircaseDNS, Δt::Number,
-                                stop_time::Number, save_schedule::Number,
+function SDNS_simulation_setup(sdns::StaircaseDNS, stop_time::Number,
                                 save_custom_output!::Function=no_custom_output!,
                                 save_velocities!::Function=no_velocities!;
+                                Δt = 1e-3,
+                                max_Δt = 1e-1,
+                                max_change = 1.2,
+                                save_schedule = 60, # seconds
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
                                 checkpointer_time_interval = nothing,
                                 cfl = 0.75,
                                 diffusive_cfl = 0.75,
-                                max_change = 1.2,
-                                max_Δt = 1e-1,
                                 overwrite_saved_output = true)
 
     simulation = Simulation(sdns.model; Δt, stop_time)

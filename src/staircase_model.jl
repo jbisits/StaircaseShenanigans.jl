@@ -11,8 +11,8 @@ end
 function Base.show(io::IO, sdns::StaircaseDNS)
     println(io, "StaircaseDirectNumericalSimulation")
     println(io, "┣━━━━━━━━━━━━━━━━ model: $(summary(sdns.model))")
-    println(io, "┣━━━ initial_conditions: $(typeof(sdns.initial_conditions))")
-    print(io,   "┗━━━━━━━━ initial_noise: $(typeof(sdns.initial_noise))")
+    println(io, "┣━━━ initial_conditions: $(summary(sdns.initial_conditions))")
+    print(io,   "┗━━━━━━━━ initial_noise: $(summary(sdns.initial_noise))")
 end
 """
     function StaircaseDNS(model, initial_conditions; initial_noise = nothing)

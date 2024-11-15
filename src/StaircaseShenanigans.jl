@@ -22,6 +22,7 @@ import SeawaterPolynomials.SecondOrderSeawaterPolynomials: RoquetSeawaterPolynom
 abstract type AbstractStaircaseModel end
 abstract type AbstractInitialConditions end
 abstract type AbstractNoise end
+abstract type BackgroundFunction end
 
 export StaircaseDNS, PeriodicStaircaseDNS, DNSModel, SDNS_simulation_setup
 

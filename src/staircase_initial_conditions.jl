@@ -42,7 +42,7 @@ function STSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, dept
 
 end
 const SingleInterfaceICs = STSingleInterfaceInitialConditions # alias
-
+Base.summary(ics::SingleInterfaceICs) = "Single S-T interface at z = $(ics.depth_of_interface)"
 """
     struct PeriodicSTSingleInterfaceInitialConditions
 Sets a `BackgroundField` according to `background_State` and uses a triply periodic domain
@@ -68,6 +68,7 @@ function PeriodicSTSingleInterfaceInitialConditions(eos::BoussinesqEquationOfSta
 
 end
 const PeriodoicSingleInterfaceICs = PeriodicSTSingleInterfaceInitialConditions # alias
+Base.summary(ics::PeriodoicSingleInterfaceICs) = "Single S-T interface at z = $(ics.depth_of_interface) on triply periodic domain with $(summary(ics.background_state)) state"
 
 "Container for initial conditions that have well mixed layers seperated by sharp step interfaces."
 struct STStaircaseInitialConditions{T} <: AbstractStaircaseInitialConditions
@@ -92,6 +93,8 @@ function STStaircaseInitialConditions(model, number_of_interfaces, depth_of_inte
 
 end
 const StaircaseICs = STStaircaseInitialConditions # alias
+Base.summary(ics::StaircaseICs) = "Multiple S-T interfaces at z = $(ics.depth_of_interfaces)"
+
 """
     function compute_R_ρ(salinity, temperature, depth_of_interfaces, eos)
 Compute the density ratio, ``R_{\rho}``, at a diffusive interface with a non-linear equation of state

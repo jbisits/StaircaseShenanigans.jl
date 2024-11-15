@@ -1,5 +1,3 @@
-abstract type BackgroundFunction end
-
 Oceananigans.BackgroundField(bf::BackgroundFunction) =
     BackgroundField(bf.func, parameters = bf.parameters)
 """

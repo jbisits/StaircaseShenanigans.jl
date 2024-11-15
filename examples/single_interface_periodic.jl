@@ -22,8 +22,9 @@ sdns = StaircaseDNS(model_setup, interface_ics, tracer_noise)
 stop_time = 200 * 60 # seconds
 save_schedule = 10  # seconds
 output_path = joinpath(@__DIR__, "output")
-simulation = SDNS_simulation_setup(sdns, Δt, stop_time, save_schedule, save_computed_output!,
-                                    StaircaseShenanigans.save_vertical_velocities!;
+simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!,
+                                    save_vertical_velocities!;
+                                    Δt, save_schedule,
                                     output_path, max_Δt = 5)
 ## Run
 run!(simulation)

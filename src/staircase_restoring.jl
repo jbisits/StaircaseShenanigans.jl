@@ -1,5 +1,3 @@
-abstract type BackgroundFunction end
-
 Oceananigans.BackgroundField(bf::BackgroundFunction) =
     BackgroundField(bf.func, parameters = bf.parameters)
 """
@@ -12,16 +10,10 @@ mutable struct BackgroundTanh{F, T} <: BackgroundFunction
     "Scale the steepness of the `tanh` change"
          scale :: T
     "Parameters for the tanh background field"
-    parameters :: Any
+    parameters :: NamedTuple
 end
 BackgroundTanh() = BackgroundTanh(tanh_background, 100, NamedTuple())
 BackgroundTanh(scale) = BackgroundTanh(tanh_background, scale, NamedTuple())
-function Base.show(io, bt::BackgroundTanh)
-    println(io, "BackgroundTanh")
-    println(io, "┣━━━ function: $(bt.func)")
-    println(io, "┣━━━━━━ scale: $(bt.scale)")
-      print(io, "┗━ parameters: $(bt.parameters)")
-end
 """
     mutable struct BackgroundLinear{F, P}
 Container for a linear background field.
@@ -30,14 +22,25 @@ mutable struct BackgroundLinear{F} <: BackgroundFunction
     "Linear function"
           func :: F
     "Parameters for the tanh background field"
-    parameters :: Any
+    parameters :: NamedTuple
 end
 BackgroundLinear() = BackgroundLinear(linear_background, NamedTuple())
-function Base.show(io, bl::BackgroundLinear)
-    println(io, "BackgroundLinear")
-    println(io, "┣━━━ function: $(bl.func)")
-      print(io, "┗━ parameters: $(bl.parameters)")
+
+function Base.show(io::IO, bf::BackgroundFunction)
+    if bf isa BackgroundTanh
+        println(io, "BackgroundTanh")
+        println(io, "┣━━━ function: $(bf.func)")
+        println(io, "┣━━━━━━ scale: $(bf.scale)")
+          print(io, "┗━ parameters: $(bf.parameters)")
+    elseif bf isa BackgroundLinear
+        println(io, "BackgroundLinear")
+        println(io, "┣━━━ function: $(bf.func)")
+          print(io, "┗━ parameters: $(bf.parameters)")
+    end
 end
+Base.summary(bt::BackgroundTanh) = "$(bt.func)"
+Base.summary(bl::BackgroundLinear) = "$(bl.func)"
+
 """
     function S_and_T_background_fields(initial_conditions)
 Set background fields for the `S` and `T` tracer fields where the domain is triply periodic.
@@ -53,9 +56,9 @@ function S_and_T_background_fields(ics::PeriodicSTSingleInterfaceInitialConditio
 end
 "Sets a background state that is hyperbolic tangent. There is also a method to save an
 `Array` of this backgorund state to output."
-tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.Lz))
+@inline tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.Lz))
 tanh_background(z, ΔC, Cₗ, Lz, z_interface, D) = Cₗ - 0.5 * ΔC * (1  + tanh(D * (z - z_interface) / Lz))
-linear_background(x, y, z, t, p) = p.Cᵤ - p.ΔC * z / p.Lz
+@inline linear_background(x, y, z, t, p) = p.Cᵤ - p.ΔC * z / p.Lz
 linear_background(z, ΔC, Cᵤ, Lz) = Cᵤ - ΔC * z / Lz
 
 function get_parameters!(ics::PeriodicSTSingleInterfaceInitialConditions, tracer::Symbol, Lz)
@@ -132,6 +135,7 @@ function save_background_state!(simulation, model, initial_conditions::Periodoic
 
     return nothing
 end
+
 # The following functions are to be used as `BoundaryConditions` so that tracers can
 # re-enter the domain with the initial gradient added effectively allowing the gradient to
 # be maintained. Another option is to add background tracer fields and only evolve the anomaly

@@ -51,8 +51,8 @@ function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs)
 
     return nothing
 end
-"Here the `BackgroundField` behaves as the `initial_condition` and noise is added to the
-tracer fields to create an instability."
+"Currently only random noise can be added as the initial condition in the tracer field
+when there is a `BackgroundField`."
 set_staircase_initial_conditions!(model, ics::PeriodoicSingleInterfaceICs) = nothing
 
 "Fallback --- don't set any noise."

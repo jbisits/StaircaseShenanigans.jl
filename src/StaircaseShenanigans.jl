@@ -22,7 +22,8 @@ import SeawaterPolynomials.SecondOrderSeawaterPolynomials: RoquetSeawaterPolynom
 abstract type AbstractStaircaseModel end
 abstract type AbstractInitialConditions end
 abstract type AbstractNoise end
-abstract type BackgroundFunction end
+abstract type AbstractBackgroundFunction end
+abstract type AbstractSmoothingFunction end
 
 export StaircaseDNS, PeriodicStaircaseDNS, DNSModel, SDNS_simulation_setup
 
@@ -47,6 +48,7 @@ export animate_tracers, animate_density, visualise_initial_conditions, visualise
        animate_tracers_anomaly, animate_density_anomaly
 
 include("staircase_initial_conditions.jl")
+include("single_interfaces_initial_conditions.jl")
 include("staircase_noise.jl")
 include("staircase_diagnostics.jl")
 include("staircase_model.jl")

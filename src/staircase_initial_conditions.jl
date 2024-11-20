@@ -57,7 +57,7 @@ struct PeriodicSTSingleInterfaceInitialConditions{T, A, F} <: AbstractStaircaseI
     temperature_values :: A
      "Initial R_ρ at the interface"
                    R_ρ :: T
-    "Function used to define the background state about which an anomaly is evolved."
+    "`BackgroundField` about which anomaly is advected. Should be an `AbstractBackgroundFunction`."
       background_state :: F
 end
 function PeriodicSTSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface, salinity, temperature, background_state)

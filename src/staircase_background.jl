@@ -1,10 +1,10 @@
-Oceananigans.BackgroundField(bf::BackgroundFunction) =
+Oceananigans.BackgroundField(bf::AbstractBackgroundFunction) =
     BackgroundField(bf.func, parameters = bf.parameters)
 """
     mutable struct BackgroundTanh{F, T, P}
 Container for a tanh background field.
 """
-mutable struct BackgroundTanh{F, T} <: BackgroundFunction
+mutable struct BackgroundTanh{F, T} <: AbstractBackgroundFunction
     "tanh function"
           func :: F
     "Scale the steepness of the `tanh` change"
@@ -18,7 +18,7 @@ BackgroundTanh(scale) = BackgroundTanh(tanh_background, scale, NamedTuple())
     mutable struct BackgroundLinear{F, P}
 Container for a linear background field.
 """
-mutable struct BackgroundLinear{F} <: BackgroundFunction
+mutable struct BackgroundLinear{F} <: AbstractBackgroundFunction
     "Linear function"
           func :: F
     "Parameters for the tanh background field"
@@ -26,7 +26,7 @@ mutable struct BackgroundLinear{F} <: BackgroundFunction
 end
 BackgroundLinear() = BackgroundLinear(linear_background, NamedTuple())
 
-function Base.show(io::IO, bf::BackgroundFunction)
+function Base.show(io::IO, bf::AbstractBackgroundFunction)
     if bf isa BackgroundTanh
         println(io, "BackgroundTanh")
         println(io, "┣━━━ function: $(bf.func)")

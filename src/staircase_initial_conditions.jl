@@ -31,7 +31,7 @@ Base.summary(ics::StaircaseICs) = "Multiple S-T interfaces at z = $(ics.depth_of
 
 # TODO: implement this so it is an option.
 "Container for initial conditions that have well mixed layers seperated by smoothed step interfaces."
-struct SmoothSTStaircaseInitialConditions{T} <: AbstractStaircaseInitialConditions
+struct SmoothSTStaircaseInitialConditions{T, F} <: AbstractStaircaseInitialConditions
     "Number of interfaces in the initial state"
     number_of_interfaces :: Int
     "The depth of the interfaces, **note:** length (depth_of_interfaces) == number_of_interfaces"
@@ -41,7 +41,7 @@ struct SmoothSTStaircaseInitialConditions{T} <: AbstractStaircaseInitialConditio
     "Temperature values in each layer"
       temperature_values :: T
     "Function to smooth step transition"
-      smoothing_funciton :: Function
+      smoothing_funciton :: F
 end
 
 """

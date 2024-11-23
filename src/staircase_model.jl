@@ -34,9 +34,8 @@ The initial conditions are set after building the `model`.
 """
 function StaircaseDNS(model_setup::NamedTuple, initial_conditions, initial_noise)
 
-    boundary_conditions = reentrant_boundary_conditions(initial_conditions)
     architecture, diffusivities, domain_extent, resolution, eos =  model_setup
-    model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos; boundary_conditions)
+    model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos)
 
     sdns = StaircaseDNS(model, initial_conditions, initial_noise)
     set_staircase_initial_conditions!(sdns)

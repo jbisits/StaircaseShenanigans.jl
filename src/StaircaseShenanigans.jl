@@ -23,7 +23,7 @@ abstract type AbstractStaircaseModel end
 abstract type AbstractInitialConditions end
 abstract type AbstractNoise end
 abstract type AbstractBackgroundFunction end
-abstract type AbstractSmoothingFunction end
+abstract type AbstractInterfaceSmoothing end
 
 export StaircaseDNS, PeriodicStaircaseDNS, DNSModel, SDNS_simulation_setup
 
@@ -47,6 +47,7 @@ export compute_R_ρ!
 export animate_tracers, animate_density, visualise_initial_conditions, visualise_initial_density,
        animate_tracers_anomaly, animate_density_anomaly
 
+include("interface_smoothing.jl")
 include("staircase_initial_conditions.jl")
 include("single_interfaces_initial_conditions.jl")
 include("staircase_noise.jl")

@@ -33,9 +33,9 @@ function set_staircase_initial_conditions!(model, ics::SmoothSTStaircaseInitialC
 
     return nothing
 end
-set_staircase_initial_conditions!(model, ics::SingleInterfaceICs) =
-    set_staircase_initial_conditions!(model, ics::SingleInterfaceICs, ics.interface_smoothing)
-function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs, interface_smoothing::Nothing)
+set_staircase_initial_conditions!(model, ics::Union{SingleInterfaceICs, PeriodoicSingleInterfaceICs}) =
+    set_staircase_initial_conditions!(model, ics, ics.interface_smoothing)
+function set_staircase_initial_conditions!(model, ics, interface_smoothing::Nothing)
 
     depth_of_interface = ics.depth_of_interface
     z = znodes(model.grid, Center())
@@ -53,8 +53,7 @@ function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs, inter
 
     return nothing
 end
-function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs,
-                                           interface_smoothing::Type{<:Tanh})
+function set_staircase_initial_conditions!(model, ics, interface_smoothing::Type{<:Tanh})
 
     depth_of_interface = ics.depth_of_interface
     Lz = model.grid.Lz
@@ -68,9 +67,6 @@ function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs,
 
     return nothing
 end
-"Currently only random noise can be added as the initial condition in the tracer field
-when there is a `BackgroundField`."
-set_staircase_initial_conditions!(model, ics::PeriodoicSingleInterfaceICs) = nothing
 
 "Fallback --- don't set any noise."
 set_noise!(model, noise::Nothing) = nothing
@@ -97,8 +93,10 @@ function set_noise!(model, noise::TracerNoise)
     S, T = model.tracers
     S_noise = noise.S_magnitude * randn(size(S))
     T_noise = noise.T_magnitude * randn(size(T))
+    S₀ = S + S_noise
+    T₀ = T + T_noise
 
-    set!(model, S = S_noise, T = T_noise)
+    set!(model, S = S₀, T = T₀)
 
 end
 """

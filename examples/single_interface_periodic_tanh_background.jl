@@ -11,8 +11,7 @@ model_setup = (;architecture, diffusivities, domain_extent, resolution, eos)
 depth_of_interface = -0.5
 salinity = [34.56, 34.70]
 temperature = [-1.5, 0.5]
-interface_ics = PeriodoicSingleInterfaceICs(eos, depth_of_interface, salinity, temperature,
-                                            BackgroundTanh())
+interface_ics = PeriodoicSingleInterfaceICs(eos, depth_of_interface, salinity, temperature, interface_smoothing = Tanh)
 tracer_noise = TracerNoise(1e-6, 1e-6)
 
 ## setup model
@@ -30,6 +29,6 @@ simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!,
 ## Run
 run!(simulation)
 
-## Compute density ratio
+# Compute density ratio
 compute_R_ρ!(simulation.output_writers[:computed_output].filepath,
              simulation.output_writers[:tracers].filepath, eos)

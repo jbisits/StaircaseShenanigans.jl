@@ -19,4 +19,4 @@ const Tanh = TanhInterfaceSmoothing{T} where {T}
 @inline (p::TanhInterfaceSmoothing)(x, y, z) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.z_range))
 
 Base.summary(p::Type{<:TanhInterfaceSmoothing}) = "tanh smoothing."
-Base.summary(p::Nothing) = "No smoothing."
+Base.summary(p::Nothing) = "$p"

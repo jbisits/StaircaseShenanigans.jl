@@ -64,7 +64,9 @@ struct PeriodicSTSingleInterfaceInitialConditions{T, A, IS, BF} <: AbstractSingl
        background_state :: BF
 end
 function PeriodicSTSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface,
-                                                    salinity, temperature, interface_smoothing, background_state)
+                                                    salinity, temperature;
+                                                    interface_smoothing = nothing,
+                                                    background_state = nothing)
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
 
@@ -92,13 +94,13 @@ end
 
 function Base.show(io::IO, sics::AbstractSingleInterfaceInitialConditions)
     if sics isa PeriodicSTSingleInterfaceInitialConditions
-        println(io, "STSingleInterfaceInitialConditions")
-        println(io, "┣━ depth_of_interface: $(sics.depth_of_interface)")
-        println(io, "┣━━━━ salinity_values: $(sics.salinity_values)")
-        println(io, "┣━ temperature_values: $(sics.temperature_values)")
+        println(io, "PeriodicSTSingleInterfaceInitialConditions")
+        println(io, "┣━━ depth_of_interface: $(sics.depth_of_interface)")
+        println(io, "┣━━━━━ salinity_values: $(sics.salinity_values)")
+        println(io, "┣━━ temperature_values: $(sics.temperature_values)")
         println(io, "┣━ interface_smoothing: $(summary(sics.interface_smoothing))")
-        println(io, "┣━━━━━━━━━━━━━━━━ R_ρ: $(round.(sics.R_ρ; digits = 2))")
-        println(io, "┗━━━ background_state: $(summary(sics.background_state))")
+        println(io, "┣━━━━ background_state: $(summary(sics.background_state))")
+        print(io,   "┗━━━━━━━━━━━━━━━━━ R_ρ: $(round.(sics.R_ρ; digits = 2))")
     elseif sics isa STSingleInterfaceInitialConditions
         println(io, "STSingleInterfaceInitialConditions")
         println(io, "┣━━ depth_of_interface: $(sics.depth_of_interface)")

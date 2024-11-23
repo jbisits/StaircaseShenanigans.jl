@@ -18,3 +18,4 @@ end
 @inline (p::TanhInterfaceSmoothing)(x, y, z) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.Lz))
 
 Base.summary(p::TanhInterfaceSmoothing) = "tanh smoothing."
+Base.summary(p::Nothing) = "No smoothing."

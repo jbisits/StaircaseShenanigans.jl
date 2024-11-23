@@ -11,7 +11,7 @@ model_setup = (;architecture, diffusivities, domain_extent, resolution, eos)
 depth_of_interface = -0.5
 salinity = [34.58, 34.70]
 temperature = [-1.5, 0.5]
-interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature, maintain_interface = true)
+interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature)
 velocity_noise = VelocityNoise(0.0, 0.0, 1e-7)
 
 ## setup model

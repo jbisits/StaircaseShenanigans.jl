@@ -21,7 +21,8 @@ struct STSingleInterfaceInitialConditions{T, A, IS} <: AbstractSingleInterfaceIn
      "Initial R_ρ at the interface"
                     R_ρ :: T
 end
-function STSingleInterfaceInitialConditions(model, depth_of_interface, salinity, temperature)
+function STSingleInterfaceInitialConditions(model, depth_of_interface, salinity, temperature;
+                                            interface_smoothing = nothing)
 
     eos = model.buoyancy.model.equation_of_state
 
@@ -32,7 +33,7 @@ function STSingleInterfaceInitialConditions(model, depth_of_interface, salinity,
 
 end
 function STSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface,
-                                            salinity, temperature)
+                                            salinity, temperature; interface_smoothing = nothing)
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
 
@@ -95,7 +96,7 @@ function Base.show(io::IO, sics::AbstractSingleInterfaceInitialConditions)
         println(io, "┣━ depth_of_interface: $(sics.depth_of_interface)")
         println(io, "┣━━━━ salinity_values: $(sics.salinity_values)")
         println(io, "┣━ temperature_values: $(sics.temperature_values)")
-        println(io, "┣━ interface_smoothing: $(sumary(interface_smoothing))")
+        println(io, "┣━ interface_smoothing: $(summary(sics.interface_smoothing))")
         println(io, "┣━━━━━━━━━━━━━━━━ R_ρ: $(round.(sics.R_ρ; digits = 2))")
         println(io, "┗━━━ background_state: $(summary(sics.background_state))")
     elseif sics isa STSingleInterfaceInitialConditions
@@ -103,7 +104,7 @@ function Base.show(io::IO, sics::AbstractSingleInterfaceInitialConditions)
         println(io, "┣━━ depth_of_interface: $(sics.depth_of_interface)")
         println(io, "┣━━━━━ salinity_values: $(sics.salinity_values)")
         println(io, "┣━━ temperature_values: $(sics.temperature_values)")
-        println(io, "┣━ interface_smoothing: $(sumary(interface_smoothing))")
+        println(io, "┣━ interface_smoothing: $(summary(sics.interface_smoothing))")
         print(io,   "┗━━━━━━━━━━━━━━━━━ R_ρ: $(round.(sics.R_ρ; digits = 2))")
     end
 end

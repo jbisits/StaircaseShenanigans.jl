@@ -33,7 +33,9 @@ function set_staircase_initial_conditions!(model, ics::SmoothSTStaircaseInitialC
 
     return nothing
 end
-function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs)
+set_staircase_initial_conditions!(model, ics::SingleInterfaceICs) =
+    set_staircase_initial_conditions!(model, ics::SingleInterfaceICs, ics.interface_smoothing)
+function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs, interface_smoothing::Nothing)
 
     depth_of_interface = ics.depth_of_interface
     z = znodes(model.grid, Center())
@@ -46,6 +48,21 @@ function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs)
     T₀[:, :, z .> depth_of_interface[1]] .= T[1]
     S₀[:, :, z .< depth_of_interface[end]] .= S[2]
     T₀[:, :, z .< depth_of_interface[end]] .= T[2]
+
+    set!(model, S = S₀, T = T₀)
+
+    return nothing
+end
+function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs,
+                                           interface_smoothing::TanhInterfaceSmoothing)
+
+    depth_of_interface = ics.depth_of_interface
+    Lz = model.grid.Lz
+    S = ics.salinity_values
+    T = ics.temperature_values
+
+    S₀ = TanhInterfaceSmoothing(S[2], diff(S)[1], 100, depth_of_interface, abs(Lz))
+    T₀ = TanhInterfaceSmoothing(T[2], diff(S)[1], 100, depth_of_interface, abs(Lz))
 
     set!(model, S = S₀, T = T₀)
 

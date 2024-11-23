@@ -54,15 +54,15 @@ function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs, inter
     return nothing
 end
 function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs,
-                                           interface_smoothing::TanhInterfaceSmoothing)
+                                           interface_smoothing::Type{<:Tanh})
 
     depth_of_interface = ics.depth_of_interface
     Lz = model.grid.Lz
     S = ics.salinity_values
     T = ics.temperature_values
 
-    S₀ = TanhInterfaceSmoothing(S[2], diff(S)[1], 100, depth_of_interface, abs(Lz))
-    T₀ = TanhInterfaceSmoothing(T[2], diff(S)[1], 100, depth_of_interface, abs(Lz))
+    S₀(x, y, z) = Tanh(S[2], diff(S)[1], 100.0, depth_of_interface, abs(Lz))(x, y, z)
+    T₀(x, y, z) = Tanh(T[2], diff(T)[1], 100.0, depth_of_interface, abs(Lz))(x, y, z)
 
     set!(model, S = S₀, T = T₀)
 

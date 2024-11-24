@@ -23,7 +23,7 @@ sdns = StaircaseDNS(model_setup, interface_ics, nothing)
 Δt = 1e-1
 stop_time = 4 * 60 * 60 # seconds
 save_schedule = 30  # seconds
-output_path = joinpath(@__DIR__, "output_periodic_tanh_interface")
+output_path = joinpath(@__DIR__, "periodic_tanh_interface")
 simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!, save_vertical_velocities!;
                                     Δt, save_schedule,
                                     output_path, max_Δt = 5)
@@ -46,7 +46,7 @@ sdns = StaircaseDNS(model_setup, interface_ics, nothing)
 Δt = 1e-1
 stop_time = 4 * 60 * 60 # seconds
 save_schedule = 30  # seconds
-output_path = joinpath(@__DIR__, "output_periodic_tanh_interface_tanh_background")
+output_path = joinpath(@__DIR__, "periodic_tanh_interface_tanh_background")
 simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!, save_vertical_velocities!;
                                     Δt, save_schedule,
                                     output_path, max_Δt = 5)

@@ -42,7 +42,7 @@ function STSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, dept
 
 end
 const SingleInterfaceICs = STSingleInterfaceInitialConditions # alias
-Base.summary(ics::SingleInterfaceICs) = "Single S-T interface at z = $(ics.depth_of_interface)"
+Base.summary(ics::SingleInterfaceICs) = "Single S-T interface at z = $(ics.depth_of_interface) on bounded z domain"
 
 """
     struct PeriodicSTSingleInterfaceInitialConditions
@@ -65,8 +65,8 @@ struct PeriodicSTSingleInterfaceInitialConditions{T, A, IS, BF} <: AbstractSingl
 end
 function PeriodicSTSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface,
                                                     salinity, temperature;
-                                                    interface_smoothing = nothing,
-                                                    background_state = nothing)
+                                                    interface_smoothing = NoSmoothing(),
+                                                    background_state = NoBackground())
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
 
@@ -75,7 +75,7 @@ function PeriodicSTSingleInterfaceInitialConditions(eos::BoussinesqEquationOfSta
 
 end
 const PeriodoicSingleInterfaceICs = PeriodicSTSingleInterfaceInitialConditions # alias
-Base.summary(ics::PeriodoicSingleInterfaceICs) = "Single S-T interface at z = $(ics.depth_of_interface) on triply periodic domain with $(summary(ics.background_state)) state"
+Base.summary(ics::PeriodoicSingleInterfaceICs) = "Single S-T interface at z = $(ics.depth_of_interface) on triply periodic domain"
 
 function compute_R_ρ(salinity, temperature, depth_of_interfaces::Number, eos)
 

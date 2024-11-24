@@ -1,4 +1,3 @@
-
 """
     struct TanhInterfaceSmoothing
 Container to set a hyperbolic tangent over a single interface as an initial condition.
@@ -18,5 +17,8 @@ end
 const Tanh = TanhInterfaceSmoothing{T} where {T}
 @inline (p::TanhInterfaceSmoothing)(x, y, z) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.z_range))
 
-Base.summary(p::Type{<:TanhInterfaceSmoothing}) = "tanh smoothing."
-Base.summary(p::Nothing) = "$p"
+Base.summary(p::Type{<:TanhInterfaceSmoothing}) = "tanh smoothing"
+
+struct NoSmoothing <: AbstractInterfaceSmoothing end
+NoSmoothing() = nothing
+Base.summary(ns::NoSmoothing) = "no interface smoothing"

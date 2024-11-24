@@ -38,9 +38,12 @@ function Base.show(io::IO, bf::AbstractBackgroundFunction)
           print(io, "┗━ parameters: $(bf.parameters)")
     end
 end
+
+struct NoBackgroundFunction <: AbstractBackgroundFunction end
+const NoBackground = NoBackgroundFunction() = nothing
 Base.summary(bt::BackgroundTanh) = "$(bt.func)"
 Base.summary(bl::BackgroundLinear) = "$(bl.func)"
-Base.summary(bn::Nothing) = "$(bn)"
+Base.summary(bn::NoBackgroundFunction) = "no background"
 
 """
     function S_and_T_background_fields(initial_conditions)

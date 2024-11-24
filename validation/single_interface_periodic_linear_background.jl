@@ -13,7 +13,7 @@ salinity = [34.56, 34.70]
 temperature = [-1.5, 0.5]
 
 #### Background linear state with tanh smoothing
-interface_ics = PeriodoicSingleInterfaceICs(eos, depth_of_interface, salinity,
+interface_ics = PeriodoicSingleInterfaceICs(eos, depth_of_interface, salinity, temperature,
                                             background_state = BackgroundLinear(),
                                             interface_smoothing = Tanh)
 

@@ -11,7 +11,7 @@ model_setup = (;architecture, diffusivities, domain_extent, resolution, eos)
 depth_of_interface = -0.5
 salinity = [34.56, 34.70]
 temperature = [-1.5, 0.5]
-interface_ics = PeriodoicSingleInterfaceICs(eos, depth_of_interface, salinity, temperature, interface_smoothing = Tanh)
+interface_ics = PeriodoicSingleInterfaceICs(eos, depth_of_interface, salinity)
 tracer_noise = TracerNoise(1e-6, 1e-6)
 
 ## setup model
@@ -21,9 +21,8 @@ sdns = StaircaseDNS(model_setup, interface_ics, tracer_noise)
 Δt = 1e-1
 stop_time = 4 * 60 * 60 # seconds
 save_schedule = 30  # seconds
-output_path = joinpath(@__DIR__, "output_tanh_background")
-simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!,
-                                    save_vertical_velocities!;
+output_path = joinpath(@__DIR__, "output_periodic")
+simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!, save_vertical_velocities!;
                                     Δt, save_schedule,
                                     output_path, max_Δt = 5)
 ## Run

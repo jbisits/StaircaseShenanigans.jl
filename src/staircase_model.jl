@@ -1,5 +1,5 @@
 struct StaircaseDNS{NHM <: NonhydrostaticModel,
-                    SIC <: AbstractStaircaseInitialConditions,
+                    SIC <: AbstractInitialConditions,
                      AN <: Union{AbstractNoise, Nothing}} <: AbstractStaircaseModel
     "An [Oceananigans.jl `NonhydrostaticModel`](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.Models.NonhydrostaticModels.NonhydrostaticModel-Tuple{})"
     model :: NHM
@@ -32,11 +32,10 @@ Build the model from `model_setup` then return a `StaircaseDNS`, mainly used to 
 the `model` with [reentrant_boundary_conditions](@ref) `boundary_conditions` from `initial_conditions`.
 The initial conditions are set after building the `model`.
 """
-function StaircaseDNS(model_setup::NamedTuple, initial_conditions, initial_noise)
+function StaircaseDNS(model_setup::NamedTuple, initial_conditions::SingleInterfaceICs, initial_noise)
 
-    boundary_conditions = reentrant_boundary_conditions(initial_conditions)
     architecture, diffusivities, domain_extent, resolution, eos =  model_setup
-    model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos; boundary_conditions)
+    model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos)
 
     sdns = StaircaseDNS(model, initial_conditions, initial_noise)
     set_staircase_initial_conditions!(sdns)
@@ -53,7 +52,9 @@ function StaircaseDNS(model_setup::NamedTuple, initial_conditions::PeriodoicSing
 
     architecture, diffusivities, domain_extent, resolution, eos = model_setup
     z_topology = Periodic
-    background_fields = S_and_T_background_fields(initial_conditions, domain_extent.Lz)
+    background_fields = isnothing(initial_conditions.background_state) ? NamedTuple() :
+                            S_and_T_background_fields(initial_conditions, domain_extent.Lz)
+
     model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos;
                      z_topology, background_fields)
 

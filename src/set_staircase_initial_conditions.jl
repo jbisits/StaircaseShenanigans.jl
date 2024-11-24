@@ -33,7 +33,9 @@ function set_staircase_initial_conditions!(model, ics::SmoothSTStaircaseInitialC
 
     return nothing
 end
-function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs)
+set_staircase_initial_conditions!(model, ics::Union{SingleInterfaceICs, PeriodoicSingleInterfaceICs}) =
+    set_staircase_initial_conditions!(model, ics, ics.interface_smoothing)
+function set_staircase_initial_conditions!(model, ics, interface_smoothing::Nothing)
 
     depth_of_interface = ics.depth_of_interface
     z = znodes(model.grid, Center())
@@ -51,9 +53,20 @@ function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs)
 
     return nothing
 end
-"Here the `BackgroundField` behaves as the `initial_condition` and noise is added to the
-tracer fields to create an instability."
-set_staircase_initial_conditions!(model, ics::PeriodoicSingleInterfaceICs) = nothing
+function set_staircase_initial_conditions!(model, ics, interface_smoothing::Type{<:Tanh})
+
+    depth_of_interface = ics.depth_of_interface
+    Lz = model.grid.Lz
+    S = ics.salinity_values
+    T = ics.temperature_values
+
+    S₀(x, y, z) = Tanh(S[2], diff(S)[1], 100.0, depth_of_interface, abs(Lz))(x, y, z)
+    T₀(x, y, z) = Tanh(T[2], diff(T)[1], 100.0, depth_of_interface, abs(Lz))(x, y, z)
+
+    set!(model, S = S₀, T = T₀)
+
+    return nothing
+end
 
 "Fallback --- don't set any noise."
 set_noise!(model, noise::Nothing) = nothing
@@ -80,8 +93,10 @@ function set_noise!(model, noise::TracerNoise)
     S, T = model.tracers
     S_noise = noise.S_magnitude * randn(size(S))
     T_noise = noise.T_magnitude * randn(size(T))
+    S₀ = S + S_noise
+    T₀ = T + T_noise
 
-    set!(model, S = S_noise, T = T_noise)
+    set!(model, S = S₀, T = T₀)
 
 end
 """

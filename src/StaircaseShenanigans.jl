@@ -22,16 +22,19 @@ import SeawaterPolynomials.SecondOrderSeawaterPolynomials: RoquetSeawaterPolynom
 abstract type AbstractStaircaseModel end
 abstract type AbstractInitialConditions end
 abstract type AbstractNoise end
-abstract type BackgroundFunction end
+abstract type AbstractBackgroundFunction end
+abstract type AbstractInterfaceSmoothing end
 
-export StaircaseDNS, PeriodicStaircaseDNS, DNSModel, SDNS_simulation_setup
+export StaircaseDNS, DNSModel, SDNS_simulation_setup
 
 export STStaircaseInitialConditions, StaircaseICs, SmoothSTStaircaseInitialConditions,
        STSingleInterfaceInitialConditions, SingleInterfaceICs,
        PeriodicSTSingleInterfaceInitialConditions, PeriodoicSingleInterfaceICs,
        set_staircase_initial_conditions!
 
-export BackgroundTanh, BackgroundLinear, tanh_background, linear_background
+export TanhInterfaceSmoothing, Tanh, NoSmoothing
+
+export BackgroundTanh, BackgroundLinear, tanh_background, linear_background, NoBackground
 
 export AbstractNoise, VelocityNoise, TracerNoise
 
@@ -46,11 +49,14 @@ export compute_R_ρ!
 export animate_tracers, animate_density, visualise_initial_conditions, visualise_initial_density,
        animate_tracers_anomaly, animate_density_anomaly
 
+include("interface_smoothing.jl")
 include("staircase_initial_conditions.jl")
+include("single_interfaces_initial_conditions.jl")
 include("staircase_noise.jl")
 include("staircase_diagnostics.jl")
 include("staircase_model.jl")
 include("set_staircase_initial_conditions.jl")
+include("staircase_background.jl")
 include("staircase_restoring.jl")
 include("alt_lineareos.jl")
 include("makie_plotting_functions.jl")

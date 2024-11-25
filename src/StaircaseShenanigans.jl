@@ -30,7 +30,7 @@ export StaircaseDNS, DNSModel, SDNS_simulation_setup
 export STStaircaseInitialConditions, StaircaseICs, SmoothSTStaircaseInitialConditions,
        STSingleInterfaceInitialConditions, SingleInterfaceICs,
        PeriodicSTSingleInterfaceInitialConditions, PeriodoicSingleInterfaceICs,
-       set_staircase_initial_conditions!
+       set_initial_conditions!
 
 export TanhInterfaceSmoothing, Tanh, NoSmoothing
 
@@ -55,7 +55,7 @@ include("single_interfaces_initial_conditions.jl")
 include("staircase_noise.jl")
 include("staircase_diagnostics.jl")
 include("staircase_model.jl")
-include("set_staircase_initial_conditions.jl")
+include("set_initial_conditions.jl")
 include("staircase_background.jl")
 include("staircase_restoring.jl")
 include("alt_lineareos.jl")

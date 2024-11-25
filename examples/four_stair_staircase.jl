@@ -20,7 +20,7 @@ step_ics = StaircaseICs(model, number_of_interfaces, depth_of_interfaces, salini
 
 sdns = StaircaseDNS(model, step_ics)
 
-set_staircase_initial_conditions!(sdns)
+set_initial_conditions!(sdns)
 
 ## Build simulation
 Δt = 1e-1

@@ -12,7 +12,7 @@ step_ics = STStaircaseInitialConditions(model, number_of_interfaces, depth_of_in
 
 sdns_staircase = StaircaseDNS(model, step_ics)
 
-set_staircase_initial_conditions!(sdns_staircase)
+set_initial_conditions!(sdns_staircase)
 
 ## Random initial conditions, interface
 z = range(domain_extent.Lz, -0.0, length = 20)
@@ -26,4 +26,4 @@ singel_interface_ics = STSingleInterfaceInitialConditions(model, depth_of_interf
 
 sdns_interface = StaircaseDNS(model, singel_interface_ics)
 
-set_staircase_initial_conditions!(sdns_interface)
+set_initial_conditions!(sdns_interface)

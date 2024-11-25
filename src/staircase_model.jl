@@ -21,7 +21,7 @@ Initialise by passing a `model` that has already been built and set the initial 
 function StaircaseDNS(model, initial_conditions; initial_noise = nothing)
 
     sdns = StaircaseDNS(model, initial_conditions, initial_noise)
-    set_staircase_initial_conditions!(sdns)
+    set_initial_conditions!(sdns)
 
     return sdns
 end
@@ -38,7 +38,7 @@ function StaircaseDNS(model_setup::NamedTuple, initial_conditions::SingleInterfa
     model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos)
 
     sdns = StaircaseDNS(model, initial_conditions, initial_noise)
-    set_staircase_initial_conditions!(sdns)
+    set_initial_conditions!(sdns)
 
     return sdns
 end
@@ -59,7 +59,7 @@ function StaircaseDNS(model_setup::NamedTuple, initial_conditions::PeriodoicSing
                      z_topology, background_fields)
 
     sdns = StaircaseDNS(model, initial_conditions, initial_noise)
-    set_staircase_initial_conditions!(sdns)
+    set_initial_conditions!(sdns)
 
     return sdns
 end

@@ -1,8 +1,8 @@
 """
-    function set_staircase_initial_conditions!(model, ics)
+    function set_initial_conditions!(model, ics)
 Set initial salinity and temperature staircases in `model`.
 """
-function set_staircase_initial_conditions!(model, ics::STStaircaseInitialConditions)
+function set_initial_conditions!(model, ics::STStaircaseInitialConditions)
 
     depth_of_interfaces = ics.depth_of_interfaces
     z = znodes(model.grid, Center())
@@ -24,7 +24,7 @@ function set_staircase_initial_conditions!(model, ics::STStaircaseInitialConditi
 
     return nothing
 end
-function set_staircase_initial_conditions!(model, ics::SmoothSTStaircaseInitialConditions)
+function set_initial_conditions!(model, ics::SmoothSTStaircaseInitialConditions)
 
     # TODO: write methods to set smooth changes using the function provied in
     # `ics::SmoothSTStaircaseInitialConditions`. I can use something like the above
@@ -33,9 +33,9 @@ function set_staircase_initial_conditions!(model, ics::SmoothSTStaircaseInitialC
 
     return nothing
 end
-set_staircase_initial_conditions!(model, ics::Union{SingleInterfaceICs, PeriodoicSingleInterfaceICs}) =
-    set_staircase_initial_conditions!(model, ics, ics.interface_smoothing)
-function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs, interface_smoothing::Nothing)
+set_initial_conditions!(model, ics::Union{SingleInterfaceICs, PeriodoicSingleInterfaceICs}) =
+    set_initial_conditions!(model, ics, ics.interface_smoothing)
+function set_initial_conditions!(model, ics::SingleInterfaceICs, interface_smoothing::Nothing)
 
     depth_of_interface = ics.depth_of_interface
     z = znodes(model.grid, Center())
@@ -53,8 +53,8 @@ function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs, inter
 
     return nothing
 end
-set_staircase_initial_conditions!(model, ics::PeriodoicSingleInterfaceICs, interface_smoothing::Nothing) = nothing
-function set_staircase_initial_conditions!(model, ics, interface_smoothing::Type{<:Tanh})
+set_initial_conditions!(model, ics::PeriodoicSingleInterfaceICs, interface_smoothing::Nothing) = nothing
+function set_initial_conditions!(model, ics, interface_smoothing::Type{<:Tanh})
 
     depth_of_interface = ics.depth_of_interface
     Lz = model.grid.Lz
@@ -101,12 +101,12 @@ function set_noise!(model, noise::TracerNoise)
 
 end
 """
-    function set_staircase_initial_conditions!(sdns::StaircaseDNS)
+    function set_initial_conditions!(sdns::StaircaseDNS)
 Set initial staircase and noise for a `StaircaseDNS`.
 """
-function set_staircase_initial_conditions!(sdns::StaircaseDNS)
+function set_initial_conditions!(sdns::StaircaseDNS)
 
-    set_staircase_initial_conditions!(sdns.model, sdns.initial_conditions)
+    set_initial_conditions!(sdns.model, sdns.initial_conditions)
     set_noise!(sdns.model, sdns.initial_noise)
 
     return nothing

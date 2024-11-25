@@ -260,6 +260,45 @@ function StaircaseShenanigans.animate_density_anomaly(computed_output::AbstractS
     return nothing
 end
 """
+    function StaircaseShenanigans.animate_profile_in_S_Θ_space(tracers::AbstractString;
+                                                                anomaly = false,
+                                                                xslice = 52, yslice = 52)
+Animate the `S` and `T` profiles at `xslice`, `yslice` in salinity-temperature space.
+Setting `anomaly = true` will use the saved temperature anomaly.
+"""
+function StaircaseShenanigans.animate_profile_in_S_Θ_space(tracers::AbstractString;
+                                                            anomaly = false,
+                                                            xslice = 52, yslice = 52)
+
+    NCDataset(tracers) do ds
+
+        t = ds["time"][:]
+
+        tracer_names = anomaly == false ? (S = :S, T = :T) : (S = :S′, T = :T′)
+
+        n = Observable(1)
+        S_profile = @lift ds[tracer_names.S][xslice, yslice, :, $n]
+        T_profile = @lift ds[tracer_names.T][xslice, yslice, :, $n]
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (500, 500))
+        ax = Axis(fig[1, 1], title = time_title, xlabel = "S (gkg⁻ꜝ)", ylabel = "Θ (°C)")
+
+        scatter!(ax, S_profile, T_profile)
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "tracerprofiles_in_S_T_space.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
+
+    end
+
+    return nothing
+end
+"""
     function visualise_initial_conditions(sdns::StaircaseDNS, xslice::Integer, yslice::Integer)
 Plot the initial state of the `tracers` in a `model`. This function assumes there are two
 tracers (salinity and temperature) and plots the x-z, y-z and field-z initial fields at

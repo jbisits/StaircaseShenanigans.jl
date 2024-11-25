@@ -42,3 +42,5 @@ end
 "Convenience for all noise at same magnitude `c`, default behaviour is 1e-4"
 VelocityNoise(c::Float64=1e-4) = VelocityNoise(c, c, c)
 Base.summary(noise::VelocityNoise) = "Random noise magnitude in u, v and w fields $(noise.u_magnitude), $(noise.v_magnitude), and $(noise.w_magnitude) respectively"
+
+Base.summary(noise::Tuple{AbstractNoise, AbstractNoise}) = "Random noise in velocity and tracer fields"

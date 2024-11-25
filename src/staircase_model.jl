@@ -1,6 +1,6 @@
 struct StaircaseDNS{NHM <: NonhydrostaticModel,
                     SIC <: AbstractInitialConditions,
-                     AN <: Union{AbstractNoise, Nothing}} <: AbstractStaircaseModel
+                     AN <: Union{AbstractNoise, Nothing, Tuple{AbstractNoise, AbstractNoise}}} <: AbstractStaircaseModel
     "An [Oceananigans.jl `NonhydrostaticModel`](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.Models.NonhydrostaticModels.NonhydrostaticModel-Tuple{})"
     model :: NHM
     "Initial conditions"

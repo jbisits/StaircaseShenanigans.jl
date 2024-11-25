@@ -71,6 +71,14 @@ end
 
 "Fallback --- don't set any noise."
 set_noise!(model, noise::Nothing) = nothing
+
+function set_noise!(model, noise::Tuple)
+
+    for i ∈ eachindex(noise)
+        set_noise!(model, noise[i])
+    end
+    return nothing
+end
 """
     function set_noise!(model, noise::VelocityNoise)
 Add initial noise the `velocity` fields.
@@ -84,6 +92,7 @@ function set_noise!(model, noise::VelocityNoise)
 
     set!(model, u = u_noise, v = v_noise, w = w_noise)
 
+    return nothing
 end
 """
     function set_noise!(model, noise::TracerNoise)
@@ -99,6 +108,7 @@ function set_noise!(model, noise::TracerNoise)
 
     set!(model, S = S₀, T = T₀)
 
+    return nothing
 end
 """
     function set_initial_conditions!(sdns::StaircaseDNS)

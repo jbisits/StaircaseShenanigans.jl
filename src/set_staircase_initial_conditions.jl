@@ -35,7 +35,7 @@ function set_staircase_initial_conditions!(model, ics::SmoothSTStaircaseInitialC
 end
 set_staircase_initial_conditions!(model, ics::Union{SingleInterfaceICs, PeriodoicSingleInterfaceICs}) =
     set_staircase_initial_conditions!(model, ics, ics.interface_smoothing)
-function set_staircase_initial_conditions!(model, ics, interface_smoothing::Nothing)
+function set_staircase_initial_conditions!(model, ics::SingleInterfaceICs, interface_smoothing::Nothing)
 
     depth_of_interface = ics.depth_of_interface
     z = znodes(model.grid, Center())
@@ -53,6 +53,7 @@ function set_staircase_initial_conditions!(model, ics, interface_smoothing::Noth
 
     return nothing
 end
+set_staircase_initial_conditions!(model, ics::PeriodoicSingleInterfaceICs, interface_smoothing::Nothing) = nothing
 function set_staircase_initial_conditions!(model, ics, interface_smoothing::Type{<:Tanh})
 
     depth_of_interface = ics.depth_of_interface

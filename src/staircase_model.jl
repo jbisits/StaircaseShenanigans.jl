@@ -52,8 +52,7 @@ function StaircaseDNS(model_setup::NamedTuple, initial_conditions::PeriodoicSing
 
     architecture, diffusivities, domain_extent, resolution, eos = model_setup
     z_topology = Periodic
-    background_fields = isnothing(initial_conditions.background_state) ? NamedTuple() :
-                            S_and_T_background_fields(initial_conditions, domain_extent.Lz)
+    background_fields = S_and_T_background_fields(initial_conditions, domain_extent.Lz)
 
     model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos;
                      z_topology, background_fields)

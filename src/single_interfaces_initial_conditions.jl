@@ -22,7 +22,7 @@ struct STSingleInterfaceInitialConditions{T, A, IS} <: AbstractSingleInterfaceIn
                     R_ρ :: T
 end
 function STSingleInterfaceInitialConditions(model, depth_of_interface, salinity, temperature;
-                                            interface_smoothing = nothing)
+                                            interface_smoothing = NoSmoothing)
 
     eos = model.buoyancy.model.equation_of_state
 
@@ -33,7 +33,7 @@ function STSingleInterfaceInitialConditions(model, depth_of_interface, salinity,
 
 end
 function STSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface,
-                                            salinity, temperature; interface_smoothing = nothing)
+                                            salinity, temperature; interface_smoothing = NoSmoothing)
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
 
@@ -65,8 +65,8 @@ struct PeriodicSTSingleInterfaceInitialConditions{T, A, IS, BF} <: AbstractSingl
 end
 function PeriodicSTSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface,
                                                     salinity, temperature;
-                                                    interface_smoothing = NoSmoothing(),
-                                                    background_state = NoBackground())
+                                                    interface_smoothing = NoSmoothing,
+                                                    background_state = NoBackground)
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
 

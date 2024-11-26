@@ -58,11 +58,16 @@ function set_initial_conditions!(model, ics, interface_smoothing::Type{<:Tanh})
 
     depth_of_interface = ics.depth_of_interface
     Lz = model.grid.Lz
-    S = ics.salinity_values
-    T = ics.temperature_values
 
-    S₀(x, y, z) = Tanh(S[2], diff(S)[1], 100.0, depth_of_interface, abs(Lz))(x, y, z)
-    T₀(x, y, z) = Tanh(T[2], diff(T)[1], 100.0, depth_of_interface, abs(Lz))(x, y, z)
+    S = Array(ics.salinity_values)
+    Sᵤ, Sₗ = S
+    ΔS = diff(S)[1]
+    S₀(x, y, z) = Tanh(Sₗ, ΔS, 100.0, depth_of_interface, abs(Lz))(x, y, z)
+
+    T = Array(ics.temperature_values)
+    Tᵤ, Tₗ = T
+    ΔT = diff(T)[1]
+    T₀(x, y, z) = Tanh(Tₗ, ΔT, 100.0, depth_of_interface, abs(Lz))(x, y, z)
 
     set!(model, S = S₀, T = T₀)
 

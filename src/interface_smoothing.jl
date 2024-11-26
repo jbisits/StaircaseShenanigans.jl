@@ -20,5 +20,5 @@ const Tanh = TanhInterfaceSmoothing{T} where {T}
 Base.summary(p::Type{<:TanhInterfaceSmoothing}) = "tanh smoothing"
 
 struct NoInterfaceSmoothing <: AbstractInterfaceSmoothing end
-const NoSmoothing = NoInterfaceSmoothing() = nothing
-Base.summary(ns::NoInterfaceSmoothing) = "no interface smoothing"
+const NoSmoothing = NoInterfaceSmoothing
+Base.summary(ns::Type{<:NoInterfaceSmoothing}) = "no interface smoothing"

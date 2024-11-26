@@ -40,16 +40,20 @@ function Base.show(io::IO, bf::AbstractBackgroundFunction)
 end
 
 struct NoBackgroundFunction <: AbstractBackgroundFunction end
-const NoBackground = NoBackgroundFunction() = nothing
+const NoBackground = NoBackgroundFunction
 Base.summary(bt::BackgroundTanh) = "$(bt.func)"
 Base.summary(bl::BackgroundLinear) = "$(bl.func)"
-Base.summary(bn::NoBackgroundFunction) = "no background"
+Base.summary(bn::Type{<:NoBackgroundFunction}) = "no background field"
 
+S_and_T_background_fields(ics::PeriodicSTSingleInterfaceInitialConditions, Lz) =
+    S_and_T_background_fields(ics, Lz, ics.background_state)
+"Return blank `NamedTuple` so that no `BackgroundField`s are set."
+S_and_T_background_fields(ics, Lz, background_state::Type{<:NoBackground}) = NamedTuple()
 """
     function S_and_T_background_fields(initial_conditions)
 Set background fields for the `S` and `T` tracer fields where the domain is triply periodic.
 """
-function S_and_T_background_fields(ics::PeriodicSTSingleInterfaceInitialConditions, Lz)
+function S_and_T_background_fields(ics, Lz, background_state)
 
     get_parameters!(ics, :salinity_values, Lz)
     S_background = BackgroundField(ics.background_state)

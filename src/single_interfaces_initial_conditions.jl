@@ -65,8 +65,8 @@ struct PeriodicSTSingleInterfaceInitialConditions{T, A, IS, BF} <: AbstractSingl
 end
 function PeriodicSTSingleInterfaceInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface,
                                                     salinity, temperature;
-                                                    interface_smoothing = NoSmoothing(),
-                                                    background_state = NoBackground())
+                                                    interface_smoothing = NoSmoothing,
+                                                    background_state = NoBackground)
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
 

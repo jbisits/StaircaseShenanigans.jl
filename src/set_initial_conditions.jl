@@ -72,11 +72,11 @@ end
 "Fallback --- don't set any noise."
 set_noise!(model, noise::Nothing) = nothing
 
-function set_noise!(model, noise::Tuple)
+function set_noise!(model, noise::NamedTuple)
 
-    for i ∈ eachindex(noise)
-        set_noise!(model, noise[i])
-    end
+    set_noise!(model, noise.tracers)
+    set_noise!(model, noise.velocities)
+
     return nothing
 end
 """

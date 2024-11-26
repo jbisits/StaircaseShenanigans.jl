@@ -101,15 +101,23 @@ function set_noise!(model, noise::VelocityNoise)
 end
 """
     function set_noise!(model, noise::TracerNoise)
-Add initial noise the `tracer` fields.
+Add initial noise the `tracer` fields. The tracer noise is added to the values already in
+the tracer `Field`s so if nothing else is set it will just be noise.
 """
 function set_noise!(model, noise::TracerNoise)
 
     S, T = model.tracers
+
     S_noise = noise.S_magnitude * randn(size(S))
+    S_noise_field = similar(S)
+    set!(S_noise_field, S_noise)
+
     T_noise = noise.T_magnitude * randn(size(T))
-    S₀ = S + S_noise
-    T₀ = T + T_noise
+    T_noise_field = similar(T)
+    set!(T_noise_field, T_noise)
+
+    S₀ = S + S_noise_field
+    T₀ = T + T_noise_field
 
     set!(model, S = S₀, T = T₀)
 

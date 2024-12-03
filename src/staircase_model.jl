@@ -28,34 +28,27 @@ end
 
 """
     function StaircaseDNS(model_setup::NamedTuple, initial_conditions, initial_noise)
-Build the model from `model_setup` then return a `StaircaseDNS`, mainly used to build
-the `model` with [reentrant_boundary_conditions](@ref) `boundary_conditions` from `initial_conditions`.
-The initial conditions are set after building the `model`.
+Build the model from `model_setup` then return a `StaircaseDNS`. the `NamedTuple` `model_setup`
+requires:
+- `architecture` either `CPU` or `GPU`
+- `diffusivities`, a `NamedTuple` in the form `(ν = val, κ = (S = val, T = val))` where `val`
+is the diffusivity values
+- `domain_extent`, a `NamedTuple` in form `(Lx = a, Ly = b, Lz = c)` where `a`, `b` and `c` are
+the lengths of the domain
+- `domain_topology`, `NamedTuple` in form `(x = a, y = b, z = c)` where `a`, `b` and `c` are
+Oceananigans.jl topologies see [Oceananigans.jl](https://clima.github.io/OceananigansDocumentation/dev/grids/#grids_tutorial)
+for more info
+- `resolution`, a `NamedTuple` in form `(Nx = a, Ny = b, Nz = c)` where `a`, `b` and `c` are
+the values of resolution along each dimension
+- `eos`, a `BoussinesqEquationOfState` from [SeawaterPolynomials.jl](https://github.com/CliMA/SeawaterPolynomials.jl)
+
+**Note:** currently using `model_setup` does not allow boundary conditions to be added.
+Instead use `DNSModel` and build a `StaircaseDNS` from the `DNSModel`.
 """
 function StaircaseDNS(model_setup::NamedTuple, initial_conditions::SingleInterfaceICs, initial_noise)
 
-    architecture, diffusivities, domain_extent, resolution, eos =  model_setup
-    model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos)
-
-    sdns = StaircaseDNS(model, initial_conditions, initial_noise)
-    set_initial_conditions!(sdns)
-
-    return sdns
-end
-
-"""
-    function StaircaseDNS(model_setup::NamedTuple, initial_conditions, initial_noise)
-`StaircaseDNS` that is `Periodic` in z direction and evoloves an anomaly around a
-background state. The initial conditions are set after building the `model`.
-"""
-function StaircaseDNS(model_setup::NamedTuple, initial_conditions::PeriodoicSingleInterfaceICs, initial_noise)
-
-    architecture, diffusivities, domain_extent, resolution, eos = model_setup
-    z_topology = Periodic
-    background_fields = S_and_T_background_fields(initial_conditions, domain_extent.Lz)
-
-    model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos;
-                     z_topology, background_fields)
+    background_fields = S_and_T_background_fields(initial_conditions, model_setup.domain_extent.Lz)
+    model = DNSModel(model_setup...; background_fields)
 
     sdns = StaircaseDNS(model, initial_conditions, initial_noise)
     set_initial_conditions!(sdns)
@@ -81,6 +74,9 @@ chosen.
 
 - `architecture`, `CPU()` or `GPU()`;
 - `domain_extent` as a `NamedTuple` in the format `(Lx = , Ly = , Lz = )`;
+- `domain_topology`, `NamedTuple` in form `(x = a, y = b, z = c)` where `a`, `b` and `c` are
+Oceananigans.jl topologies see [Oceananigans.jl](https://clima.github.io/OceananigansDocumentation/dev/grids/#grids_tutorial)
+for more info
 - `resolution` as a `NamedTuple` in the format `(Nx = , Ny = , Nz = )`;
 - `diffusivities` as a `NamedTuple` in the format `(ν = , κ = )`, **note** to set different
 diffusivities for temperature and salinity `κ` must also be a `NamedTuple` in the format
@@ -101,22 +97,23 @@ the rate `stretching`, `false` by default;
 - `refinement = 1.2` spacing near the surface in the `z` dimension;
 - `stretching = 100` rate of stretching at the bottom of grid in the `z` dimension.
 """
-function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
-                  diffusivities::NamedTuple, eos::BoussinesqEquationOfState=TEOS10EquationOfState();
+function DNSModel(architecture, diffusivities::NamedTuple, domain_extent::NamedTuple,
+                  domain_topology::NamedTuple, resolution::NamedTuple,
+                  eos::BoussinesqEquationOfState=TEOS10EquationOfState();
                   forcing = nothing,
                   boundary_conditions = nothing,
                   background_fields = nothing,
-                  z_topology = Bounded,
                   zgrid_stretching = false,
                   refinement = 1.05,
                   stretching = 40)
 
     Lx, Ly, Lz = domain_extent.Lx, domain_extent.Ly, domain_extent.Lz
+    x_top, y_top, z_top = domain_topology.x, domain_topology.y, domain_topology.z
     Nx, Ny, Nz = resolution.Nx, resolution.Ny, resolution.Nz
     zgrid = zgrid_stretching ? grid_stretching(-Lz, Nz, refinement, stretching) : (Lz, 0)
 
     grid = RectilinearGrid(architecture,
-                           topology = (Periodic, Periodic, z_topology),
+                           topology = (x_top, y_top, z_top),
                            size = (Nx, Ny, Nz),
                            x = (-Lx/2, Lx/2),
                            y = (-Ly/2, Ly/2),

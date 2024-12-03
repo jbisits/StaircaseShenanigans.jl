@@ -33,9 +33,19 @@ function set_initial_conditions!(model, ics::SmoothSTStaircaseInitialConditions)
 
     return nothing
 end
-set_initial_conditions!(model, ics::Union{SingleInterfaceICs, PeriodoicSingleInterfaceICs}) =
-    set_initial_conditions!(model, ics, ics.interface_smoothing)
-function set_initial_conditions!(model, ics::SingleInterfaceICs, interface_smoothing::Type{<:NoSmoothing})
+"""
+    function set_initial_conditions!(model, ics::SingleInterfaceICs)
+Set the initial conditions for a single interface. When there is no smoothing the initial
+conditions are set as a step change at `ics.depth_of_interface`. Any `interface_smoothing`
+will be added if specified.
+When there is a `background_state` in the `SingleInterfaceICs`, nothing will be set in the
+model tracer fields (i.e. nothing set in `model.tracers.S` and `model.tracers.T`) but noise
+can be added.
+"""
+set_initial_conditions!(model, ics::SingleInterfaceICs) =
+    set_initial_conditions!(model, ics, ics.interface_smoothing, ics.background_state)
+function set_initial_conditions!(model, ics,
+                                 interface_smoothing::Type{<:NoSmoothing}, background_state::Type{<:NoBackground})
 
     depth_of_interface = ics.depth_of_interface
     z = znodes(model.grid, Center())
@@ -53,8 +63,8 @@ function set_initial_conditions!(model, ics::SingleInterfaceICs, interface_smoot
 
     return nothing
 end
-set_initial_conditions!(model, ics::PeriodoicSingleInterfaceICs, interface_smoothing::Type{<:NoSmoothing}) = nothing
-function set_initial_conditions!(model, ics, interface_smoothing::Type{<:Tanh})
+set_initial_conditions!(model, ics, interface_smoothing::Type{<:NoSmoothing}, background_state) = nothing
+function set_initial_conditions!(model, ics, interface_smoothing::Type{<:Tanh}, background_state)
 
     depth_of_interface = ics.depth_of_interface
     Lz = model.grid.Lz

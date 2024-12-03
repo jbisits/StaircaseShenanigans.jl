@@ -45,7 +45,7 @@ Base.summary(bt::BackgroundTanh) = "$(bt.func)"
 Base.summary(bl::BackgroundLinear) = "$(bl.func)"
 Base.summary(bn::Type{<:NoBackgroundFunction}) = "no background field"
 
-S_and_T_background_fields(ics::PeriodicSTSingleInterfaceInitialConditions, Lz) =
+S_and_T_background_fields(ics::STSingleInterfaceInitialConditions, Lz) =
     S_and_T_background_fields(ics, Lz, ics.background_state)
 "Return blank `NamedTuple` so that no `BackgroundField`s are set."
 S_and_T_background_fields(ics, Lz, background_state::Type{<:NoBackground}) = NamedTuple()
@@ -69,7 +69,7 @@ tanh_background(z, ΔC, Cₗ, Lz, z_interface, D) = Cₗ - 0.5 * ΔC * (1  + tan
 @inline linear_background(x, y, z, t, p) = p.Cᵤ - p.ΔC * z / p.Lz
 linear_background(z, ΔC, Cᵤ, Lz) = Cᵤ - ΔC * z / Lz
 
-function get_parameters!(ics::PeriodicSTSingleInterfaceInitialConditions, tracer::Symbol, Lz)
+function get_parameters!(ics::STSingleInterfaceInitialConditions, tracer::Symbol, Lz)
 
     z_interface = ics.depth_of_interface
     C = Array(getproperty(ics, tracer))
@@ -98,7 +98,7 @@ save the background state for the tracers and density so this can be used later
 """
 save_background_state!(simulation, sdns) = save_background_state!(simulation, sdns.model, sdns.initial_conditions)
 save_background_state!(simulation, model, initial_conditions) = nothing
-function save_background_state!(simulation, model, initial_conditions::PeriodoicSingleInterfaceICs)
+function save_background_state!(simulation, model, initial_conditions::SingleInterfaceICs)
 
     if !isnothing(initial_conditions.background_state)
         S_background = Field(model.background_fields.tracers.S)

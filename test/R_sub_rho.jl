@@ -1,4 +1,4 @@
-model = DNSModel(architecture, domain_extent, resolution, diffusivities, eos)
+model = DNSModel(architecture, diffusivities, domain_extent, domain_topology, resolution, eos)
 
 ## Initial conditions
 number_of_interfaces = 4

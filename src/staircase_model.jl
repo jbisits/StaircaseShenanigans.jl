@@ -270,8 +270,8 @@ function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
 
     model  = sdns.model
     ics = sdns.initial_conditions
-    S = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.S + model.tracers.S) : model.tracers.S
-    T = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.T + model.tracers.T) : model.tracers.T
+    S = ics.background_state <: NoBackground ? model.tracers.S : Field(model.background_fields.tracers.S + model.tracers.S)
+    T = ics.background_state <: NoBackground ? model.tracers.T : Field(model.background_fields.tracers.T + model.tracers.T)
 
     Sᵤ_mean = Average(condition_operand(identity, S, upper_quarter, 0))
     Sₗ_mean = Average(condition_operand(identity, S, lower_quarter, 0))
@@ -281,7 +281,7 @@ function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
     tracers = Dict("S" => S, "Sᵤ_mean" => Sᵤ_mean, "Sₗ_mean" => Sₗ_mean,
                    "T" => T, "Tᵤ_mean" => Tᵤ_mean, "Tₗ_mean" => Tₗ_mean)
 
-    if ics isa PeriodoicSingleInterfaceICs
+    if !(ics.background_state <: NoBackground)
         anomalies = Dict("S′" => model.tracers.S, "T′" => model.tracers.T)
         merge!(tracers, anomalies)
     end
@@ -377,8 +377,8 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
 
     model = sdns.model
     ics = sdns.initial_conditions
-    S = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.S + model.tracers.S) : model.tracers.S
-    T = ics isa PeriodoicSingleInterfaceICs ? Field(model.background_fields.tracers.T + model.tracers.T) : model.tracers.T
+    S = ics.background_state <: NoBackground ? model.tracers.S : Field(model.background_fields.tracers.S + model.tracers.S)
+    T = ics.background_state <: NoBackground ? model.tracers.T : Field(model.background_fields.tracers.T + model.tracers.T)
 
     σ = seawater_density(model, temperature = T, salinity = S, geopotential_height = reference_gp_height)
 
@@ -388,6 +388,18 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
                     "units" => "kgm⁻³")
         )
 
+    if !(ics.background_state <: NoBackground)
+        S′ = model.tracers.S
+        T′ = model.tracers.T
+        σ′ = seawater_density(model, temperature = T′, salinity = S′, geopotential_height = reference_gp_height)
+        density_anomaly = Dict("σ′" => σ′)
+        merge(computed_outputs, density_anomaly)
+        oa_ = Dict(
+            "σ′" => Dict("longname" => "Seawater potential density calculated from salintiy and temperature anomalies equation of state in model.",
+                        "units" => "kgm⁻³")
+            )
+        merge(oa, oa_)
+    end
     simulation.output_writers[:computed_output] =
         save_file == :netcdf ? NetCDFOutputWriter(model, computed_outputs;
                                                 filename = "computed_output",

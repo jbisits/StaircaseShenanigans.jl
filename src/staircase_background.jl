@@ -96,52 +96,50 @@ end
 Where there is `BackgroundField` (currently this assumes that is for periodic simulations)
 save the background state for the tracers and density so this can be used later
 """
-save_background_state!(simulation, sdns) = save_background_state!(simulation, sdns.model, sdns.initial_conditions)
-save_background_state!(simulation, model, initial_conditions) = nothing
-function save_background_state!(simulation, model, initial_conditions::SingleInterfaceICs)
+save_background_state!(simulation, sdns) = save_background_state!(simulation, sdns.model, sdns.initial_conditions.background_state)
+save_background_state!(simulation, model, background_state::Type{<:NoBackground}) = nothing
+function save_background_state!(simulation, model, background_state)
 
-    if !isnothing(initial_conditions.background_state)
-        S_background = Field(model.background_fields.tracers.S)
-        compute!(S_background)
-        S_background_array = Array(interior(S_background, :, :, :))
-        T_background = Field(model.background_fields.tracers.T)
-        compute!(T_background)
-        T_background_array = Array(interior(T_background, :, :, :))
-        σ_background = Field(seawater_density(model, temperature = T_background, salinity = S_background,
-                                            geopotential_height = 0))
-        compute!(σ_background)
-        σ_background_array = Array(interior(σ_background, :, :, :))
+    S_background = Field(model.background_fields.tracers.S)
+    compute!(S_background)
+    S_background_array = Array(interior(S_background, :, :, :))
+    T_background = Field(model.background_fields.tracers.T)
+    compute!(T_background)
+    T_background_array = Array(interior(T_background, :, :, :))
+    σ_background = Field(seawater_density(model, temperature = T_background, salinity = S_background,
+                                        geopotential_height = 0))
+    compute!(σ_background)
+    σ_background_array = Array(interior(σ_background, :, :, :))
 
-        if simulation.output_writers[:tracers] isa NetCDFOutputWriter
+    if simulation.output_writers[:tracers] isa NetCDFOutputWriter
 
-            NCDataset(simulation.output_writers[:tracers].filepath, "a") do ds
-                defVar(ds, "S_background", S_background_array, ("xC", "yC", "zC"),
-                    attrib = Dict("longname" => "Background field for salinity",
-                                    "units" => "gkg⁻¹"))
-                defVar(ds, "T_background", T_background_array, ("xC", "yC", "zC"),
-                    attrib =  Dict("longname" => "Background field for temperature",
-                                    "units" => "°C"))
-            end
+        NCDataset(simulation.output_writers[:tracers].filepath, "a") do ds
+            defVar(ds, "S_background", S_background_array, ("xC", "yC", "zC"),
+                attrib = Dict("longname" => "Background field for salinity",
+                                "units" => "gkg⁻¹"))
+            defVar(ds, "T_background", T_background_array, ("xC", "yC", "zC"),
+                attrib =  Dict("longname" => "Background field for temperature",
+                                "units" => "°C"))
+        end
 
-            NCDataset(simulation.output_writers[:computed_output].filepath, "a") do ds
-                defVar(ds, "σ_background", σ_background_array, ("xC", "yC", "zC"),
-                    attrib = Dict("longname" => "Background field for potential density (0dbar) computed from the `S` and `T` background fields",
-                                    "units" => "kgm⁻³"))
-            end
+        NCDataset(simulation.output_writers[:computed_output].filepath, "a") do ds
+            defVar(ds, "σ_background", σ_background_array, ("xC", "yC", "zC"),
+                attrib = Dict("longname" => "Background field for potential density (0dbar) computed from the `S` and `T` background fields",
+                                "units" => "kgm⁻³"))
+        end
 
-        elseif simulation.output_writers[:tracers] isa JLD2OutputWriter
+    elseif simulation.output_writers[:tracers] isa JLD2OutputWriter
 
-            jldopen(simulation.output_writers[:tracers].filepath, "a+") do f
-                f["S_background"] = S_background_array
-                f["T_background"] = T_background_array
-            end
+        jldopen(simulation.output_writers[:tracers].filepath, "a+") do f
+            f["S_background"] = S_background_array
+            f["T_background"] = T_background_array
+        end
 
-            jldopen(simulation.output_writers[:computed_output].filepath, "a+") do f
-                f["σ_background"] = σ_background_array
-            end
-
+        jldopen(simulation.output_writers[:computed_output].filepath, "a+") do f
+            f["σ_background"] = σ_background_array
         end
 
     end
+
     return nothing
 end

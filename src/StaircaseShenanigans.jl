@@ -33,7 +33,8 @@ export STStaircaseInitialConditions, StaircaseICs, SmoothSTStaircaseInitialCondi
 
 export TanhInterfaceSmoothing, Tanh, NoSmoothing
 
-export BackgroundTanh, BackgroundLinear, tanh_background, linear_background, NoBackground
+export BackgroundTanh, BackgroundLinear, BackgroundStep, NoBackground,
+        tanh_background, linear_background, step_background
 
 export AbstractNoise, VelocityNoise, TracerNoise
 

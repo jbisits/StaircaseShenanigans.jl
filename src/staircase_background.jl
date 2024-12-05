@@ -1,5 +1,6 @@
 Oceananigans.BackgroundField(bf::AbstractBackgroundFunction) =
     BackgroundField(bf.func, parameters = bf.parameters)
+
 """
     mutable struct BackgroundTanh{F, T, P}
 Container for a tanh background field.
@@ -14,17 +15,30 @@ mutable struct BackgroundTanh{F, T} <: AbstractBackgroundFunction
 end
 BackgroundTanh() = BackgroundTanh(tanh_background, 100, NamedTuple())
 BackgroundTanh(scale) = BackgroundTanh(tanh_background, scale, NamedTuple())
+
 """
-    mutable struct BackgroundLinear{F, P}
+    mutable struct BackgroundLinear{F}
 Container for a linear background field.
 """
 mutable struct BackgroundLinear{F} <: AbstractBackgroundFunction
     "Linear function"
           func :: F
-    "Parameters for the tanh background field"
+    "Parameters for the linear background field"
     parameters :: NamedTuple
 end
 BackgroundLinear() = BackgroundLinear(linear_background, NamedTuple())
+
+"""
+    mutable struct BackgroundStep{F}
+Container for a step change background field.
+"""
+mutable struct BackgroundStep{F} <: AbstractBackgroundFunction
+    "Heaviside function"
+          func :: F
+    "Parameters for the step change background field"
+    parameters :: NamedTuple
+end
+BackgroundStep() = BackgroundStep(step_background, NamedTuple())
 
 function Base.show(io::IO, bf::AbstractBackgroundFunction)
     if bf isa BackgroundTanh
@@ -32,8 +46,8 @@ function Base.show(io::IO, bf::AbstractBackgroundFunction)
         println(io, "┣━━━ function: $(bf.func)")
         println(io, "┣━━━━━━ scale: $(bf.scale)")
           print(io, "┗━ parameters: $(bf.parameters)")
-    elseif bf isa BackgroundLinear
-        println(io, "BackgroundLinear")
+    else
+        println(io, "$(typeof(bf))")
         println(io, "┣━━━ function: $(bf.func)")
           print(io, "┗━ parameters: $(bf.parameters)")
     end
@@ -68,6 +82,7 @@ end
 tanh_background(z, ΔC, Cₗ, Lz, z_interface, D) = Cₗ - 0.5 * ΔC * (1  + tanh(D * (z - z_interface) / Lz))
 @inline linear_background(x, y, z, t, p) = p.Cᵤ - p.ΔC * z / p.Lz
 linear_background(z, ΔC, Cᵤ, Lz) = Cᵤ - ΔC * z / Lz
+@inline step_background(x, y, z, t, p) = z > p.z_interface ? p.Cᵤ : p.Cₗ
 
 function get_parameters!(ics::STSingleInterfaceInitialConditions, tracer::Symbol, Lz)
 
@@ -88,6 +103,11 @@ end
 function update_parameters!(backgound_state::BackgroundLinear, ΔC, Cᵤ, Cₗ, Lz, z_interface)
 
     backgound_state.parameters = (; ΔC, Cᵤ, Lz)
+    return nothing
+end
+function update_parameters!(backgound_state::BackgroundStep, ΔC, Cᵤ, Cₗ, Lz, z_interface)
+
+    backgound_state.parameters = (; Cᵤ, Cₗ, z_interface)
     return nothing
 end
 

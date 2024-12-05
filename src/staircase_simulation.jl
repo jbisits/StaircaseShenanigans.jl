@@ -13,7 +13,7 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, stop_time::Number,
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
                                 checkpointer_time_interval = nothing,
-                                cfl = 0.75,
+                                cfl = 0.2,
                                 diffusive_cfl = 0.75,
                                 overwrite_saved_output = true)
 

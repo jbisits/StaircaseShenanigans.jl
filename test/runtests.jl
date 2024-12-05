@@ -8,7 +8,15 @@ using Test
 
     @testset "Setting initial conditions" begin
 
-        include("model_ic_setup.jl")
+        include("model_ic_instantiation.jl")
+        for interface_smoothing ∈ smoothing
+            for background_state ∈ background
+                @test SingleInterfaceICs(eos, depth_of_interface, salinity, temperature;
+                                        interface_smoothing, background_state) isa STSingleInterfaceInitialConditions
+            end
+        end
+
+        include("model_ic_setting.jl")
         @test all(unique(interior(sdns_staircase.model.tracers.S, 1, 1, :)) .== reverse(salinity_staircase))
         @test all(unique(interior(sdns_staircase.model.tracers.T, 1, 1, :)) .== reverse(temperature_staircase))
         @test all(unique(interior(sdns_interface.model.tracers.S, 1, 1, :)) .== reverse(salinity))

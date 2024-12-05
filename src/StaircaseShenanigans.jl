@@ -29,7 +29,6 @@ export StaircaseDNS, DNSModel, SDNS_simulation_setup
 
 export STStaircaseInitialConditions, StaircaseICs, SmoothSTStaircaseInitialConditions,
        STSingleInterfaceInitialConditions, SingleInterfaceICs,
-       PeriodicSTSingleInterfaceInitialConditions, PeriodoicSingleInterfaceICs,
        set_initial_conditions!
 
 export TanhInterfaceSmoothing, Tanh, NoSmoothing
@@ -49,14 +48,15 @@ export compute_R_ρ!
 export animate_tracers, animate_density, visualise_initial_conditions, visualise_initial_density,
        animate_tracers_anomaly, animate_density_anomaly, animate_profile_in_S_Θ_space
 
-include("interface_smoothing.jl")
 include("staircase_initial_conditions.jl")
 include("single_interfaces_initial_conditions.jl")
+include("interface_smoothing.jl")
+include("staircase_background.jl")
 include("staircase_noise.jl")
 include("staircase_diagnostics.jl")
 include("staircase_model.jl")
+include("staircase_simulation.jl")
 include("set_initial_conditions.jl")
-include("staircase_background.jl")
 include("staircase_restoring.jl")
 include("alt_lineareos.jl")
 include("makie_plotting_functions.jl")

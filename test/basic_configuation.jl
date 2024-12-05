@@ -2,6 +2,7 @@
 architecture = CPU()
 diffusivities = (ν = 1e-4, κ = (S = 1e-7, T = 1e-5))
 domain_extent = (Lx = 0.1, Ly = 0.1, Lz = -1.0)
+domain_topology = (x = Periodic, y = Periodic, z = Periodic)
 resolution = (Nx = 5, Ny = 5, Nz = 100)
 
 ## For testing R_ρ calcualtion

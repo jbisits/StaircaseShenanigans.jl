@@ -8,13 +8,16 @@ Container for a tanh background field.
 mutable struct BackgroundTanh{F, T} <: AbstractBackgroundFunction
     "tanh function"
           func :: F
-    "Scale the steepness of the `tanh` change"
-         scale :: T
+    "Scale the steepness of the `tanh` change in the salinity field"
+       S_scale :: T
+    "Scale the steepness of the `tanh` change in the temperature field"
+       T_scale :: T
     "Parameters for the tanh background field"
     parameters :: NamedTuple
 end
-BackgroundTanh() = BackgroundTanh(tanh_background, 100, NamedTuple())
-BackgroundTanh(scale) = BackgroundTanh(tanh_background, scale, NamedTuple())
+BackgroundTanh() = BackgroundTanh(tanh_background, 100, 50, NamedTuple())
+"Default that makes the temperature interface 3 times larger than the salinity"
+BackgroundTanh(scale) = BackgroundTanh(tanh_background, scale, scale / 3, NamedTuple())
 
 """
     mutable struct BackgroundLinear{F}
@@ -44,7 +47,8 @@ function Base.show(io::IO, bf::AbstractBackgroundFunction)
     if bf isa BackgroundTanh
         println(io, "BackgroundTanh")
         println(io, "┣━━━ function: $(bf.func)")
-        println(io, "┣━━━━━━ scale: $(bf.scale)")
+        println(io, "┣━━━━ S scale: $(bf.S_scale)")
+        println(io, "┣━━━━ T scale: $(bf.T_scale)")
           print(io, "┗━ parameters: $(bf.parameters)")
     else
         println(io, "$(typeof(bf))")
@@ -76,6 +80,7 @@ function S_and_T_background_fields(ics, Lz, background_state)
 
     return (S = S_background, T = T_background)
 end
+
 "Sets a background state that is hyperbolic tangent. There is also a method to save an
 `Array` of this backgorund state to output."
 @inline tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.Lz))
@@ -90,24 +95,27 @@ function get_parameters!(ics::STSingleInterfaceInitialConditions, tracer::Symbol
     C = Array(getproperty(ics, tracer))
     ΔC = diff(C)[1]
     Cᵤ, Cₗ = C
-    update_parameters!(ics.background_state, ΔC, Cᵤ, Cₗ, abs(Lz), z_interface)
+    update_parameters!(ics.background_state, tracer, ΔC, Cᵤ, Cₗ, abs(Lz), z_interface)
 
     return nothing
 end
+function update_parameters!(background_state::BackgroundTanh, tracer, ΔC, Cᵤ, Cₗ, Lz, z_interface)
 
-function update_parameters!(backgound_state::BackgroundTanh, ΔC, Cᵤ, Cₗ, Lz, z_interface)
+    D = tracer == :salinity_values ? background_state.S_scale : background_state.T_scale
+    background_state.parameters = (; ΔC, Cᵤ, Cₗ, Lz, z_interface, D)
 
-    backgound_state.parameters = (; ΔC, Cᵤ, Cₗ, Lz, z_interface, D = backgound_state.scale)
     return nothing
 end
-function update_parameters!(backgound_state::BackgroundLinear, ΔC, Cᵤ, Cₗ, Lz, z_interface)
+function update_parameters!(background_state::BackgroundLinear, tracer, ΔC, Cᵤ, Cₗ, Lz, z_interface)
 
-    backgound_state.parameters = (; ΔC, Cᵤ, Lz)
+    background_state.parameters = (; ΔC, Cᵤ, Lz)
+
     return nothing
 end
-function update_parameters!(backgound_state::BackgroundStep, ΔC, Cᵤ, Cₗ, Lz, z_interface)
+function update_parameters!(background_state::BackgroundStep, tracer, ΔC, Cᵤ, Cₗ, Lz, z_interface)
 
-    backgound_state.parameters = (; Cᵤ, Cₗ, z_interface)
+    background_state.parameters = (; Cᵤ, Cₗ, z_interface)
+
     return nothing
 end
 

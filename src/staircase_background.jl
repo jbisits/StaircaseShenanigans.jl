@@ -17,8 +17,22 @@ mutable struct BackgroundTanh{F, T} <: AbstractBackgroundFunction
 end
 BackgroundTanh() = BackgroundTanh(tanh_background, 100, 50, NamedTuple())
 "Default that makes the temperature interface 3 times larger than the salinity"
-BackgroundTanh(scale) = BackgroundTanh(tanh_background, scale, scale / 3, NamedTuple())
+function BackgroundTanh(scale::Number)
 
+    S_scale = scale
+    T_scale = scale / 3
+    _S_scale, _T_scale = promote(S_scale, T_scale) # ensures both are same type
+
+    return BackgroundTanh(tanh_background, _S_scale, _T_scale, NamedTuple())
+end
+"Pass a `NamedTuple` in form `(S = , T = )` to set the tanh scaling."
+function BackgroundTanh(scale::NamedTuple)
+
+    S_scale, T_scale = scale.S, scale.T
+    _S_scale, _T_scale = promote(S_scale, T_scale) # ensures both are same type
+
+    return BackgroundTanh(tanh_background, _S_scale, _T_scale, NamedTuple())
+end
 """
     mutable struct BackgroundLinear{F}
 Container for a linear background field.

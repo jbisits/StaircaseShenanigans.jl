@@ -279,6 +279,29 @@ function checkpointer_setup!(simulation, sdns, output_dir,
 
 end
 checkpointer_setup!(simulation, sdns, output_dir, checkpointer_time_interval::Nothing) = nothing
+
+"""
+    function check_key_present(simulation, name::Symbol, key)
+Check if `key` is already present in `simlulation.output_writers[name]`. Return `true` if
+`key` is present and `false` otherwise.
+"""
+function check_key_present(simulation, name::Symbol, key)
+
+    ow = simulation.output_writers[name]
+    key_present = false
+
+    if ow isa NetCDFOutputWriter
+        NCDataset(ow.filepath) do ds
+            key_present = haskey(ds, key)
+        end
+    elseif ow isa JLD2OutputWriter
+        jldopen(ow.filepath, "a+") do f
+            key_present = haskey(f, key)
+        end
+    end
+
+    return key_present
+end
 """
     function simulation_progress(sim)
 Useful progress messaging for simulation runs. This function is from an

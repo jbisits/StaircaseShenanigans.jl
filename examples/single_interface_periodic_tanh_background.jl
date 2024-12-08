@@ -26,7 +26,8 @@ save_schedule = 30  # seconds
 output_path = joinpath(@__DIR__, "output_periodic")
 simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!, save_vertical_velocities!;
                                     Δt, save_schedule,
-                                    output_path, max_Δt = 5)
+                                    output_path, max_Δt = 5,
+                                    overwrite_saved_output = false)
 ## Run
 run!(simulation)
 

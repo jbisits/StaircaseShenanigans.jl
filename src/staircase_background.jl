@@ -153,35 +153,40 @@ function save_background_state!(simulation, model, background_state)
     compute!(σ_background)
     σ_background_array = Array(interior(σ_background, :, :, :))
 
-    if simulation.output_writers[:tracers] isa NetCDFOutputWriter
+    # Here need only check if one key is present as if one is all are
+    if !check_key_present(simulation, :tracers, "S_background")
 
-        NCDataset(simulation.output_writers[:tracers].filepath, "a") do ds
-            defVar(ds, "S_background", S_background_array, ("xC", "yC", "zC"),
-                attrib = Dict("longname" => "Background field for salinity",
-                                "units" => "gkg⁻¹"))
-            defVar(ds, "T_background", T_background_array, ("xC", "yC", "zC"),
-                attrib =  Dict("longname" => "Background field for temperature",
-                                "units" => "°C"))
-        end
+        ow = simulation.output_writers
+        if ow[:tracers] isa NetCDFOutputWriter
 
-        NCDataset(simulation.output_writers[:computed_output].filepath, "a") do ds
-            defVar(ds, "σ_background", σ_background_array, ("xC", "yC", "zC"),
-                attrib = Dict("longname" => "Background field for potential density (0dbar) computed from the `S` and `T` background fields",
-                                "units" => "kgm⁻³"))
-        end
+            NCDataset(ow[:tracers].filepath, "a") do ds
+                defVar(ds, "S_background", S_background_array, ("xC", "yC", "zC"),
+                    attrib = Dict("longname" => "Background field for salinity",
+                                    "units" => "gkg⁻¹"))
+                defVar(ds, "T_background", T_background_array, ("xC", "yC", "zC"),
+                    attrib =  Dict("longname" => "Background field for temperature",
+                                    "units" => "°C"))
+            end
 
-    elseif simulation.output_writers[:tracers] isa JLD2OutputWriter
+            NCDataset(ow[:computed_output].filepath, "a") do ds
+                defVar(ds, "σ_background", σ_background_array, ("xC", "yC", "zC"),
+                    attrib = Dict("longname" => "Background field for potential density (0dbar) computed from the `S` and `T` background fields",
+                                    "units" => "kgm⁻³"))
+            end
 
-        jldopen(simulation.output_writers[:tracers].filepath, "a+") do f
-            f["S_background"] = S_background_array
-            f["T_background"] = T_background_array
-        end
+        elseif ow[:tracers] isa JLD2OutputWriter
 
-        jldopen(simulation.output_writers[:computed_output].filepath, "a+") do f
-            f["σ_background"] = σ_background_array
+            jldopen(ow[:tracers].filepath, "a+") do f
+                f["S_background"] = S_background_array
+                f["T_background"] = T_background_array
+            end
+
+            jldopen(ow[:computed_output].filepath, "a+") do f
+                f["σ_background"] = σ_background_array
+            end
+
         end
 
     end
-
     return nothing
 end

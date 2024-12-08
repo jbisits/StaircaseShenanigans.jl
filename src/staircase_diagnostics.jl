@@ -29,8 +29,15 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
     R_ρ = @. (0.5 * (ρ_f - ρ_u) + 0.5 * (ρ_l - ρ_g)) / (0.5 * (ρ_f - ρ_l) + 0.5 * (ρ_u - ρ_g))
 
     NCDataset(computed_output, "a") do ds2
-        defVar(ds2, "R_ρ", R_ρ, ("time",),
-                attrib = Dict("long_name" => "Density ratio"))
+        if haskey(ds2, "R_ρ")
+            # rename so if picking up can saved the whole array
+            renameVar(ds2, "R_ρ", "R_ρ_prior_cp")
+            defVar(ds2, "R_ρ", R_ρ, ("time",),
+                    attrib = Dict("long_name" => "Density ratio"))
+        else
+            defVar(ds2, "R_ρ", R_ρ, ("time",),
+                    attrib = Dict("long_name" => "Density ratio"))
+        end
     end
 
     close(ds)

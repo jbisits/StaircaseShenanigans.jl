@@ -42,13 +42,14 @@ for more info
 the values of resolution along each dimension
 - `eos`, a `BoussinesqEquationOfState` from [SeawaterPolynomials.jl](https://github.com/CliMA/SeawaterPolynomials.jl)
 
-**Note:** currently using `model_setup` does not allow boundary conditions to be added.
-Instead use `DNSModel` and build a `StaircaseDNS` from the `DNSModel`.
+**Note:** By default if the domain is `Bounded` in the z-direction `jump_periodic_boundary_conditions`
+are applied.
 """
 function StaircaseDNS(model_setup::NamedTuple, initial_conditions::SingleInterfaceICs, initial_noise)
 
     background_fields = S_and_T_background_fields(initial_conditions, model_setup.domain_extent.Lz)
-    model = DNSModel(model_setup...; background_fields)
+    boundary_conditions = jump_periodic_boundary_conditions(initial_conditions, model_setup.domain_topology.z)
+    model = DNSModel(model_setup...; background_fields, boundary_conditions)
 
     sdns = StaircaseDNS(model, initial_conditions, initial_noise)
     set_initial_conditions!(sdns)

@@ -36,6 +36,8 @@ export TanhInterfaceSmoothing, Tanh, NoSmoothing
 export BackgroundTanh, BackgroundLinear, BackgroundStep, NoBackground,
         tanh_background, linear_background, step_background
 
+export jump_periodic_boundary_conditions
+
 export AbstractNoise, VelocityNoise, TracerNoise
 
 export OuterStairMask, OuterStairTargets, OuterMask, OuterTargets, ExponentialTarget
@@ -53,6 +55,7 @@ include("staircase_initial_conditions.jl")
 include("single_interfaces_initial_conditions.jl")
 include("interface_smoothing.jl")
 include("staircase_background.jl")
+include("staircase_jumpperiodic.jl")
 include("staircase_noise.jl")
 include("staircase_diagnostics.jl")
 include("staircase_model.jl")

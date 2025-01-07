@@ -2,7 +2,7 @@ module StaircaseShenanigans
 
 using Oceananigans, Reexport, Printf
 using Oceananigans: seawater_density
-
+using Oceananigans.BuoyancyFormulations: buoyancy_frequency
 using Oceananigans.Fields: condition_operand
 import Oceananigans.BackgroundField
 using SeawaterPolynomials.TEOS10

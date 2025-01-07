@@ -220,11 +220,14 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
     T = typeof(ics.background_state) <: NoBackground ? model.tracers.T : Field(model.background_fields.tracers.T + model.tracers.T)
 
     σ = seawater_density(model, temperature = T, salinity = S, geopotential_height = reference_gp_height)
+    N² = buoyancy_frequency(model)
 
-    computed_outputs = Dict("σ" => σ)
+    computed_outputs = Dict("σ" => σ, "N²" => N²)
     oa = Dict(
         "σ" => Dict("longname" => "Seawater potential density calculated using equation of state in model.",
-                    "units" => "kgm⁻³")
+                    "units" => "kgm⁻³"),
+        "N²" => Dict("longname" => "Buoyancy frequency.",
+                    "units" => "s⁻¹")
         )
 
     if !(typeof(ics.background_state) <: NoBackground)

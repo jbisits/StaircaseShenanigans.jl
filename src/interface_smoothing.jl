@@ -2,7 +2,7 @@
     struct TanhInterfaceSmoothing
 Container to set a hyperbolic tangent over a single interface as an initial condition.
 """
-mutable struct TanhInterfaceSmoothing{T} <: AbstractInterfaceSmoothing
+struct TanhInterfaceSmoothing{T} <: AbstractInterfaceSmoothing
     "Tracer in the deeper of the two layers seperated by an interface"
     Cₗ :: T
     "Change in tracer content over an interface"

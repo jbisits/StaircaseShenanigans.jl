@@ -64,6 +64,26 @@ function set_initial_conditions!(model, ics,
     return nothing
 end
 set_initial_conditions!(model, ics, interface_smoothing::Type{<:NoSmoothing}, background_state) = nothing
+function set_initial_conditions!(model, ics, interface_smoothing::Tanh, background_state)
+
+    depth_of_interface = ics.depth_of_interface
+    Lz = model.grid.Lz
+
+    S = Array(ics.salinity_values)
+    Sᵤ, Sₗ = S
+    ΔS = diff(S)[1]
+    tanh_change = 500.0
+    S₀(x, y, z) = Tanh(Sₗ, ΔS, tanh_change, depth_of_interface, abs(Lz))(x, y, z)
+
+    T = Array(ics.temperature_values)
+    Tᵤ, Tₗ = T
+    ΔT = diff(T)[1]
+    T₀(x, y, z) = Tanh(Tₗ, ΔT, tanh_change / 3, depth_of_interface, abs(Lz))(x, y, z)
+
+    set!(model, S = S₀, T = T₀)
+
+    return nothing
+end
 "By default there is a difference in the steepness of the tanh change to create an instabiltiy."
 function set_initial_conditions!(model, ics, interface_smoothing::Tanh, background_state)
 

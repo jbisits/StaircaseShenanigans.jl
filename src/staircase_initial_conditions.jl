@@ -18,7 +18,7 @@ struct STStaircaseInitialConditions{T} <: AbstractStaircaseInitialConditions
 end
 function STStaircaseInitialConditions(model, number_of_interfaces, depth_of_interfaces, salinity, temperature)
 
-    eos = model.buoyancy.model.equation_of_state
+    eos = model.buoyancy.formulation.equation_of_state
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interfaces, eos)
 

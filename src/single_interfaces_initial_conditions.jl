@@ -23,7 +23,7 @@ function STSingleInterfaceInitialConditions(model, depth_of_interface, salinity,
                                             interface_smoothing = NoSmoothing,
                                             background_state = NoBackground)
 
-    eos = model.buoyancy.model.equation_of_state
+    eos = model.buoyancy.formulation.equation_of_state
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
 

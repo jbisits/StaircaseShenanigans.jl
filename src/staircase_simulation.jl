@@ -77,7 +77,7 @@ function output_directory(sdns::StaircaseDNS, stop_time::Number, output_path)
     ic_type = typeof(sdns.initial_conditions)
     ic_string = ic_type <: STStaircaseInitialConditions ? "staircase" : "single_interface"
 
-    eos_string = is_linear_eos(sdns.model.buoyancy.model.equation_of_state.seawater_polynomial)
+    eos_string = is_linear_eos(sdns.model.buoyancy.formulation.equation_of_state.seawater_polynomial)
 
     stop_time_min = stop_time / 60 ≥ 1 ? string(round(Int, stop_time / 60)) :
                                          string(round(stop_time / 60; digits = 2))

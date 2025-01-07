@@ -77,7 +77,7 @@ function output_directory(sdns::StaircaseDNS, stop_time::Number, output_path)
     ic_type = typeof(sdns.initial_conditions)
     ic_string = ic_type <: STStaircaseInitialConditions ? "staircase" : "single_interface"
 
-    eos_string = is_linear_eos(sdns.model.buoyancy.model.equation_of_state.seawater_polynomial)
+    eos_string = is_linear_eos(sdns.model.buoyancy.formulation.equation_of_state.seawater_polynomial)
 
     stop_time_min = stop_time / 60 ≥ 1 ? string(round(Int, stop_time / 60)) :
                                          string(round(stop_time / 60; digits = 2))
@@ -220,11 +220,14 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
     T = typeof(ics.background_state) <: NoBackground ? model.tracers.T : Field(model.background_fields.tracers.T + model.tracers.T)
 
     σ = seawater_density(model, temperature = T, salinity = S, geopotential_height = reference_gp_height)
+    N² = buoyancy_frequency(model)
 
-    computed_outputs = Dict("σ" => σ)
+    computed_outputs = Dict("σ" => σ, "N²" => N²)
     oa = Dict(
         "σ" => Dict("longname" => "Seawater potential density calculated using equation of state in model.",
-                    "units" => "kgm⁻³")
+                    "units" => "kgm⁻³"),
+        "N²" => Dict("longname" => "Buoyancy frequency.",
+                    "units" => "s⁻¹")
         )
 
     if !(typeof(ics.background_state) <: NoBackground)

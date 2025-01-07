@@ -28,8 +28,8 @@ using Test
         include("R_sub_rho.jl")
         ΔS, ΔΘ = diff(salinity[1:2]), diff(temperature[1:2])
         Sₘ, Θₘ = (sum(salinity[1:2]) / 2), (sum(temperature[1:2]) / 2)
-        β = haline_contraction(Θₘ, Sₘ, 0, model.buoyancy.model.equation_of_state)
-        α = -thermal_expansion(Θₘ, Sₘ, 0, model.buoyancy.model.equation_of_state)
+        β = haline_contraction(Θₘ, Sₘ, 0, model.buoyancy.formulation.equation_of_state)
+        α = -thermal_expansion(Θₘ, Sₘ, 0, model.buoyancy.formulation.equation_of_state)
 
         @test all(step_ics.R_ρ .≈ (β * ΔS) / (α * ΔΘ))
         @test (interface_ics.R_ρ ≈ vec((β * ΔS) / (α * ΔΘ))[1])

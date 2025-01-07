@@ -64,7 +64,16 @@ function set_initial_conditions!(model, ics,
     return nothing
 end
 set_initial_conditions!(model, ics, interface_smoothing::Type{<:NoSmoothing}, background_state) = nothing
-function set_initial_conditions!(model, ics, interface_smoothing::Type{<:Tanh}, background_state)
+function set_initial_conditions!(model, ics, interface_smoothing::Tanh, background_state)
+
+    S₀(x, y, z) = interface_smoothing(x, y, z)
+    T₀(x, y, z) = interface_smoothing(x, y, z)
+
+    set!(model, S = S₀, T = T₀)
+
+    return nothing
+end
+function set_initial_conditions!(model, ics, interface_smoothing::TanhInterfaceSteepness, background_state)
 
     depth_of_interface = ics.depth_of_interface
     Lz = model.grid.Lz
@@ -72,18 +81,17 @@ function set_initial_conditions!(model, ics, interface_smoothing::Type{<:Tanh}, 
     S = Array(ics.salinity_values)
     Sᵤ, Sₗ = S
     ΔS = diff(S)[1]
-    S₀(x, y, z) = Tanh(Sₗ, ΔS, 100.0, depth_of_interface, abs(Lz))(x, y, z)
+    S₀(x, y, z) = Tanh(Sₗ, ΔS, interface_smoothing.DS, depth_of_interface, abs(Lz))(x, y, z)
 
     T = Array(ics.temperature_values)
     Tᵤ, Tₗ = T
     ΔT = diff(T)[1]
-    T₀(x, y, z) = Tanh(Tₗ, ΔT, 100.0, depth_of_interface, abs(Lz))(x, y, z)
+    T₀(x, y, z) = Tanh(Tₗ, ΔT, interface_smoothing.DT, depth_of_interface, abs(Lz))(x, y, z)
 
     set!(model, S = S₀, T = T₀)
 
     return nothing
 end
-
 "Fallback --- don't set any noise."
 set_noise!(model, noise::Nothing) = nothing
 

@@ -17,7 +17,22 @@ end
 const Tanh = TanhInterfaceSmoothing{T} where {T}
 @inline (p::TanhInterfaceSmoothing)(x, y, z) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.z_range))
 
+"Container for the steepness of the `tanh` over the interface for both salinity and temperature.
+Allows easy setting of both and avoids having to set other parts of the container before the
+model has been setup."
+struct TanhInterfaceSteepness{T}
+    "Salinity interface steepness"
+    DS :: T
+    "Temperature interface steepness"
+    DT :: T
+end
+"Some defaults that are unstable to diffusive convection."
+TanhInterfaceSteepness() = TanhInterfaceSteepness(500.0, 250.0)
+TanhInterfaceSteepness(S) = TanhInterfaceSteepness(S, S / 3)
+
 Base.summary(p::Type{<:TanhInterfaceSmoothing}) = "tanh smoothing"
+Base.summary(p::TanhInterfaceSmoothing) = "tanh smoothing"
+Base.summary(p::TanhInterfaceSteepness) = "tanh smoothing"
 
 struct NoInterfaceSmoothing <: AbstractInterfaceSmoothing end
 const NoSmoothing = NoInterfaceSmoothing

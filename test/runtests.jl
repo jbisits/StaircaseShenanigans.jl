@@ -61,6 +61,7 @@ using Test
         model = DNSModel(architecture, diffusivities, domain_extent, domain_topology, resolution)
         stop_time = 5
         simulation = Simulation(model; Δt = 0.1, stop_time)
+        run!(simulation)
         @test simulation.model.clock.time > stop_time
     end
 

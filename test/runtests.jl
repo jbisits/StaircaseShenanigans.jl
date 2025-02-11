@@ -54,4 +54,14 @@ using Test
 
     end
 
+    @testset "Function for diffusivity closure" begin
+
+        diffusivities = (ν = 1e-5, κ = (S = enhance_κₛ, T = enhance_κₜ),
+                        parameters = (diff_change = 0.5, enhance = 10), discrete_form = true)
+        model = DNSModel(architecture, diffusivities, domain_extent, domain_topology, resolution)
+        stop_time = 5
+        simulation = Simulation(model; Δt = 0.1, stop_time)
+        @test simulation.model.clock.time > stop_time
+    end
+
 end

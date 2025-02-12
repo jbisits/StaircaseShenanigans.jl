@@ -1,7 +1,9 @@
 using StaircaseShenanigans
 
 architecture = CPU() # or GPU()
-diffusivities = (ν = 1e-5, κ = (S = 1e-8, T = 1e-6))
+diffusivities = (ν = 1e-5, κ = (S = enhance_κₛ, T = enhance_κₜ),
+                parameters = (κₛ = 1e-9, κₜ = 1e-7, enhance = 10, diff_change = 10),
+                discrete_form = true)
 domain_extent = (Lx = 0.1, Ly = 0.1, Lz = -1.0)
 domain_topology = (x = Periodic, y = Periodic, z = Bounded)
 resolution = (Nx = 5, Ny = 5, Nz = 50)
@@ -12,13 +14,14 @@ model_setup = (;architecture, diffusivities, domain_extent, domain_topology, res
 depth_of_interface = -0.5
 salinity = [34.54, 34.70]
 temperature = [-1.5, 0.5]
-interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature, interface_smoothing = TanhInterfaceSteepness())
+interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature)
 velocity_noise = VelocityNoise()
 
 ## setup model
-sdns = StaircaseDNS(model_setup, interface_ics, velocity_noise)
+model = DNSModel(model_setup...)
+sdns = StaircaseDNS(model, interface_ics, velocity_noise)
 
-# Build simulation
+## Build simulation
 Δt = 1e-1
 stop_time = 4 * 60 * 60 # seconds
 save_schedule = 60  # seconds

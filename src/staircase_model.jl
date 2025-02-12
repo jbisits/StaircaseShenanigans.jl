@@ -111,6 +111,7 @@ function DNSModel(architecture, diffusivities::NamedTuple, domain_extent::NamedT
 
     Lx, Ly, Lz = domain_extent.Lx, domain_extent.Ly, domain_extent.Lz
     x_top, y_top, z_top = domain_topology.x, domain_topology.y, domain_topology.z
+    loc = z_top isa Periodic ? (Center(), Center(), Center()) : (Center(), Center(), Face())
     Nx, Ny, Nz = resolution.Nx, resolution.Ny, resolution.Nz
     zgrid = zgrid_stretching ? grid_stretching(-Lz, Nz, refinement, stretching) : (Lz, 0)
 
@@ -126,8 +127,9 @@ function DNSModel(architecture, diffusivities::NamedTuple, domain_extent::NamedT
 
     closure = length(diffusivities) > 2 ? ScalarDiffusivity(; ν = diffusivities.ν, κ = diffusivities.κ,
                                                             discrete_form = diffusivities.discrete_form,
+                                                            loc,
                                                             parameters = diffusivities.parameters) :
-                                          ScalarDiffusivity(; ν = diffusivities.ν, κ = diffusivities.κ)
+                                          ScalarDiffusivity(ν = diffusivities.ν, κ = diffusivities.κ)
 
     timestepper = :RungeKutta3
 
@@ -164,7 +166,6 @@ function grid_stretching(Lz::Number, Nz::Number, refinement::Number, stretching:
     return z_faces
 
 end
-
 """
     enhance_κₛ(i, j, k, grid, clock, fields, p)
 Enhance the isotropic, scalar diffusiviy applied to the salintiy field by `p.enhance * 100`,

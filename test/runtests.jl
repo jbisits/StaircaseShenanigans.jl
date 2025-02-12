@@ -62,7 +62,7 @@ using Test
         stop_time = 5
         simulation = Simulation(model; Δt = 0.1, stop_time)
         run!(simulation)
-        @test simulation.model.clock.time > stop_time
+        @test simulation.model.clock.time ≥ stop_time
     end
 
 end

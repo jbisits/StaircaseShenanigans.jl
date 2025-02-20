@@ -18,7 +18,7 @@ velocity_noise = VelocityNoise()
 ## setup model
 sdns = StaircaseDNS(model_setup, interface_ics, velocity_noise)
 
-## Build simulation
+# Build simulation
 Δt = 1e-1
 stop_time = 4 * 60 * 60 # seconds
 save_schedule = 60  # seconds

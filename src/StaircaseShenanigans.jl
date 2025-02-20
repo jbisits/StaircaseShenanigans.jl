@@ -24,7 +24,7 @@ abstract type AbstractNoise end
 abstract type AbstractBackgroundFunction end
 abstract type AbstractInterfaceSmoothing end
 
-export StaircaseDNS, DNSModel, SDNS_simulation_setup
+export StaircaseDNS, DNSModel, SDNS_simulation_setup, enhance_κₛ, enhance_κₜ
 
 export STStaircaseInitialConditions, StaircaseICs, SmoothSTStaircaseInitialConditions,
        STSingleInterfaceInitialConditions, SingleInterfaceICs,

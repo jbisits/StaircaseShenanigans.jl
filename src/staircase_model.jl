@@ -81,7 +81,8 @@ for more info
 - `resolution` as a `NamedTuple` in the format `(Nx = , Ny = , Nz = )`;
 - `diffusivities` as a `NamedTuple` in the format `(ν = , κ = )`, **note** to set different
 diffusivities for temperature and salinity `κ` must also be a `NamedTuple` in the format
-`κ = (S = , T = )`;
+`κ = (S = , T = )`. Functions can also be passed but `discrete_form` and `parameters` need to
+be added to the `NamedTuple`;
 - `eos` a `BoussinesqEquationOfState`, default is [`TEOS10EquationOfState`](https://clima.github.io/SeawaterPolynomials.jl/dev/API/#SeawaterPolynomials.TEOS10.TEOS10EquationOfState)
 but any of the [`RoquetEquationOfState`s](https://clima.github.io/SeawaterPolynomials.jl/dev/API/#SeawaterPolynomials.SecondOrderSeawaterPolynomials.RoquetEquationOfState)
 may be used.
@@ -110,6 +111,7 @@ function DNSModel(architecture, diffusivities::NamedTuple, domain_extent::NamedT
 
     Lx, Ly, Lz = domain_extent.Lx, domain_extent.Ly, domain_extent.Lz
     x_top, y_top, z_top = domain_topology.x, domain_topology.y, domain_topology.z
+    loc = z_top isa Periodic ? (Center(), Center(), Center()) : (Center(), Center(), Face())
     Nx, Ny, Nz = resolution.Nx, resolution.Ny, resolution.Nz
     zgrid = zgrid_stretching ? grid_stretching(-Lz, Nz, refinement, stretching) : (Lz, 0)
 
@@ -123,7 +125,11 @@ function DNSModel(architecture, diffusivities::NamedTuple, domain_extent::NamedT
     buoyancy = SeawaterBuoyancy(equation_of_state = eos)
     tracers = (:S, :T)
 
-    closure = ScalarDiffusivity(; ν = diffusivities.ν, κ = diffusivities.κ)
+    closure = length(diffusivities) > 2 ? ScalarDiffusivity(; ν = diffusivities.ν, κ = diffusivities.κ,
+                                                            discrete_form = diffusivities.discrete_form,
+                                                            loc,
+                                                            parameters = diffusivities.parameters) :
+                                          ScalarDiffusivity(ν = diffusivities.ν, κ = diffusivities.κ)
 
     timestepper = :RungeKutta3
 
@@ -160,3 +166,16 @@ function grid_stretching(Lz::Number, Nz::Number, refinement::Number, stretching:
     return z_faces
 
 end
+"""
+    enhance_κₛ(i, j, k, grid, clock, fields, p)
+Enhance the isotropic, scalar diffusiviy applied to the salintiy field by `p.enhance * 100`,
+to give same enhancement to enhanced diffusivity as temperature, after time = `p.diff_change`.
+Note `p.diff_change` is expeceted in minutes.
+"""
+@inline enhance_κₛ(i, j, k, grid, clock, fields, p) = clock.time < p.diff_change * 60 ? p.κₛ : p.κₛ * p.enhance * 100
+"""
+    enhance_enhance_κₜ(i, j, k, grid, clock, fields, p)
+Enhance the isotropic, scalar diffusiviy applied to the temperature field by `p.enhance` after
+time `p.diff_change`. Note `p.diff_change` is expeceted in minutes.
+"""
+@inline enhance_κₜ(i, j, k, grid, clock, fields, p) = clock.time < p.diff_change * 60 ? p.κₜ : p.κₜ * p.enhance

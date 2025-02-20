@@ -95,6 +95,8 @@ function S_and_T_background_fields(ics, Lz, background_state)
     return (S = S_background, T = T_background)
 end
 
+S_and_T_background_fields(ics, Lz, background_state::NamedTuple) = background_state
+
 "Sets a background state that is hyperbolic tangent. There is also a method to save an
 `Array` of this backgorund state to output."
 @inline tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.Lz))

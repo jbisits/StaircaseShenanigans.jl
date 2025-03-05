@@ -81,12 +81,6 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
 
     return nothing
 end
-function save_diagnostics!(diagnostics_file, tracers, computed_output, group)
-
-
-
-    return nothing
-end
 """
     function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 Save space, time and any other variable that acts as a dimension (e.g `z✶`).
@@ -127,11 +121,10 @@ function update_diagnostic!(diagnostics_file::AbstractString, group::AbstractStr
                             key::AbstractString, tracers::AbstractString,
                             computed_output::AbstractString)
 
-    dim_keys = ["time", "xC", "yC", "zC", "R_ρ"]
-    S_flux_keys = string.([S_flux, S_interface_idx])
-    T_flux_keys = string.([T_flux, T_interface_idx])
-    interface_thickness_keys = string.([hₜ, hₛ, r, ΔS, ΔT])
-    Ẽ_keys = string.([Ẽ, Tₗ_Tᵤ_ts, Sₗ_Sᵤ_ts, ρₗ_ρᵤ_ts])
+    S_flux_keys = ("S_flux", "S_interface_idx")
+    T_flux_keys = ("T_flux", "T_interface_idx")
+    interface_thickness_keys = ("hₜ", "hₛ", "r","ΔS", "ΔT")
+    Ẽ_keys = ("Ẽ", "Tₗ_Tᵤ_ts", "Sₗ_Sᵤ_ts", "ρₗ_ρᵤ_ts")
 
       keys_to_remove =  if key ∈ S_flux_keys
                             S_flux_keys
@@ -141,19 +134,29 @@ function update_diagnostic!(diagnostics_file::AbstractString, group::AbstractStr
                             interface_thickness_keys
                         elseif key ∈ Ẽ_keys
                             Ẽ_keys
-                        elseif key ∈ dim_keys
-                            dim_keys
                         end
 
     delete_keys!(diagnostics_file, group, keys_to_remove)
-    save_diagnostics!(diagnostics_file, tracers, computed_output, group)
+
+    group = group * '/'
+    if keys_to_remove == S_flux_keys
+        φ_interface_flux!(diagnostics_file, tracers, :S, group)
+    elseif keys_to_remove == T_flux_keys
+        φ_interface_flux!(diagnostics_file, tracers, :T, group)
+    elseif keys_to_remove == Ẽ_keys
+        compute_Ẽ!(diagnostics_file, computed_output, tracers, group)
+    elseif keys_to_remove == interface_thickness_keys
+        interface_thickness!(diagnostics_file, tracers, group)
+    end
 
     return nothing
 end
 function delete_keys!(diagnostics_file, group, keys_to_remove)
 
-    for k ∈ keys_to_remove
-        delete!(diagnostics_file, group*k)
+    jldopen(diagnostics_file, "a+") do f
+        for k ∈ keys_to_remove
+            delete!(f, group*"/"*k)
+        end
     end
 
     return nothing

@@ -83,6 +83,18 @@ using Test
                           simulation.output_writers[:computed_output].filepath,
                           eos = "nonlineareos")
         @test isfile(diagnostics_file)
+
+        update_diagnostic!(diagnostics_file, "nonlineareos", "S_flux",
+                          simulation.output_writers[:tracers].filepath,
+                          simulation.output_writers[:computed_output].filepath)
+        @test isfile(diagnostics_file)
+        update_diagnostic!(diagnostics_file, "lineareos", "hₜ",
+        simulation.output_writers[:tracers].filepath,
+        simulation.output_writers[:computed_output].filepath)
+    @test isfile(diagnostics_file)
+        rm(diagnostics_file)
+        rm(simulation.output_writers[:tracers].filepath)
+        rm(simulation.output_writers[:computed_output].filepath)
     end
 
 

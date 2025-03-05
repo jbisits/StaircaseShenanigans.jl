@@ -57,23 +57,33 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
 
     if isfile(diagnostics_file)
 
-        f = jldopen(diagnostics_file)
-           haskey(f, "dims/xC") ? nothing : dimensions!(diagnostics_file, computed_output)
-        haskey(f, eos*"S_flux") ? nothing : φ_interface_flux!(diagnostics_file, tracers, :S, eos)
-        haskey(f, eos*"T_flux") ? nothing : φ_interface_flux!(diagnostics_file, tracers, :T, eos)
-             haskey(f, eos*"Ẽ") ? nothing : Ẽ!(diagnostics_file, computed_output, eos)
-            haskey(f, eos*"hₜ") ? nothing : interface_thickness!(diagnostics_file, tracers, eos)
-        close(f)
+        group_keys = jldopen(diagnostics_file) do f; keys(f); end
+        saved_keys = jldopen(diagnostics_file) do f; [keys(f[g]) for g ∈ group_keys]; end
+        saved_keys = vcat(saved_keys...)
+
+        if eos[end-1] ∉ group_keys
+            "dims" ∈ group_keys ? nothing : dimensions!(diagnostics_file, computed_output)
+            φ_interface_flux!(diagnostics_file, tracers, :S, eos)
+            φ_interface_flux!(diagnostics_file, tracers, :T, eos)
+            compute_Ẽ!(diagnostics_file, computed_output, tracers, eos)
+            interface_thickness!(diagnostics_file, tracers, eos)
+        end
 
     else
 
         dimensions!(diagnostics_file, computed_output)
         φ_interface_flux!(diagnostics_file, tracers, :S, eos)
         φ_interface_flux!(diagnostics_file, tracers, :T, eos)
-        Ẽ!(diagnostics_file, computed_output, eos)
+        compute_Ẽ!(diagnostics_file, computed_output, tracers, eos)
         interface_thickness!(diagnostics_file, tracers, eos)
 
     end
+
+    return nothing
+end
+function save_diagnostics!(diagnostics_file, tracers, computed_output, group)
+
+
 
     return nothing
 end
@@ -86,9 +96,17 @@ function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
     dims = ("time", "xC", "yC", "zC", "R_ρ")
     NCDataset(co) do ds
 
-        jldopen(diagnostics_file) do file
-            for d ∈ dims
-                file["dims/"*d] = ds[d][:]
+        if isfile(diagnostics_file)
+            jldopen(diagnostics_file, "a+") do file
+                for d ∈ dims
+                    file["dims/"*d] = ds[d][:]
+                end
+            end
+        else
+            jldopen(diagnostics_file, "w") do file
+                for d ∈ dims
+                    file["dims/"*d] = ds[d][:]
+                end
             end
         end
 
@@ -97,38 +115,45 @@ function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
     return nothing
 end
 """
-    function update_diagnostic!(diagnostics_file::AbstractString, key::AbstractString, tracers::AbstractString,
-                                computed_output::AbstractString; eos = nothing)
+    function update_diagnostic!(diagnostics_file::AbstractString, group::AbstractString,
+                                key::AbstractString, tracers::AbstractString,
+                                computed_output::AbstractString)
 Update the diagnostic (i.e. run again) at `key` in diagnostics_file. This function first deletes
 what is saved at `key` then calls [save_diagnostics](@ref) which should only update the relevant
 diagnostic. **Note:** the function will find the relevant `key` then remove all keys that the
-function saves so they can all be recomputed
+function saves so they can all be recomputed.
 """
-function update_diagnostic!(diagnostics_file::AbstractString, key::AbstractString, tracers::AbstractString,
-                            computed_output::AbstractString; eos = nothing)
+function update_diagnostic!(diagnostics_file::AbstractString, group::AbstractString,
+                            key::AbstractString, tracers::AbstractString,
+                            computed_output::AbstractString)
 
-    eos = isnothing(eos) ? "" : eos * "/"
-    S_flux_keys = eos .* string.([S_flux, S_interface_idx])
-    interface_thickness_keys = eos .* string.([hₜ, hₛ, r, ΔS, ΔT])
-    Ẽ_keys = eos .* string.([Ẽ, Tₗ_Tᵤ_ts, Sₗ_Sᵤ_ts, ρₗ_ρᵤ_ts])
+    dim_keys = ["time", "xC", "yC", "zC", "R_ρ"]
+    S_flux_keys = string.([S_flux, S_interface_idx])
+    T_flux_keys = string.([T_flux, T_interface_idx])
+    interface_thickness_keys = string.([hₜ, hₛ, r, ΔS, ΔT])
+    Ẽ_keys = string.([Ẽ, Tₗ_Tᵤ_ts, Sₗ_Sᵤ_ts, ρₗ_ρᵤ_ts])
 
-    keys =  if key ∈ S_flux_keys
-                S_flux_keys
-            elseif key ∈ interface_thickness_keys
-                interface_thickness_keys
-            elseif key ∈ Ẽ_keys
-                Ẽ_keys
-            end
+      keys_to_remove =  if key ∈ S_flux_keys
+                            S_flux_keys
+                        elseif key ∈ T_flux_keys
+                            T_flux_keys
+                        elseif key ∈ interface_thickness_keys
+                            interface_thickness_keys
+                        elseif key ∈ Ẽ_keys
+                            Ẽ_keys
+                        elseif key ∈ dim_keys
+                            dim_keys
+                        end
 
-    delete_keys!(diagnostics_file, keys)
-    save_diagnostics!(diagnostics_file, tracers, computed_output; eos)
+    delete_keys!(diagnostics_file, group, keys_to_remove)
+    save_diagnostics!(diagnostics_file, tracers, computed_output, group)
 
     return nothing
 end
-function delete_keys!(diagnostics_file, keys)
+function delete_keys!(diagnostics_file, group, keys_to_remove)
 
-    for k ∈ keys
-        delete!(diagnostics_file, k)
+    for k ∈ keys_to_remove
+        delete!(diagnostics_file, group*k)
     end
 
     return nothing
@@ -204,7 +229,7 @@ function save_fluxes!(diagnostics_file, φ_interface_flux, interface_idx, tracer
 end
 function save_z✶!(diagnostics_file, z✶)
 
-    f = jldopen(diagnostics_file)
+    f = jldopen(diagnostics_file, "a+")
     if !haskey(f, "dims/z✶")
         f["dims/z✶"] =  z✶
     end
@@ -231,14 +256,14 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
         hₜ = similar(timestamps[1:end-1])
         hₛ = similar(timestamps[1:end-1])
 
-        for t ∈ eachindex(timestamps)
+        for t ∈ eachindex(hₜ)
             T = reshape(mean(ds[:T][:, :, :, t+1], dims = (1, 2)), :)
             find = findall(Tmidpoint - (ΔT[t+1]/4) .<  T .< Tmidpoint + (ΔT[t+1]/4))
             intercept, slope = [ones(length(find)) zC[find]] \ T[find]
             hₜ[t] = ΔT[t] / slope
         end
 
-        for t ∈ eachindex(timestamps)
+        for t ∈ eachindex(hₛ)
             S = reshape(mean(ds[:S][:, :, :, t+1], dims = (1, 2)), :)
             find = findall(Smidpoint - (ΔS[t+1]/4) .<  S .< Smidpoint + (ΔS[t+1]/4))
             intercept, slope = [ones(length(find)) zC[find]] \ S[find]
@@ -274,7 +299,7 @@ function save_interface_thickness!(diagnostics_file, hₜ, hₛ, r, ΔS, ΔT, eo
     return nothing
 end
 """
-    function Ẽ(diagnostics_file::AbstractString, co::AbstractString, tracers::AbstractString, eos;
+    function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, tracers::AbstractString, eos;
                interface_offset = 1)
 Compute the entrainment parameter using equation (y) from [McDougall (1981)](https://www.sciencedirect.com/science/article/pii/007966118190001X).
 This is defined as
@@ -289,8 +314,8 @@ lower layers.
 The kwarg `interface_offset` is how far away to move (vertically) from the interface to define
 the upper and lower layers.
 """
-function Ẽ(diagnostics_file::AbstractString, co::AbstractString, tracers::AbstractString, eos;
-            interface_offset = 1)
+function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, tracers::AbstractString, eos;
+                    interface_offset = 1)
 
     ds_co = NCDataset(co)
     ds_tracers = NCDataset(tracers)

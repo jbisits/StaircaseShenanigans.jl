@@ -54,6 +54,20 @@ using Test
 
     end
 
+    @testset "Diagnostic saving" begin
+        model = DNSModel(architecture, diffusivities, domain_extent, domain_topology, resolution)
+        stop_time = 5
+        simulation = Simulation(model; Δt = 0.1, stop_time)
+        run!(simulation)
+        save_diagnostics!("test_diagnostics.jld2", simulation.output_writers[:computed_output].filepath,
+                            simulation.output_writers[:tracers].filepath, eos = "linear")
+        @test isfile("test_diagnostics.jld2")
+        save_diagnostics!("test_diagnostics.jld2", simulation.output_writers[:computed_output].filepath,
+                            simulation.output_writers[:tracers].filepath, eos = "nonlinear")
+        @test isfile("test_diagnostics.jld2")
+    end
+
+
     @testset "Function for diffusivity closure" begin
 
         diffusivities = (ν = 1e-5, κ = (S = enhance_κₛ, T = enhance_κₜ),

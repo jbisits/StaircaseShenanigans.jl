@@ -46,21 +46,28 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
 end
 """
     function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractString, computed_output::AbstractString)
-Save the diagnostics in this script, diagnostics.jl, to `diagnostics_file`.
+Save the diagnostics (in this script) to `diagnostics_file`. These diagnostics
+are currently only able to be computed from output that is saved in netcdf format (i.e. `.nc` files)
+but they returned output is in `.jld2` format.
 """
 function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractString,
                            computed_output::AbstractString; eos = nothing)
 
     eos = isnothing(eos) ? "" : eos[end] == '/' ? eos : eos * "/" # creates a group in the saved output.
+
     if isfile(diagnostics_file)
 
-        haskey(diagnostics_file, eos*"S_flux") ? nothing : φ_interface_flux!(diagnostics_file, tracers, :S, eos)
-        haskey(diagnostics_file, eos*"T_flux") ? nothing : φ_interface_flux!(diagnostics_file, tracers, :T, eos)
-             haskey(diagnostics_file, eos*"Ẽ") ? nothing : Ẽ!(diagnostics_file, computed_output, eos)
-            haskey(diagnostics_file, eos*"hₜ") ? nothing : interface_thickness!(diagnostics_file, tracers, eos)
+        f = jldopen(diagnostics_file)
+           haskey(f, "dims/xC") ? nothing : dimensions!(diagnostics_file, computed_output)
+        haskey(f, eos*"S_flux") ? nothing : φ_interface_flux!(diagnostics_file, tracers, :S, eos)
+        haskey(f, eos*"T_flux") ? nothing : φ_interface_flux!(diagnostics_file, tracers, :T, eos)
+             haskey(f, eos*"Ẽ") ? nothing : Ẽ!(diagnostics_file, computed_output, eos)
+            haskey(f, eos*"hₜ") ? nothing : interface_thickness!(diagnostics_file, tracers, eos)
+        close(f)
 
     else
 
+        dimensions!(diagnostics_file, computed_output)
         φ_interface_flux!(diagnostics_file, tracers, :S, eos)
         φ_interface_flux!(diagnostics_file, tracers, :T, eos)
         Ẽ!(diagnostics_file, computed_output, eos)
@@ -70,7 +77,25 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
 
     return nothing
 end
+"""
+    function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
+Save space, time and any other variable that acts as a dimension (e.g `z✶`).
+"""
+function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 
+    dims = ("time", "xC", "yC", "zC", "R_ρ")
+    NCDataset(co) do ds
+
+        jldopen(diagnostics_file) do file
+            for d ∈ dims
+                file["dims/"*d] = ds[d][:]
+            end
+        end
+
+    end
+
+    return nothing
+end
 """
     function update_diagnostic!(diagnostics_file::AbstractString, key::AbstractString, tracers::AbstractString,
                                 computed_output::AbstractString; eos = nothing)
@@ -82,7 +107,7 @@ function saves so they can all be recomputed
 function update_diagnostic!(diagnostics_file::AbstractString, key::AbstractString, tracers::AbstractString,
                             computed_output::AbstractString; eos = nothing)
 
-    eos = isnothing(eos) : "" : eos * "/"
+    eos = isnothing(eos) ? "" : eos * "/"
     S_flux_keys = eos .* string.([S_flux, S_interface_idx])
     interface_thickness_keys = eos .* string.([hₜ, hₛ, r, ΔS, ΔT])
     Ẽ_keys = eos .* string.([Ẽ, Tₗ_Tᵤ_ts, Sₗ_Sᵤ_ts, ρₗ_ρᵤ_ts])
@@ -123,10 +148,13 @@ function φ_interface_flux!(diagnostics_file::AbstractString, tracers::AbstractS
         Δφ₀ = φ[1, 1, 1, 1] - 0.5 * (φ[1, 1, 1, 1] - φ[1, 1, end, 1])
         timestamps = ds[:time][:]
         Δt = diff(timestamps)
-        ΔV = diff(ds[:xC][1:2])[1] * diff(ds[:yC][1:2])[1] * diff(ds[:zC][1:2])[1]
+        Δx, Δy, Δz = diff(ds[:xC][1:2])[1], diff(ds[:yC][1:2])[1], diff(ds[:zC][1:2])[1]
+        ΔV = Δx * Δy * Δz
         V = (1:length(reshape(φ[:, :, :, 1], :))) * ΔV
-        SA = 0.07^2
+        Lx, Ly = Δx * length(ds[:xC][:]), Δy * length(ds[:yC][:])
+        SA = Lx * Ly
         z✶ = V / SA
+        save_z✶!(diagnostics_file, z✶)
         Δz✶ = diff(z✶)[1]
 
         φ_interface_flux = Array{Float64}(undef, 3, length(Δt))
@@ -172,6 +200,15 @@ function save_fluxes!(diagnostics_file, φ_interface_flux, interface_idx, tracer
         end
     end
 
+    return nothing
+end
+function save_z✶!(diagnostics_file, z✶)
+
+    f = jldopen(diagnostics_file)
+    if !haskey(f, "dims/z✶")
+        f["dims/z✶"] =  z✶
+    end
+    close(f)
     return nothing
 end
 """

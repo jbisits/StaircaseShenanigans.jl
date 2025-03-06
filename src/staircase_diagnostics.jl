@@ -45,15 +45,17 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
     return nothing
 end
 """
-    function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractString, computed_output::AbstractString)
+    function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractString,
+                            computed_output::AbstractString; group = nothing)
 Save the diagnostics (in this script) to `diagnostics_file`. These diagnostics
 are currently only able to be computed from output that is saved in netcdf format (i.e. `.nc` files)
-but they returned output is in `.jld2` format.
+but they returned output is in `.jld2` format. The kwarg `group` is for creating a `group` in
+`diagnostics_file`.
 """
 function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractString,
-                           computed_output::AbstractString; eos = nothing)
+                           computed_output::AbstractString; group = nothing)
 
-    eos = isnothing(eos) ? "" : eos[end] == '/' ? eos : eos * "/" # creates a group in the saved output.
+    group = isnothing(group) ? "" : group[end] == '/' ? group : group * "/" # creates a group in the saved output.
 
     if isfile(diagnostics_file)
 
@@ -61,23 +63,23 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         saved_keys = jldopen(diagnostics_file) do f; [keys(f[g]) for g ∈ group_keys]; end
         saved_keys = vcat(saved_keys...)
 
-        if eos[end-1] ∉ group_keys
+        if group[end-1] ∉ group_keys
             "dims" ∈ group_keys ? nothing : dimensions!(diagnostics_file, computed_output)
-            Rᵨ!(diagnostics_file, computed_output, eos)
-            φ_interface_flux!(diagnostics_file, tracers, :S, eos)
-            φ_interface_flux!(diagnostics_file, tracers, :T, eos)
-            compute_Ẽ!(diagnostics_file, computed_output, tracers, eos)
-            interface_thickness!(diagnostics_file, tracers, eos)
+            Rᵨ!(diagnostics_file, computed_output, group)
+            φ_interface_flux!(diagnostics_file, tracers, :S, group)
+            φ_interface_flux!(diagnostics_file, tracers, :T, group)
+            compute_Ẽ!(diagnostics_file, computed_output, tracers, group)
+            interface_thickness!(diagnostics_file, tracers, group)
         end
 
     else
 
         dimensions!(diagnostics_file, computed_output)
-        Rᵨ!(diagnostics_file, computed_output, eos)
-        φ_interface_flux!(diagnostics_file, tracers, :S, eos)
-        φ_interface_flux!(diagnostics_file, tracers, :T, eos)
-        compute_Ẽ!(diagnostics_file, computed_output, tracers, eos)
-        interface_thickness!(diagnostics_file, tracers, eos)
+        Rᵨ!(diagnostics_file, computed_output, group)
+        φ_interface_flux!(diagnostics_file, tracers, :S, group)
+        φ_interface_flux!(diagnostics_file, tracers, :T, group)
+        compute_Ẽ!(diagnostics_file, computed_output, tracers, group)
+        interface_thickness!(diagnostics_file, tracers, group)
 
     end
 
@@ -110,17 +112,17 @@ function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 
     return nothing
 end
-function Rᵨ!(diagnostics_file::AbstractString, computed_output::AbstractString, eos)
+function Rᵨ!(diagnostics_file::AbstractString, computed_output::AbstractString, group)
 
         NCDataset(computed_output) do ds
 
             if isfile(diagnostics_file)
                 jldopen(diagnostics_file, "a+") do file
-                        file[eos*"R_ρ"] = ds["R_ρ"][:]
+                        file[group*"R_ρ"] = ds["R_ρ"][:]
                 end
             else
                 jldopen(diagnostics_file, "w") do file
-                    file[eos*"R_ρ"] = ds["R_ρ"][:]
+                    file[group*"R_ρ"] = ds["R_ρ"][:]
                 end
             end
 
@@ -187,7 +189,7 @@ is found in the sorted profile where φ > Δφ / 2 (with the previous two levels
 not a single value). The flux is then calculated as the change in φ content to
 z✶(Δφ / 2) were z✶ is the backgrund z profile.
 """
-function φ_interface_flux!(diagnostics_file::AbstractString, tracers::AbstractString, tracer::Symbol, eos)
+function φ_interface_flux!(diagnostics_file::AbstractString, tracers::AbstractString, tracer::Symbol, group)
 
     NCDataset(tracers) do ds
 
@@ -222,7 +224,7 @@ function φ_interface_flux!(diagnostics_file::AbstractString, tracers::AbstractS
 
         end
 
-        save_fluxes!(diagnostics_file, φ_interface_flux, interface_idx, tracer, eos)
+        save_fluxes!(diagnostics_file, φ_interface_flux, interface_idx, tracer, group)
 
     end
 
@@ -233,17 +235,17 @@ end
 Save the flux through, and index of, the diffusive interface. **Note** the index is for the reshaped
 and resorted vector.
 """
-function save_fluxes!(diagnostics_file, φ_interface_flux, interface_idx, tracer, eos)
+function save_fluxes!(diagnostics_file, φ_interface_flux, interface_idx, tracer, group)
 
     if isfile(diagnostics_file)
         jldopen(diagnostics_file, "a+") do file
-            file[eos*string(tracer)*"_flux"] = φ_interface_flux
-            file[eos*string(tracer)*"_interface_idx"] = interface_idx
+            file[group*string(tracer)*"_flux"] = φ_interface_flux
+            file[group*string(tracer)*"_interface_idx"] = interface_idx
         end
     else
         jldopen(diagnostics_file, "w") do file
-            file[eos*string(tracer)*"_flux"] = φ_interface_flux
-            file[eos*string(tracer)*"_interface_idx"] = interface_idx
+            file[group*string(tracer)*"_flux"] = φ_interface_flux
+            file[group*string(tracer)*"_interface_idx"] = interface_idx
         end
     end
 
@@ -263,7 +265,7 @@ end
 Calculate the interface thickness using the method in appendix A of
 [Sommer et al. (2013)](https://journals.ametsoc.org/view/journals/atot/30/8/jtech-d-12-00272_1.xml).
 """
-function interface_thickness!(diagnostics_file::AbstractString, tracers::AbstractString, eos)
+function interface_thickness!(diagnostics_file::AbstractString, tracers::AbstractString, group)
 
     ds = NCDataset(tracers) do ds
 
@@ -293,35 +295,35 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
         end
 
         r = hₜ ./ hₛ
-        save_interface_thickness!(diagnostics_file, hₜ, hₛ, r, ΔS, ΔT, eos)
+        save_interface_thickness!(diagnostics_file, hₜ, hₛ, r, ΔS, ΔT, group)
     end
 
     return nothing
 end
-function save_interface_thickness!(diagnostics_file, hₜ, hₛ, r, ΔS, ΔT, eos)
+function save_interface_thickness!(diagnostics_file, hₜ, hₛ, r, ΔS, ΔT, group)
 
     if isfile(diagnostics_file)
         jldopen(diagnostics_file, "a+") do file
-            file[eos*"hₜ"] = hₜ
-            file[eos*"hₛ"] = hₛ
-            file[eos*"r"] = r
-            file[eos*"ΔS"] = ΔS
-            file[eos*"ΔT"] = ΔT
+            file[group*"hₜ"] = hₜ
+            file[group*"hₛ"] = hₛ
+            file[group*"r"] = r
+            file[group*"ΔS"] = ΔS
+            file[group*"ΔT"] = ΔT
         end
     else
         jldopen(diagnostics_file, "w") do file
-            file[eos*"hₜ"] = hₜ
-            file[eos*"hₛ"] = hₛ
-            file[eos*"r"] = r
-            file[eos*"ΔS"] = ΔS
-            file[eos*"ΔT"] = ΔT
+            file[group*"hₜ"] = hₜ
+            file[group*"hₛ"] = hₛ
+            file[group*"r"] = r
+            file[group*"ΔS"] = ΔS
+            file[group*"ΔT"] = ΔT
         end
     end
 
     return nothing
 end
 """
-    function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, tracers::AbstractString, eos;
+    function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, tracers::AbstractString, group;
                interface_offset = 1)
 Compute the entrainment parameter using equation (y) from [McDougall (1981)](https://www.sciencedirect.com/science/article/pii/007966118190001X).
 This is defined as
@@ -336,7 +338,7 @@ lower layers.
 The kwarg `interface_offset` is how far away to move (vertically) from the interface to define
 the upper and lower layers.
 """
-function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, tracers::AbstractString, eos;
+function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, tracers::AbstractString, group;
                     interface_offset = 1)
 
     ds_co = NCDataset(co)
@@ -391,25 +393,25 @@ function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, trac
     close(ds_co)
     close(ds_tracers)
 
-    save_Ẽ!(diagnostics_file, Ẽ, T̄_ts, S̄_ts, ρ̄_ts, eos)
+    save_Ẽ!(diagnostics_file, Ẽ, T̄_ts, S̄_ts, ρ̄_ts, group)
 
     return nothing
 end
-function save_Ẽ!(diagnostics_file, Ẽ, T̄_ts, S̄_ts, ρ̄_ts, eos)
+function save_Ẽ!(diagnostics_file, Ẽ, T̄_ts, S̄_ts, ρ̄_ts, group)
 
     if isfile(diagnostics_file)
         jldopen(diagnostics_file, "a+") do file
-            file[eos*"Ẽ"] = Ẽ
-            file[eos*"Tₗ_Tᵤ_ts"] = T̄_ts
-            file[eos*"Sₗ_Sᵤ_ts"] = S̄_ts
-            file[eos*"ρₗ_ρᵤ_ts"] = ρ̄_ts
+            file[group*"Ẽ"] = Ẽ
+            file[group*"Tₗ_Tᵤ_ts"] = T̄_ts
+            file[group*"Sₗ_Sᵤ_ts"] = S̄_ts
+            file[group*"ρₗ_ρᵤ_ts"] = ρ̄_ts
         end
     else
         jldopen(diagnostics_file, "w") do file
-            file[eos*"Ẽ"] = Ẽ
-            file[eos*"Tₗ_Tᵤ_ts"] = T̄_ts
-            file[eos*"Sₗ_Sᵤ_ts"] = S̄_ts
-            file[eos*"ρₗ_ρᵤ_ts"] = ρ̄_ts
+            file[group*"Ẽ"] = Ẽ
+            file[group*"Tₗ_Tᵤ_ts"] = T̄_ts
+            file[group*"Sₗ_Sᵤ_ts"] = S̄_ts
+            file[group*"ρₗ_ρᵤ_ts"] = ρ̄_ts
         end
     end
     return nothing

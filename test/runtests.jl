@@ -76,12 +76,12 @@ using Test
         save_diagnostics!(diagnostics_file,
                           simulation.output_writers[:tracers].filepath,
                           simulation.output_writers[:computed_output].filepath,
-                          eos = "lineareos")
+                          group = "lineareos")
         @test isfile(diagnostics_file)
         save_diagnostics!(diagnostics_file,
                           simulation.output_writers[:tracers].filepath,
                           simulation.output_writers[:computed_output].filepath,
-                          eos = "nonlineareos")
+                          group = "nonlineareos")
         @test isfile(diagnostics_file)
 
         update_diagnostic!(diagnostics_file, "nonlineareos", "S_flux",

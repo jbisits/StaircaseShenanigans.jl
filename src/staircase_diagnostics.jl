@@ -63,6 +63,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
 
         if eos[end-1] ∉ group_keys
             "dims" ∈ group_keys ? nothing : dimensions!(diagnostics_file, computed_output)
+            Rᵨ!(diagnostics_file, computed_output, eos)
             φ_interface_flux!(diagnostics_file, tracers, :S, eos)
             φ_interface_flux!(diagnostics_file, tracers, :T, eos)
             compute_Ẽ!(diagnostics_file, computed_output, tracers, eos)
@@ -72,6 +73,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
     else
 
         dimensions!(diagnostics_file, computed_output)
+        Rᵨ!(diagnostics_file, computed_output, eos)
         φ_interface_flux!(diagnostics_file, tracers, :S, eos)
         φ_interface_flux!(diagnostics_file, tracers, :T, eos)
         compute_Ẽ!(diagnostics_file, computed_output, tracers, eos)
@@ -87,7 +89,7 @@ Save space, time and any other variable that acts as a dimension (e.g `z✶`).
 """
 function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 
-    dims = ("time", "xC", "yC", "zC", "R_ρ")
+    dims = ("time", "xC", "yC", "zC")
     NCDataset(co) do ds
 
         if isfile(diagnostics_file)
@@ -106,6 +108,23 @@ function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 
     end
 
+    return nothing
+end
+function Rᵨ!(diagnostics_file::AbstractString, computed_output::AbstractString, eos)
+
+        NCDataset(computed_output) do ds
+
+            if isfile(diagnostics_file)
+                jldopen(diagnostics_file, "a+") do file
+                        file[eos*"R_ρ"] = ds["R_ρ"][:]
+                end
+            else
+                jldopen(diagnostics_file, "w") do file
+                    file[eos*"R_ρ"] = ds["R_ρ"][:]
+                end
+            end
+
+        end
     return nothing
 end
 """

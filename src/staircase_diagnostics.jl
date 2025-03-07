@@ -55,7 +55,7 @@ but they returned output is in `.jld2` format. The kwarg `group` is for creating
 function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractString,
                            computed_output::AbstractString;
                            group = nothing,
-                           interface_offset = 10)
+                           interface_offset = 9)
 
     group = isnothing(group) ? "" : group[end] == '/' ? group : group * "/" # creates a group in the saved output.
 
@@ -142,7 +142,8 @@ function saves so they can all be recomputed.
 """
 function update_diagnostic!(diagnostics_file::AbstractString, group::AbstractString,
                             key::AbstractString, tracers::AbstractString,
-                            computed_output::AbstractString)
+                            computed_output::AbstractString;
+                            interface_offset = 9)
 
     S_flux_keys = ("S_flux", "S_interface_idx")
     T_flux_keys = ("T_flux", "T_interface_idx")
@@ -167,7 +168,7 @@ function update_diagnostic!(diagnostics_file::AbstractString, group::AbstractStr
     elseif keys_to_remove == T_flux_keys
         φ_interface_flux!(diagnostics_file, tracers, :T, group)
     elseif keys_to_remove == Ẽ_keys
-        compute_Ẽ!(diagnostics_file, computed_output, tracers, group)
+        compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
     elseif keys_to_remove == interface_thickness_keys
         interface_thickness!(diagnostics_file, tracers, group)
     end
@@ -365,7 +366,7 @@ function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, trac
 
         T_ha = reshape(mean(T[:, :, :, t], dims = (1, 2)), :)
         interface_idx = findfirst(T_ha .< mid_T)
-        lower = 1:interface_idx-interface_offset
+        lower = 1:interface_idx-1-interface_offset # the extra -1 is needed because of `findfirst` index.
         upper = interface_idx+interface_offset:length(zC)
 
         Hₗ = abs(zC[lower][1] - zC[lower][end])

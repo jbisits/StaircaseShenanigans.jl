@@ -90,8 +90,14 @@ using Test
         @test isfile(diagnostics_file)
 
         update_diagnostic!(diagnostics_file, "lineareos", "hₜ",
-        simulation.output_writers[:tracers].filepath,
-        simulation.output_writers[:computed_output].filepath)
+                            simulation.output_writers[:tracers].filepath,
+                            simulation.output_writers[:computed_output].filepath)
+        @test isfile(diagnostics_file)
+
+        update_diagnostic!(diagnostics_file, "nonlineareos", "Ẽ",
+                            simulation.output_writers[:tracers].filepath,
+                            simulation.output_writers[:computed_output].filepath,
+                            interface_offset = 2)
         @test isfile(diagnostics_file)
 
         rm(diagnostics_file)

@@ -55,7 +55,7 @@ but they returned output is in `.jld2` format. The kwarg `group` is for creating
 function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractString,
                            computed_output::AbstractString;
                            group = nothing,
-                           interface_offset = 9)
+                           interface_offset = 4)
 
     group = isnothing(group) ? "" : group[end] == '/' ? group : group * "/" # creates a group in the saved output.
 
@@ -143,7 +143,7 @@ function saves so they can all be recomputed.
 function update_diagnostic!(diagnostics_file::AbstractString, group::AbstractString,
                             key::AbstractString, tracers::AbstractString,
                             computed_output::AbstractString;
-                            interface_offset = 9)
+                            interface_offset = 4)
 
     S_flux_keys = ("S_flux", "S_interface_idx")
     T_flux_keys = ("T_flux", "T_interface_idx")

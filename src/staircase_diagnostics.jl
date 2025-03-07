@@ -53,7 +53,9 @@ but they returned output is in `.jld2` format. The kwarg `group` is for creating
 `diagnostics_file`.
 """
 function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractString,
-                           computed_output::AbstractString; group = nothing)
+                           computed_output::AbstractString;
+                           group = nothing,
+                           interface_offset = 10)
 
     group = isnothing(group) ? "" : group[end] == '/' ? group : group * "/" # creates a group in the saved output.
 
@@ -68,7 +70,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
             Rᵨ!(diagnostics_file, computed_output, group)
             φ_interface_flux!(diagnostics_file, tracers, :S, group)
             φ_interface_flux!(diagnostics_file, tracers, :T, group)
-            compute_Ẽ!(diagnostics_file, computed_output, tracers, group)
+            compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
             interface_thickness!(diagnostics_file, tracers, group)
         end
 
@@ -78,7 +80,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         Rᵨ!(diagnostics_file, computed_output, group)
         φ_interface_flux!(diagnostics_file, tracers, :S, group)
         φ_interface_flux!(diagnostics_file, tracers, :T, group)
-        compute_Ẽ!(diagnostics_file, computed_output, tracers, group)
+        compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
         interface_thickness!(diagnostics_file, tracers, group)
 
     end
@@ -335,11 +337,11 @@ heights Hᵤ and Hₗ are calculated from this but they take initial values of t
 in two as that is how the experiments are set.
 Also saved is a time series of the average temperature, salinity and density in the upper and
 lower layers.
-The kwarg `interface_offset` is how far away to move (vertically) from the interface to define
-the upper and lower layers.
+The warg `interface_offset` is how far away to move (vertically) from the interface to define
+the upper and lower layers. This is passed by [save_diagnostics!](@ref)
 """
-function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, tracers::AbstractString, group;
-                    interface_offset = 1)
+function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, tracers::AbstractString,
+                    group, interface_offset)
 
     ds_co = NCDataset(co)
     ds_tracers = NCDataset(tracers)

@@ -101,7 +101,7 @@ using Test
                             interface_offset = 2)
         @test isfile(diagnostics_file)
 
-        save_diagnostic!(diagnostics_file, diagnostics_file,
+        save_diagnostic!(diagnostics_file, φ_interface_flux!,
                          (simulation.output_writers[:tracers].filepath, :T, "extra_group"))
 
         @test isfile(diagnostics_file)

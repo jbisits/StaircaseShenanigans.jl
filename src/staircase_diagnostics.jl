@@ -288,8 +288,7 @@ function ha_φ_flux!(diagnostics_file::AbstractString, tracers::AbstractString, 
 
         for i ∈ eachindex(Δt)
 
-            φₜ = [reshape(mean(φ[:, :, :, i], dims = (1, 2)), :)
-                  reshape(mean(φ[:, :, :, i+1], dims = (1, 2)), :)]
+            φₜ = [reshape(mean(φ[:, :, :, i], dims = (1, 2)), :) reshape(mean(φ[:, :, :, i+1], dims = (1, 2)), :)]
             sort!(φₜ, rev = true, dims = 1)
             ∫φdz = cumsum(φₜ * Δz, dims = 1)
             dₜ∫φdz = vec(diff(∫φdz, dims = 2) ./ Δt[i])

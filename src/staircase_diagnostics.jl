@@ -70,6 +70,8 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
             Rᵨ!(diagnostics_file, computed_output, group)
             φ_interface_flux!(diagnostics_file, tracers, :S, group)
             φ_interface_flux!(diagnostics_file, tracers, :T, group)
+            ha_φ_flux!(diagnostics_file, tracers, :S, group)
+            ha_φ_flux!(diagnostics_file, tracers, :T, group)
             compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
             interface_thickness!(diagnostics_file, tracers, group)
         end
@@ -80,6 +82,8 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         Rᵨ!(diagnostics_file, computed_output, group)
         φ_interface_flux!(diagnostics_file, tracers, :S, group)
         φ_interface_flux!(diagnostics_file, tracers, :T, group)
+        ha_φ_flux!(diagnostics_file, tracers, :S, group)
+        ha_φ_flux!(diagnostics_file, tracers, :T, group)
         compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
         interface_thickness!(diagnostics_file, tracers, group)
 
@@ -163,7 +167,9 @@ function update_diagnostic!(diagnostics_file::AbstractString, group::AbstractStr
                             interface_offset = 4)
 
     S_flux_keys = ("S_flux", "S_interface_idx")
+    ha_S_flux_keys = ("ha_S_flux", "ha_S_interface_idx")
     T_flux_keys = ("T_flux", "T_interface_idx")
+    ha_T_flux_keys = ("ha_T_flux", "ha_T_interface_idx")
     interface_thickness_keys = ("hₜ", "hₛ", "r","ΔS", "ΔT")
     Ẽ_keys = ("Ẽ", "Tₗ_Tᵤ_ts", "Sₗ_Sᵤ_ts", "ρₗ_ρᵤ_ts")
 
@@ -171,6 +177,10 @@ function update_diagnostic!(diagnostics_file::AbstractString, group::AbstractStr
                             S_flux_keys
                         elseif key ∈ T_flux_keys
                             T_flux_keys
+                        elseif key ∈ ha_S_flux_keys
+                            ha_S_flux_keys
+                        elseif key ∈ ha_T_flux_keys
+                            ha_T_flux_keys
                         elseif key ∈ interface_thickness_keys
                             interface_thickness_keys
                         elseif key ∈ Ẽ_keys
@@ -184,6 +194,10 @@ function update_diagnostic!(diagnostics_file::AbstractString, group::AbstractStr
         φ_interface_flux!(diagnostics_file, tracers, :S, group)
     elseif keys_to_remove == T_flux_keys
         φ_interface_flux!(diagnostics_file, tracers, :T, group)
+    elseif keys_to_remove == ha_S_flux_keys
+        ha_φ_flux!(diagnostics_file, tracers, :S, group)
+    elseif keys_to_remove == ha_T_flux_keys
+        ha_φ_flux!(diagnostics_file, tracers, :T, group)
     elseif keys_to_remove == Ẽ_keys
         compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
     elseif keys_to_remove == interface_thickness_keys
@@ -245,6 +259,49 @@ function φ_interface_flux!(diagnostics_file::AbstractString, tracers::AbstractS
         end
 
         save_fluxes!(diagnostics_file, φ_interface_flux, interface_idx, tracer, group)
+
+    end
+
+    return nothing
+end
+"""
+    function ha_φ_flux!(diagnostics_file::AbstractString, tracers::AbstractString, tracer::Symbol)
+Calculate the flux through the diffusive interface for the horizontally averaged `φ` tracer.
+The diffusive interface is found in the horizontally averaged, sorted profile where φ > Δφ / 2
+(with the previous two levels saved so it is not a single value). The flux is then calculated as the change in φ content to
+z(Δφ / 2) were z is the depth. In this case the whole flux field is saved and the index of
+the interface is returned separately.
+"""
+function ha_φ_flux!(diagnostics_file::AbstractString, tracers::AbstractString, tracer::Symbol, group)
+
+    NCDataset(tracers) do ds
+
+        φ = ds[tracer]
+        Δφ₀ = φ[1, 1, 1, 1] - 0.5 * (φ[1, 1, 1, 1] - φ[1, 1, end, 1])
+        timestamps = ds[:time][:]
+        Δt = diff(timestamps)
+        z = ds[:zC][:]
+        Δz = diff(z)[1]
+
+        φ_flux = Array{Float64}(undef, length(z), length(Δt))
+        interface_idx = Array{Int64}(undef, length(Δt))
+
+        for i ∈ eachindex(Δt)
+
+            φₜ = [reshape(mean(φ[:, :, :, i], dims = (1, 2)), :) reshape(mean(φ[:, :, :, i+1], dims = (1, 2)), :)]
+            sort!(φₜ, rev = true, dims = 1)
+            ∫φdz = cumsum(φₜ * Δz, dims = 1)
+            dₜ∫φdz = vec(diff(∫φdz, dims = 2) ./ Δt[i])
+
+            φₜ_interp = 0.5 * vec(sum(φₜ, dims = 2))
+            interface_idx[i] = findfirst(φₜ_interp .< Δφ₀) - 1
+
+            φ_flux[:, i] .= dₜ∫φdz
+
+        end
+
+        ha_tracer = "ha_"*string(tracer)
+        save_fluxes!(diagnostics_file, φ_flux, interface_idx, ha_tracer, group)
 
     end
 

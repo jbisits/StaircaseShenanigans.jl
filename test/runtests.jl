@@ -1,5 +1,6 @@
-using StaircaseShenanigans, GibbsSeaWater
+using StaircaseShenanigans, GibbsSeaWater, JLD2
 using SeawaterPolynomials: thermal_expansion, haline_contraction
+using StaircaseShenanigans: φ_interface_flux!
 using Test
 
 @testset "StaircaseShenanigans.jl" begin
@@ -99,6 +100,16 @@ using Test
                             simulation.output_writers[:computed_output].filepath,
                             interface_offset = 2)
         @test isfile(diagnostics_file)
+
+        save_diagnostic!(diagnostics_file, φ_interface_flux!,
+                         (simulation.output_writers[:tracers].filepath, :T, "extra_group/"))
+
+        @test isfile(diagnostics_file)
+
+        output = jldopen(diagnostics_file)
+        println(keys(output))
+        @test all(sort(keys(output)) .== sort(["lineareos", "nonlineareos", "extra_group", "dims"]))
+        close(output)
 
         rm(diagnostics_file)
         rm(simulation.output_writers[:tracers].filepath)

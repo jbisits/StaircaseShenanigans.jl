@@ -88,6 +88,23 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
     return nothing
 end
 """
+function save_diagnostic!(diagnostics_file::AbstractString, diagnostic_function!::Function,
+                            function_args)
+Save `diagnostic_function!` to `diagnostics_file`. The `function_args` are the arguments for
+`diagnostic_function`. This allows a nice way to add other diagnostics that follows syntax
+I have used above though this is really a nice to have rather than necessary function.
+`function_args` will always require the data to compute the diagnostic from, the `group` to
+save it to in `diagnostics_file`. **Note:** the `group` must end with `\` i.e. `lineareos\`
+will create the group in `diagnostics_file` but `lineareos` will just prepend variable name.
+Either will work but best to save in groups.
+"""
+function save_diagnostic!(diagnostics_file::AbstractString, diagnostic_function!::Function,
+                            function_args)
+
+    diagnostic_function!(diagnostics_file, function_args...)
+    return nothing
+end
+"""
     function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 Save space, time and any other variable that acts as a dimension (e.g `z✶`).
 """

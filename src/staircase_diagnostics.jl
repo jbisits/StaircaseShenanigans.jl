@@ -94,7 +94,9 @@ Save `diagnostic_function!` to `diagnostics_file`. The `function_args` are the a
 `diagnostic_function`. This allows a nice way to add other diagnostics that follows syntax
 I have used above though this is really a nice to have rather than necessary function.
 `function_args` will always require the data to compute the diagnostic from, the `group` to
-save it to in `diagnostics_file`. After that
+save it to in `diagnostics_file`. **Note:** the `group` must end with `\` i.e. `lineareos\`
+will create the group in `diagnostics_file` but `lineareos` will just prepend variable name.
+Either will work but best to save in groups.
 """
 function save_diagnostic!(diagnostics_file::AbstractString, diagnostic_function!::Function,
                             function_args)

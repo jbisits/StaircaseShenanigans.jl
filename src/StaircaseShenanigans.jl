@@ -38,7 +38,7 @@ export BackgroundTanh, BackgroundLinear, BackgroundStep, NoBackground,
 
 export jump_periodic_boundary_conditions
 
-export AbstractNoise, VelocityNoise, TracerNoise
+export AbstractNoise, VelocityNoise, TracerNoise, NoiseAtDepth
 
 export OuterStairMask, OuterStairTargets, OuterMask, OuterTargets, ExponentialTarget
 

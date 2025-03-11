@@ -118,9 +118,23 @@ function set_noise!(model, noise::VelocityNoise)
     return nothing
 end
 """
-    function set_noise!(model, noise::TracerNoise)
-Add initial noise the `tracer` fields. The tracer noise is added to the values already in
-the tracer `Field`s so if nothing else is set it will just be noise.
+    function set_noise!(model, nd::NoiseAtDepth{<:AbstractArray, <:VelocityNoise})
+Add initial noise the `velocity` fields where `depth[1] < z < depth[2]``.
+"""
+function set_noise!(model, nd::NoiseAtDepth{<:AbstractArray, <:VelocityNoise{T}}) where T
+
+    depth_array = Array(nd.depth)
+    u_noise(x, y, z) = depth_array[1] < z < depth_array[2] ? nd.noise.u_magnitude * randn() : 0
+    v_noise(x, y, z) = depth_array[1] < z < depth_array[2] ? nd.noise.v_magnitude * randn() : 0
+    w_noise(x, y, z) = depth_array[1] < z < depth_array[2] ? nd.noise.w_magnitude * randn() : 0
+
+    set!(model, u = u_noise, v = v_noise, w = w_noise)
+
+    return nothing
+end
+"""
+    function set_noise!(model, noise::VelocityNoise)
+Add initial noise the `velocity` fields.
 """
 function set_noise!(model, noise::TracerNoise)
 
@@ -131,6 +145,32 @@ function set_noise!(model, noise::TracerNoise)
     set!(S_noise_field, S_noise)
 
     T_noise = noise.T_magnitude * randn(size(T))
+    T_noise_field = similar(T)
+    set!(T_noise_field, T_noise)
+
+    S₀ = S + S_noise_field
+    T₀ = T + T_noise_field
+
+    set!(model, S = S₀, T = T₀)
+
+    return nothing
+end
+"""
+    function set_noise!(model, noise::TracerNoise)
+Add initial noise the `tracer` fields. The tracer noise is added to the values already in
+the tracer `Field`s so if nothing else is set it will just be noise.
+"""
+function set_noise!(model, nd::NoiseAtDepth{<:AbstractArray, <:TracerNoise{c}}) where c
+
+    S, T = model.tracers
+
+    depth_array = Array(nd.depth)
+    S_noise(x, y, z) = depth_array[1] < z < depth_array[2] ? nd.noise.S_magnitude * randn() : 0
+    T_noise(x, y, z) = depth_array[1] < z < depth_array[2] ? nd.noise.T_magnitude * randn() : 0
+
+    S_noise_field = similar(S)
+    set!(S_noise_field, S_noise)
+
     T_noise_field = similar(T)
     set!(T_noise_field, T_noise)
 

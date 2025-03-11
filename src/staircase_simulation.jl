@@ -230,7 +230,7 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
     ∫wb = Integral(wb)
 
     computed_outputs = Dict("σ" => σ, "N²" => N², "∫ε" => ∫ε, "ε_maximum" => ε_maximum,
-                            "∫Eₖ" => ∫Eₖ, "∫wb" => ∫wb )
+                            "∫Eₖ" => ∫Eₖ, "∫wb" => ∫wb)
     oa = Dict(
         "σ" => Dict("longname" => "Seawater potential density calculated using equation of state in model.",
                     "units" => "kgm⁻³"),
@@ -238,10 +238,12 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
                     "units" => "s⁻¹"),
         "∫ε" => Dict("longname" => "Volume integrated turbulent kinetic energy dissipation rate.",
                         "units" => "m⁵s⁻³"),
+        "ε_maximum" => Dict("longname" => "Maximum (in space) local TKE rate.",
+                        "units" => "m⁵s⁻³"),
         "∫Eₖ" => Dict("longname" => "Volume integrated turbulent kinetic energy.",
                         "units" => "m⁵s⁻²"),
         "∫wb" => Dict("longname" => "Volume integrated buoyancy flux.",
-                        "units" => "m⁵s⁻³"),
+                        "units" => "m⁵s⁻³")
         )
 
     if !(typeof(ics.background_state) <: NoBackground)

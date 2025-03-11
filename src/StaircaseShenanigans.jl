@@ -12,6 +12,7 @@ using SeawaterPolynomials: thermal_expansion, haline_contraction, ρ
 using GibbsSeaWater: gsw_alpha, gsw_beta
 using NCDatasets, JLD2
 using Statistics
+using Oceanostics: KineticEnergyDissipationRate, KineticEnergy, PotentialEnergy, BuoyancyProductionTerm
 
 import SeawaterPolynomials.SecondOrderSeawaterPolynomials: RoquetSeawaterPolynomial
 

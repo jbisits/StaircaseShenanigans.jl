@@ -221,13 +221,27 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
 
     σ = seawater_density(model, temperature = T, salinity = S, geopotential_height = reference_gp_height)
     N² = buoyancy_frequency(model)
+    ε = KineticEnergyDissipationRate(model)
+    ∫ε = Integral(ε)
+    ε_maximum = Reduction(maximum!, ε, dims = (1, 2, 3))
+    Eₖ = KineticEnergy(model)
+    ∫Eₖ = Integral(Eₖ)
+    wb = BuoyancyProductionTerm(model)
+    ∫wb = Integral(wb)
 
-    computed_outputs = Dict("σ" => σ, "N²" => N²)
+    computed_outputs = Dict("σ" => σ, "N²" => N², "∫ε" => ∫ε, "ε_maximum" => ε_maximum,
+                            "∫Eₖ" => ∫Eₖ, "∫wb" => ∫wb )
     oa = Dict(
         "σ" => Dict("longname" => "Seawater potential density calculated using equation of state in model.",
                     "units" => "kgm⁻³"),
         "N²" => Dict("longname" => "Buoyancy frequency.",
-                    "units" => "s⁻¹")
+                    "units" => "s⁻¹"),
+        "∫ε" => Dict("longname" => "Volume integrated turbulent kinetic energy dissipation rate.",
+                        "units" => "m⁵s⁻³"),
+        "∫Eₖ" => Dict("longname" => "Volume integrated turbulent kinetic energy.",
+                        "units" => "m⁵s⁻²"),
+        "∫wb" => Dict("longname" => "Volume integrated buoyancy flux.",
+                        "units" => "m⁵s⁻³"),
         )
 
     if !(typeof(ics.background_state) <: NoBackground)

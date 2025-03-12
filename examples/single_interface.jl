@@ -12,11 +12,12 @@ model_setup = (;architecture, diffusivities, domain_extent, domain_topology, res
 depth_of_interface = -0.5
 salinity = [34.54, 34.70]
 temperature = [-1.5, 0.5]
-interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature, interface_smoothing = TanhInterfaceSteepness())
-velocity_noise = VelocityNoise()
+interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature)
+velocity_noise = NoiseAtDepth([-0.6, -0.4], VelocityNoise())
+tracer_noise = NoiseAtDepth([-0.6, -0.4], TracerNoise())
 
 ## setup model
-sdns = StaircaseDNS(model_setup, interface_ics, velocity_noise)
+sdns = StaircaseDNS(model_setup, interface_ics, tracer_noise)
 
 # Build simulation
 Δt = 1e-1

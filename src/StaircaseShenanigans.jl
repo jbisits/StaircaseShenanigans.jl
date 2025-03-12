@@ -8,7 +8,7 @@ import Oceananigans.BackgroundField
 using SeawaterPolynomials.TEOS10
 using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 using SeawaterPolynomials: BoussinesqEquationOfState
-using SeawaterPolynomials: thermal_expansion, haline_contraction, ρ
+using SeawaterPolynomials: thermal_expansion, haline_contraction, total_density
 using GibbsSeaWater: gsw_alpha, gsw_beta
 using NCDatasets, JLD2
 using Statistics

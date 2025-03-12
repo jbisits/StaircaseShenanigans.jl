@@ -21,10 +21,10 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
     T_l = T_g = ds[:Tₗ_mean][:]
 
     eos_vec = fill(eos, length(S_u))
-    ρ_u = ρ.(T_u, S_u, 0, eos_vec)
-    ρ_l = ρ.(T_l, S_l, 0, eos_vec)
-    ρ_f = ρ.(T_f, S_f, 0, eos_vec)
-    ρ_g = ρ.(T_g, S_g, 0, eos_vec)
+    ρ_u = total_density.(T_u, S_u, 0, eos_vec)
+    ρ_l = total_density.(T_l, S_l, 0, eos_vec)
+    ρ_f = total_density.(T_f, S_f, 0, eos_vec)
+    ρ_g = total_density.(T_g, S_g, 0, eos_vec)
 
     R_ρ = @. (0.5 * (ρ_f - ρ_u) + 0.5 * (ρ_l - ρ_g)) / (0.5 * (ρ_f - ρ_l) + 0.5 * (ρ_u - ρ_g))
 
@@ -67,7 +67,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
 
         if group[end-1] ∉ group_keys
             "dims" ∈ group_keys ? nothing : dimensions!(diagnostics_file, computed_output)
-            Rᵨ!(diagnostics_file, computed_output, group)
+            save_computed_output!(diagnostics_file, computed_output, group)
             φ_interface_flux!(diagnostics_file, tracers, :S, group)
             φ_interface_flux!(diagnostics_file, tracers, :T, group)
             ha_φ_flux!(diagnostics_file, tracers, :S, group)
@@ -79,7 +79,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
     else
 
         dimensions!(diagnostics_file, computed_output)
-        Rᵨ!(diagnostics_file, computed_output, group)
+        save_computed_output!(diagnostics_file, computed_output, group)
         φ_interface_flux!(diagnostics_file, tracers, :S, group)
         φ_interface_flux!(diagnostics_file, tracers, :T, group)
         ha_φ_flux!(diagnostics_file, tracers, :S, group)
@@ -108,6 +108,48 @@ function save_diagnostic!(diagnostics_file::AbstractString, diagnostic_function!
     diagnostic_function!(diagnostics_file, function_args...)
     return nothing
 end
+"Local Kolmogorov length scale."
+η(ν, ε) = (ν.^3 ./ ε).^(1/4)
+"Local Batchelor length scale."
+Ba(η, Sc) = η / sqrt(Sc)
+"""
+    function save_computed_output!(diagnostics_file::AbstractString, computed_output::AbstractString, group)
+Save diagnostics from `computed_output` (energetics, Rᵨ, horizontally averaged N² and density)
+"""
+function save_computed_output!(diagnostics_file::AbstractString, computed_output::AbstractString, group)
+
+    NCDataset(computed_output) do ds
+
+        if isfile(diagnostics_file)
+            jldopen(diagnostics_file, "a+") do file
+                file[group*"R_ρ"] = ds["R_ρ"][:]
+                file[group*"∫ε"] = ds["∫ε"][:]
+                file[group*"∫Eₖ"] = ds["∫Eₖ"][:]
+                file[group*"∫wb"] = ds["∫wb"][:]
+                ν, κₛ = 1e-6, 1e-9 # hard coded because previously was not saved
+                Sc = ν / κₛ
+                η_ = η.(ν, ds["ε_maximum"][:])
+                file[group*"η"] = η_
+                file[group*"Ba"] = Ba(η_, Sc)
+            end
+        else
+            jldopen(diagnostics_file, "w") do file
+                file[group*"R_ρ"] = ds["R_ρ"][:]
+                file[group*"∫ε"] = ds["∫ε"][:]
+                file[group*"∫Eₖ"] = ds["∫Eₖ"][:]
+                file[group*"∫wb"] = ds["∫wb"][:]
+                ν, κₛ = 1e-6, 1e-9 # hard coded because previously was not saved
+                Sc = ν / κₛ
+                η_ = η.(ν, ds["∫ε"][:])
+                file[group*"η"] = η_
+                file[group*"Ba"] = Ba(η_, Sc)
+            end
+        end
+
+    end
+
+    return nothing
+end
 """
     function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 Save space, time and any other variable that acts as a dimension (e.g `z✶`).
@@ -133,23 +175,6 @@ function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 
     end
 
-    return nothing
-end
-function Rᵨ!(diagnostics_file::AbstractString, computed_output::AbstractString, group)
-
-        NCDataset(computed_output) do ds
-
-            if isfile(diagnostics_file)
-                jldopen(diagnostics_file, "a+") do file
-                        file[group*"R_ρ"] = ds["R_ρ"][:]
-                end
-            else
-                jldopen(diagnostics_file, "w") do file
-                    file[group*"R_ρ"] = ds["R_ρ"][:]
-                end
-            end
-
-        end
     return nothing
 end
 """

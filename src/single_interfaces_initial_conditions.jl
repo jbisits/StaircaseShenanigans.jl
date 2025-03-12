@@ -52,10 +52,10 @@ function compute_R_ρ(salinity, temperature, depth_of_interfaces::Number, eos)
     T_u = T_f = temperature[1]
     T_l = T_g = temperature[2]
 
-    ρ_u = ρ(T_u, S_u, depth_of_interfaces, eos)
-    ρ_l = ρ(T_l, S_l, depth_of_interfaces, eos)
-    ρ_f = ρ(T_f, S_f, depth_of_interfaces, eos)
-    ρ_g = ρ(T_g, S_g, depth_of_interfaces, eos)
+    ρ_u = total_density(T_u, S_u, depth_of_interfaces, eos)
+    ρ_l = total_density(T_l, S_l, depth_of_interfaces, eos)
+    ρ_f = total_density(T_f, S_f, depth_of_interfaces, eos)
+    ρ_g = total_density(T_g, S_g, depth_of_interfaces, eos)
 
     return (0.5 * (ρ_f - ρ_u) + 0.5 * (ρ_l - ρ_g)) / (0.5 * (ρ_f - ρ_l) + 0.5 * (ρ_u - ρ_g))
 end

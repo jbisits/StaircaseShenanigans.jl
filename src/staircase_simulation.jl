@@ -91,8 +91,8 @@ function non_dimensional_numbers!(simulation::Simulation, sdns::StaircaseDNS)
     Pr = ν / κₜ
     Sc = ν / κₛ
     Le = κₜ / κₛ
-    salinity = Array(initial_conditions.salinity)
-    temperature = Array(initial_conditions.temperature)
+    salinity = Array(initial_conditions.salinity_values)
+    temperature = Array(initial_conditions.temperature_values)
     int_depth = initial_conditions.depth_of_interface
     Lz = model.grid.Lz
     L = Lz - int_depth # lower layer height

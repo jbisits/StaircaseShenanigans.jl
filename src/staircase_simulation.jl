@@ -41,26 +41,74 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, stop_time::Number,
     # Checkpointer setup
     checkpointer_setup!(simulation, sdns, output_dir, checkpointer_time_interval)
 
-    save_R_ρ!(simulation, sdns)
+    non_dimensional_numbers!(simulation, sdns)
 
     save_background_state!(simulation, sdns)
 
     return simulation
 
 end
-"""
-    save_R_ρ!(simulation::Simulation, sdns::StaircaseDNS)
-To the output file.
-"""
-function save_R_ρ!(simulation::Simulation, sdns::StaircaseDNS)
+"Salinity and temperature Rayleigh numbers."
+function compute_Ra(salinity, temperature, κₛ, κₜ, ν, eos, int_depth, L; g = 9.81)
 
-    if simulation.output_writers[:tracers] isa NetCDFOutputWriter
-        NCDataset(simulation.output_writers[:computed_output].filepath, "a") do ds
-            ds.attrib["Step interface R_ρ"] = sdns.initial_conditions.R_ρ
-        end
-    elseif simulation.output_writers[:tracers] isa JLD2OutputWriter
-        jldopen(simulation.output_writers[:computed_output].filepath, "a+") do f
-            f["Step interface R_ρ"] = sdns.initial_conditions.R_ρ
+    S₀ᵘ, S₀ˡ = salinity
+    T₀ᵘ, T₀ˡ = temperature
+    S̄ = 0.5 * (S₀ˡ - S₀ᵘ)
+    T̄ = 0.5 * (T₀ˡ - T₀ᵘ)
+    ΔS = S₀ˡ - S₀ᵘ
+    ΔT = T₀ˡ - T₀ᵘ
+    S_u = S_g = S₀ᵘ
+    S_l = S_f = S₀ˡ
+    T_u = T_f = T₀ᵘ
+    T_l = T_g = T₀ˡ
+
+    ρ_u = total_density(T_u, S_u, int_depth, eos)
+    ρ_l = total_density(T_l, S_l, int_depth, eos)
+    ρ_f = total_density(T_f, S_f, int_depth, eos)
+    ρ_g = total_density(T_g, S_g, int_depth, eos)
+
+    ρ_m = total_density(T̄, S̄, int_depth, eos)
+
+    # McDougall (1981)
+    α̃ = (0.5 * (ρ_f - ρ_g) - 0.5 * (ρ_l - ρ_u)) / (ρ_m * ΔT)
+    β̃ = (0.5 * (ρ_f - ρ_g) + 0.5 * (ρ_l - ρ_u)) / (ρ_m * ΔS)
+
+    RaS = (g * β̃ * ΔS * L^3) / (ν * κₛ)
+    RaT = (g * α̃ * ΔT * L^3) / (ν * κₜ)
+
+    return RaS, RaT
+end
+"""
+    non_dimensional_numbers!(simulation::Simulation, sdns::StaircaseDNS)
+Save these to the output file.
+"""
+function non_dimensional_numbers!(simulation::Simulation, sdns::StaircaseDNS)
+
+    model, initial_conditions = sdns.model, sdns.initial_conditions
+    eos = model.buoyancy.model.equation_of_state
+    ν = model.closure.ν
+    κₛ, κₜ = model.closure.κ
+    Pr = ν / κₜ
+    Sc = ν / κₛ
+    Le = κₜ / κₛ
+    salinity = Array(initial_conditions.salinity)
+    temperature = Array(initial_conditions.temperature)
+    int_depth = initial_conditions.depth_of_interface
+    Lz = model.grid.Lz
+    L = Lz - int_depth # lower layer height
+    RaS, RaT = compute_Ra(salinity, temperature, κₛ, κₜ, ν, eos, int_depth, L)
+
+    nd_nums = Dict("Pr" => Pr, "Sc" => Sc, "Le" => Le, "RaS" => RaS, "RaT" => RaT,
+                    "Rᵨ" => initial_conditions.R_ρ)
+
+    NCDataset(simulation.output_writers[:computed_output].filepath, "a") do ds
+        ds.attrib["EOS"] = summary(eos.seawater_polynomial)
+        ds.attrib["Reference density (kgm⁻³)"] = eos.reference_density
+        ds.attrib["ν (m²s⁻¹)"]  = ν
+        ds.attrib["κₛ (m²s⁻¹)"] = κₛ
+        ds.attrib["κₜ (m²s⁻¹)"] = κₜ
+        for key ∈ keys(nd_nums)
+            ds.attrib[key] = nd_nums[key]
         end
     end
 
@@ -278,6 +326,7 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
 end
 save_computed_output!(simulation, sdns, save_info::Tuple; reference_gp_height = 0) =
     save_computed_output!(simulation, sdns, save_info..., reference_gp_height)
+
 "Default function for `save_custom_output!` in `sdns_simulation_setup`."
 no_custom_output!(simulation, sdns, save_info...) = nothing
 """

@@ -128,7 +128,7 @@ function save_computed_output!(diagnostics_file::AbstractString, computed_output
                 file[group*"∫wb"] = ds["∫wb"][:]
                 ν, κₛ = 1e-6, 1e-9 # hard coded because previously was not saved
                 Sc = ν / κₛ
-                η_ = η.(ν, ds["∫ε"][:])
+                η_ = η.(ν, ds["ε_maximum"][:])
                 file[group*"η"] = η_
                 file[group*"Ba"] = Ba(η_, Sc)
             end

@@ -85,7 +85,7 @@ Save these to the output file.
 function non_dimensional_numbers!(simulation::Simulation, sdns::StaircaseDNS)
 
     model, initial_conditions = sdns.model, sdns.initial_conditions
-    eos = model.buoyancy.model.equation_of_state
+    eos = model.buoyancy.formulation.equation_of_state
     ν = model.closure.ν
     κₛ, κₜ = model.closure.κ
     Pr = ν / κₜ

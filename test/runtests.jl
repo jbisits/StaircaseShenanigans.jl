@@ -22,6 +22,12 @@ using Test
         @test all(unique(interior(sdns_staircase.model.tracers.T, 1, 1, :)) .== reverse(temperature_staircase))
         @test all(unique(interior(sdns_interface.model.tracers.S, 1, 1, :)) .== reverse(salinity))
         @test all(unique(interior(sdns_interface.model.tracers.T, 1, 1, :)) .== reverse(temperature))
+
+        include("noise_range.jl")
+        @test all(interior(sdns_noise_range.model.tracers.S, :, :, z_noise_range) .!= 34.7)
+        @test all(interior(sdns_noise_range.model.tracers.S, :, :, z_no_noise_range) .== 34.7)
+        @test all(interior(sdns_noise_range.model.tracers.T, :, :, z_noise_range) .!= 0.5)
+        @test all(interior(sdns_noise_range.model.tracers.T, :, :, z_no_noise_range) .== 0.5)
     end
 
     @testset "R_ρ calculation" begin
@@ -107,7 +113,6 @@ using Test
         @test isfile(diagnostics_file)
 
         output = jldopen(diagnostics_file)
-        println(keys(output))
         @test all(sort(keys(output)) .== sort(["lineareos", "nonlineareos", "extra_group", "dims"]))
         close(output)
 

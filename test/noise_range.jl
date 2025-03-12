@@ -1,0 +1,9 @@
+model_setup = (;architecture, diffusivities, domain_extent, domain_topology, resolution, eos)
+depth_of_interface = -0.5
+salinity = [34.70, 34.70]
+temperature = [0.5, 0.5]
+interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature)
+tracer_noise = NoiseAtDepth([-0.6, -0.4], TracerNoise())
+sdns_noise_range = StaircaseDNS(model_setup, interface_ics, tracer_noise)
+z_noise_range = findall(-0.6 .< znodes(sdns_noise_range.model.grid, Center()) .< -0.4)
+z_no_noise_range = vcat(1:z_noise_range[1]-1, z_noise_range[end]+1:model.grid.Nz)

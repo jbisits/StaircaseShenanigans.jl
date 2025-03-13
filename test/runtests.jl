@@ -67,7 +67,7 @@ using Test
         depth_of_interface = -0.5
         salinity = [34.54, 34.70]
         temperature = [-1.5, 0.5]
-        interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature, interface_smoothing = TanhInterfaceSteepness())
+        interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature, interface_smoothing = TanhInterfaceThickness())
         sdns = StaircaseDNS(model, interface_ics, nothing)
         set_initial_conditions!(sdns)
         stop_time = 4  * 60 # seconds

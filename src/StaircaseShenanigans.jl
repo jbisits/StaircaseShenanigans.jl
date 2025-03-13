@@ -31,7 +31,7 @@ export STStaircaseInitialConditions, StaircaseICs, SmoothSTStaircaseInitialCondi
        STSingleInterfaceInitialConditions, SingleInterfaceICs,
        set_initial_conditions!
 
-export TanhInterfaceSmoothing, Tanh, TanhInterfaceSteepness, NoSmoothing
+export TanhInterfaceSmoothing, Tanh, TanhInterfaceThickness, NoSmoothing
 
 export BackgroundTanh, BackgroundLinear, BackgroundStep, NoBackground,
         tanh_background, linear_background, step_background

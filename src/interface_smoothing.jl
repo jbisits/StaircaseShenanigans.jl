@@ -7,32 +7,32 @@ struct TanhInterfaceSmoothing{T} <: AbstractInterfaceSmoothing
     Cₗ :: T
     "Change in tracer content over an interface"
     ΔC :: T
-    "Steepness of the tanh change"
-     D :: T
+    "Initial interface thickness"
+     h :: T
     "Location of the interface"
     z_interface :: T
     "Total z range of the two layers seperated by a given interface"
     z_range :: T
 end
 const Tanh = TanhInterfaceSmoothing{T} where {T}
-@inline (p::TanhInterfaceSmoothing)(x, y, z) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.z_range))
+@inline (p::TanhInterfaceSmoothing)(x, y, z) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh((z - p.z_interface) / (p.h * p.z_range)))
 
 "Container for the steepness of the `tanh` over the interface for both salinity and temperature.
 Allows easy setting of both and avoids having to set other parts of the container before the
 model has been setup."
-struct TanhInterfaceSteepness{T}
-    "Salinity interface steepness"
-    DS :: T
-    "Temperature interface steepness"
-    DT :: T
+struct TanhInterfaceThickness{T}
+    "Initial salinity interface thickness"
+    hₛ :: T
+    "Initial salinity interface thickness"
+    hₜ :: T
 end
 "Some defaults that are unstable to diffusive convection."
-TanhInterfaceSteepness() = TanhInterfaceSteepness(500.0, 250.0)
-TanhInterfaceSteepness(S) = TanhInterfaceSteepness(S, S / 3)
+TanhInterfaceThickness() = TanhInterfaceThickness(500.0, 250.0)
+TanhInterfaceThickness(hₛ) = TanhInterfaceThickness(hₛ, hₛ / 3)
 
 Base.summary(p::Type{<:TanhInterfaceSmoothing}) = "tanh smoothing"
 Base.summary(p::TanhInterfaceSmoothing) = "tanh smoothing"
-Base.summary(p::TanhInterfaceSteepness) = "tanh smoothing"
+Base.summary(p::TanhInterfaceThickness) = "tanh smoothing"
 
 struct NoInterfaceSmoothing <: AbstractInterfaceSmoothing end
 const NoSmoothing = NoInterfaceSmoothing

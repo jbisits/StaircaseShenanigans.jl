@@ -74,8 +74,10 @@ using Test
         save_schedule = 60  # seconds
         output_path = joinpath(@__DIR__, "output")
         simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!;
-                                            Δt=1e-1, save_schedule,
+                                            save_schedule,
                                             output_path, max_Δt = 5)
+        min_spacing = abs(domain_extent.Lz) / resolution.Nz
+        @test simulation.Δt == 0.2 * (min_spacing^2 / sdns.model.closure.ν) # tests `initial_timestep`
         run!(simulation)
         compute_R_ρ!(simulation.output_writers[:computed_output].filepath,
                     simulation.output_writers[:tracers].filepath, eos)

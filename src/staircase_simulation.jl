@@ -1,14 +1,14 @@
 """
     function SDNS_simulation_setup
 Build a `simulation` from `sdns`. Only required arguments are the `sdns` and `stop_time`.
-All other `kwargs` have defaults (that can be changed).
+All other `kwargs` have sensible defaults.
 """
 function SDNS_simulation_setup(sdns::StaircaseDNS, stop_time::Number,
                                 save_custom_output!::Function=no_custom_output!,
                                 save_velocities!::Function=no_velocities!;
-                                Δt = 1e-3,
-                                max_Δt = 1e-1,
-                                max_change = 1.2,
+                                Δt = nothing,
+                                max_Δt = Inf,
+                                max_change = 1.1,
                                 save_schedule = 60, # seconds
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
@@ -17,6 +17,7 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, stop_time::Number,
                                 diffusive_cfl = 0.75,
                                 overwrite_saved_output = true)
 
+    Δt = isnothing(Δt) ? initial_timestep(sdns) : Δt
     simulation = Simulation(sdns.model; Δt, stop_time)
 
     # time step adjustments
@@ -48,6 +49,12 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, stop_time::Number,
     return simulation
 
 end
+"""
+    function initial_timestep(sdns)
+Compute an initial timestep from the diffusivities set in the model. The timestep is
+a sensible choice based on the diffusivities set in the simulation.
+"""
+initial_timestep(sdns) = 0.2 * cell_diffusion_timescale(sdns.model)
 "Salinity and temperature Rayleigh numbers."
 function compute_Ra(salinity, temperature, κₛ, κₜ, ν, eos, int_depth, L; g = 9.81)
 

@@ -7,8 +7,8 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, stop_time::Number,
                                 save_custom_output!::Function=no_custom_output!,
                                 save_velocities!::Function=no_velocities!;
                                 Δt = nothing,
-                                max_Δt = 1e-1,
-                                max_change = 1.2,
+                                max_Δt = Inf,
+                                max_change = 1.1,
                                 save_schedule = 60, # seconds
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,

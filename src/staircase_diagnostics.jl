@@ -109,7 +109,7 @@ function save_diagnostic!(diagnostics_file::AbstractString, diagnostic_function!
     return nothing
 end
 "Local Kolmogorov length scale."
-η(ν, ε) = (ν.^3 ./ ε).^(1/4)
+η(ν, ε) = (ν^3 / ε)^(1/4)
 "Local Batchelor length scale."
 Ba(η, Sc) = η / sqrt(Sc)
 """
@@ -126,11 +126,10 @@ function save_computed_output!(diagnostics_file::AbstractString, computed_output
                 file[group*"∫ε"] = ds["∫ε"][:]
                 file[group*"∫Eₖ"] = ds["∫Eₖ"][:]
                 file[group*"∫wb"] = ds["∫wb"][:]
-                ν, κₛ = 1e-6, 1e-9 # hard coded because previously was not saved
-                Sc = ν / κₛ
+                ν, Sc = ds.attrib["ν (m²s⁻¹)"], ds.attrib["Sc"]
                 η_ = η.(ν, ds["ε_maximum"][:])
                 file[group*"η"] = η_
-                file[group*"Ba"] = Ba(η_, Sc)
+                file[group*"Ba"] = Ba.(η_, Sc)
             end
         else
             jldopen(diagnostics_file, "w") do file
@@ -138,8 +137,7 @@ function save_computed_output!(diagnostics_file::AbstractString, computed_output
                 file[group*"∫ε"] = ds["∫ε"][:]
                 file[group*"∫Eₖ"] = ds["∫Eₖ"][:]
                 file[group*"∫wb"] = ds["∫wb"][:]
-                ν, κₛ = 1e-6, 1e-9 # hard coded because previously was not saved
-                Sc = ν / κₛ
+                ν, Sc = ds.attrib["ν (m²s⁻¹)"], ds.attrib["Sc"]
                 η_ = η.(ν, ds["∫ε"][:])
                 file[group*"η"] = η_
                 file[group*"Ba"] = Ba(η_, Sc)

@@ -182,13 +182,13 @@ function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
 
 
     simulation.output_writers[:tracers] =
-        save_file == :netcdf ? NetCDFOutputWriter(model, tracers;
+        save_file == :netcdf ? NetCDFWriter(model, tracers;
                                                   filename = "tracers",
                                                   dir = output_dir,
                                                   overwrite_existing = overwrite_saved_output,
                                                   schedule = TimeInterval(save_schedule)
                                                   ) :
-                                JLD2OutputWriter(model, tracers;
+                                JLD2Writer(model, tracers;
                                                  filename = "tracers",
                                                  dir = output_dir,
                                                  schedule = TimeInterval(save_schedule),
@@ -212,13 +212,13 @@ function save_all_velocities!(simulation, sdns, save_schedule, save_file, output
     velocities = Dict("u" => u, "v" => v, "w" => w)
 
     simulation.output_writers[:velocities] =
-        save_file == :netcdf ? NetCDFOutputWriter(model, velocities;
+        save_file == :netcdf ? NetCDFWriter(model, velocities;
                                                 filename = "velocities",
                                                 dir = output_dir,
                                                 overwrite_existing = overwrite_saved_output,
                                                 schedule = TimeInterval(save_schedule)
                                                 ) :
-                                JLD2OutputWriter(model, velocities;
+                                JLD2Writer(model, velocities;
                                                 filename = "velocities",
                                                 dir = output_dir,
                                                 schedule = TimeInterval(save_schedule),
@@ -242,13 +242,13 @@ function save_vertical_velocities!(simulation, sdns, save_schedule, save_file, o
     velocities = Dict("w" => w)
 
     simulation.output_writers[:velocities] =
-    save_file == :netcdf ? NetCDFOutputWriter(model, velocities;
+    save_file == :netcdf ? NetCDFWriter(model, velocities;
                                 filename = "velocities",
                                 dir = output_dir,
                                 overwrite_existing = overwrite_saved_output,
                                 schedule = TimeInterval(save_schedule)
                                 ) :
-                JLD2OutputWriter(model, velocities;
+                JLD2Writer(model, velocities;
                                 filename = "velocities",
                                 dir = output_dir,
                                 schedule = TimeInterval(save_schedule),
@@ -314,14 +314,14 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
         merge(oa, oa_)
     end
     simulation.output_writers[:computed_output] =
-        save_file == :netcdf ? NetCDFOutputWriter(model, computed_outputs;
+        save_file == :netcdf ? NetCDFWriter(model, computed_outputs;
                                                 filename = "computed_output",
                                                 dir = output_dir,
                                                 overwrite_existing = overwrite_saved_output,
                                                 schedule = TimeInterval(save_schedule),
                                                 output_attributes = oa
                                                 ) :
-                                JLD2OutputWriter(model, computed_outputs;
+                                JLD2Writer(model, computed_outputs;
                                                 filename = "computed_output",
                                                 dir = output_dir,
                                                 schedule = TimeInterval(save_schedule),
@@ -365,11 +365,11 @@ function check_key_present(simulation, name::Symbol, key)
     ow = simulation.output_writers[name]
     key_present = false
 
-    if ow isa NetCDFOutputWriter
+    if ow isa NetCDFWriter
         NCDataset(ow.filepath) do ds
             key_present = haskey(ds, key)
         end
-    elseif ow isa JLD2OutputWriter
+    elseif ow isa JLD2Writer
         jldopen(ow.filepath, "a+") do f
             key_present = haskey(f, key)
         end

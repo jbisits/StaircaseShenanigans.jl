@@ -159,7 +159,7 @@ function save_background_state!(simulation, model, background_state)
     if !check_key_present(simulation, :tracers, "S_background")
 
         ow = simulation.output_writers
-        if ow[:tracers] isa NetCDFOutputWriter
+        if ow[:tracers] isa NetCDFWriter
 
             NCDataset(ow[:tracers].filepath, "a") do ds
                 defVar(ds, "S_background", S_background_array, ("xC", "yC", "zC"),
@@ -176,7 +176,7 @@ function save_background_state!(simulation, model, background_state)
                                     "units" => "kgm⁻³"))
             end
 
-        elseif ow[:tracers] isa JLD2OutputWriter
+        elseif ow[:tracers] isa JLD2Writer
 
             jldopen(ow[:tracers].filepath, "a+") do f
                 f["S_background"] = S_background_array

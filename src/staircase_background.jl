@@ -101,7 +101,7 @@ S_and_T_background_fields(ics, Lz, background_state::NamedTuple) = background_st
 `Array` of this backgorund state to output."
 @inline tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.Lz))
 tanh_background(z, ΔC, Cₗ, Lz, z_interface, D) = Cₗ - 0.5 * ΔC * (1  + tanh(D * (z - z_interface) / Lz))
-@inline linear_background(x, y, z, t, p) = p.Cᵤ - p.ΔC * z / p.Lz
+@inline linear_background(x, y, z, t, p) = p.Cₗ - (p.ΔC / p.Δz) * (z - p.Lz)
 linear_background(z, ΔC, Cᵤ, Lz) = Cᵤ - ΔC * z / Lz
 @inline step_background(x, y, z, t, p) = z > p.z_interface ? p.Cᵤ : p.Cₗ
 
@@ -124,7 +124,7 @@ function update_parameters!(background_state::BackgroundTanh, tracer, ΔC, Cᵤ,
 end
 function update_parameters!(background_state::BackgroundLinear, tracer, ΔC, Cᵤ, Cₗ, Lz, z_interface)
 
-    background_state.parameters = (; ΔC, Cᵤ, Lz)
+    background_state.parameters = (; ΔC, Δz, Cₗ, Lz)
 
     return nothing
 end

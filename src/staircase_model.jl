@@ -47,6 +47,7 @@ are applied.
 """
 function StaircaseDNS(model_setup::NamedTuple, initial_conditions::SingleInterfaceICs, initial_noise)
 
+    model_setup.domain_extent.Lz
     background_fields = S_and_T_background_fields(initial_conditions, model_setup.domain_extent.Lz)
     boundary_conditions = jump_periodic_boundary_conditions(initial_conditions, model_setup.domain_topology.z)
     model = DNSModel(model_setup...; background_fields, boundary_conditions)
@@ -94,26 +95,19 @@ may be used.
 `forcing` argument to `NonhydrostaticModel`. For how to implement `forcing` see the relevant
 part of the
 [Oceananigans documentation](https://clima.github.io/OceananigansDocumentation/dev/model_setup/forcing_functions/#forcing)
-- `zgrid_stretching` stretch the grid in the `z` dimension at the bottom of domain at
-the rate `stretching`, `false` by default;
-- `refinement = 1.2` spacing near the surface in the `z` dimension;
-- `stretching = 100` rate of stretching at the bottom of grid in the `z` dimension.
 """
 function DNSModel(architecture, diffusivities::NamedTuple, domain_extent::NamedTuple,
                   domain_topology::NamedTuple, resolution::NamedTuple,
                   eos::BoussinesqEquationOfState=TEOS10EquationOfState();
                   forcing = nothing,
                   boundary_conditions = nothing,
-                  background_fields = nothing,
-                  zgrid_stretching = false,
-                  refinement = 1.05,
-                  stretching = 40)
+                  background_fields = nothing)
 
     Lx, Ly, Lz = domain_extent.Lx, domain_extent.Ly, domain_extent.Lz
     x_top, y_top, z_top = domain_topology.x, domain_topology.y, domain_topology.z
     loc = z_top isa Periodic ? (Center(), Center(), Center()) : (Center(), Center(), Face())
     Nx, Ny, Nz = resolution.Nx, resolution.Ny, resolution.Nz
-    zgrid = zgrid_stretching ? grid_stretching(-Lz, Nz, refinement, stretching) : (Lz, 0)
+    zgrid = Lz isa Tuple ? Lz : (Lz, 0)
 
     grid = RectilinearGrid(architecture,
                            topology = (x_top, y_top, z_top),
@@ -143,27 +137,6 @@ function DNSModel(architecture, diffusivities::NamedTuple, domain_extent::NamedT
 
     return NonhydrostaticModel(; grid, buoyancy, tracers, closure, timestepper, advection,
                                  forcing, boundary_conditions, background_fields)
-
-end
-"""
-    function grid_stretching(Lz, Nz; refinement, stretching)
-Stretch the vertical coordinate of the grid. This function was taken from an
-[Oceananigans.jl example](https://clima.github.io/OceananigansDocumentation/dev/generated/ocean_wind_mixing_and_convection/).
-The rate of stretching at the bottom is controlled by the `stretching` argument and the
-spacing near the surface is controlled by `refinement`.
-"""
-function grid_stretching(Lz::Number, Nz::Number, refinement::Number, stretching::Number)
-
-    # Normalise height ranging from 0 to 1
-    h(k) = (k - 1) / Nz
-    # Linear near-surface generator
-    ζ₀(k) = 1 + (h(k) - 1) / refinement
-    # Bottom-intensified stretching function
-    Σ(k) = (1 - exp(-stretching * h(k))) / (1 - exp(-stretching))
-    # Generating function
-    z_faces(k) = Lz * (ζ₀(k) * Σ(k) - 1)
-
-    return z_faces
 
 end
 """

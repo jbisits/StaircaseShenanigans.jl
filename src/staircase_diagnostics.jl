@@ -109,7 +109,7 @@ function save_diagnostic!(diagnostics_file::AbstractString, diagnostic_function!
     return nothing
 end
 "Local Kolmogorov length scale."
-η(ν, ε) = (ν.^3 ./ ε).^(1/4)
+η(ν, ε) = (ν^3 / ε)^(1/4)
 "Local Batchelor length scale."
 Ba(η, Sc) = η / sqrt(Sc)
 """
@@ -126,11 +126,10 @@ function save_computed_output!(diagnostics_file::AbstractString, computed_output
                 file[group*"∫ε"] = ds["∫ε"][:]
                 file[group*"∫Eₖ"] = ds["∫Eₖ"][:]
                 file[group*"∫wb"] = ds["∫wb"][:]
-                ν, κₛ = 1e-6, 1e-9 # hard coded because previously was not saved
-                Sc = ν / κₛ
+                ν, Sc = ds.attrib["ν (m²s⁻¹)"], ds.attrib["Sc"]
                 η_ = η.(ν, ds["ε_maximum"][:])
                 file[group*"η"] = η_
-                file[group*"Ba"] = Ba(η_, Sc)
+                file[group*"Ba"] = Ba.(η_, Sc)
             end
         else
             jldopen(diagnostics_file, "w") do file
@@ -138,8 +137,7 @@ function save_computed_output!(diagnostics_file::AbstractString, computed_output
                 file[group*"∫ε"] = ds["∫ε"][:]
                 file[group*"∫Eₖ"] = ds["∫Eₖ"][:]
                 file[group*"∫wb"] = ds["∫wb"][:]
-                ν, κₛ = 1e-6, 1e-9 # hard coded because previously was not saved
-                Sc = ν / κₛ
+                ν, Sc = ds.attrib["ν (m²s⁻¹)"], ds.attrib["Sc"]
                 η_ = η.(ν, ds["∫ε"][:])
                 file[group*"η"] = η_
                 file[group*"Ba"] = Ba(η_, Sc)
@@ -156,7 +154,7 @@ Save space, time and any other variable that acts as a dimension (e.g `z✶`).
 """
 function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 
-    dims = ("time", "xC", "yC", "zC")
+    dims = ("time", "x_caa", "y_aca", "z_aaf")
     NCDataset(co) do ds
 
         if isfile(diagnostics_file)
@@ -256,10 +254,10 @@ function φ_interface_flux!(diagnostics_file::AbstractString, tracers::AbstractS
         Δφ₀ = φ[1, 1, 1, 1] - 0.5 * (φ[1, 1, 1, 1] - φ[1, 1, end, 1])
         timestamps = ds[:time][:]
         Δt = diff(timestamps)
-        Δx, Δy, Δz = diff(ds[:xC][1:2])[1], diff(ds[:yC][1:2])[1], diff(ds[:zC][1:2])[1]
+        Δx, Δy, Δz = ds[:Δx_caa][1], ds[:Δy_aca][1], ds[:Δz_aac][1]
         ΔV = Δx * Δy * Δz
         V = (1:length(reshape(φ[:, :, :, 1], :))) * ΔV
-        Lx, Ly = Δx * length(ds[:xC][:]), Δy * length(ds[:yC][:])
+        Lx, Ly = Δx * ds.dim[:x_caa], Δy * ds.dim[:y_aca]
         SA = Lx * Ly
         z✶ = V / SA
         save_z✶!(diagnostics_file, z✶)
@@ -305,8 +303,8 @@ function ha_φ_flux!(diagnostics_file::AbstractString, tracers::AbstractString, 
         Δφ₀ = φ[1, 1, 1, 1] - 0.5 * (φ[1, 1, 1, 1] - φ[1, 1, end, 1])
         timestamps = ds[:time][:]
         Δt = diff(timestamps)
-        z = ds[:zC][:]
-        Δz = diff(z)[1]
+        z = ds[:z_aac][:]
+        Δz = ds[:Δz_aac][1]
 
         φ_flux = Array{Float64}(undef, length(z), length(Δt))
         interface_idx = Array{Int64}(undef, length(Δt))
@@ -374,7 +372,7 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
         timestamps = ds[:time][:]
         ΔT = abs.(ds[:Tₗ_mean][:] .- ds[:Tᵤ_mean][:])
         ΔS = abs.(ds[:Sₗ_mean][:] .- ds[:Sᵤ_mean][:])
-        zC = abs.(ds[:zC][:])
+        zC = abs.(ds[:z_aac][:])
 
         Tmidpoint = 0.5 * (ds[:Tₗ_mean][1] .+ ds[:Tᵤ_mean][1])
         Smidpoint = 0.5 * (ds[:Sₗ_mean][1] .+ ds[:Sᵤ_mean][1])
@@ -447,8 +445,8 @@ function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, trac
     ds_tracers = NCDataset(tracers)
 
     timestamps = ds_co[:time][:]
-    zC = ds_co[:zC][:]
-    Δx, Δy, Δz = diff(ds_co[:xC][:])[1], diff(ds_co[:yC][:])[1], diff(ds_co[:zC][:])[1]
+    zC = ds_co[:z_aac][:]
+    Δx, Δy, Δz = ds_co[:Δx_caa][1], ds_co[:Δy_aca][1], ds_co[:Δz_aac][1]
 
     Δt = diff(timestamps)
     Ẽ = similar(Δt)

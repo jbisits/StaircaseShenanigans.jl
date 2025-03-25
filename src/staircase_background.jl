@@ -100,9 +100,11 @@ S_and_T_background_fields(ics, z_range, background_state::NamedTuple) = backgrou
 "Sets a background state that is hyperbolic tangent. There is also a method to save an
 `Array` of this backgorund state to output."
 @inline tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.Δz))
-tanh_background(z, ΔC, Cₗ, Lz, z_interface, D) = Cₗ - 0.5 * ΔC * (1  + tanh(D * (z - z_interface) / Lz))
-@inline linear_background(x, y, z, t, p) = p.Cₗ - (p.ΔC / p.Δz) * (z - p.Lz)
-linear_background(z, ΔC, Cᵤ, Lz) = Cᵤ - ΔC * z / Lz
+"Sets a background state that is linear. There is also a method to save an
+`Array` of this backgorund state to output."
+@inline linear_background(x, y, z, t, p) = p.Cᵤ + (p.ΔC / p.Δz) * (z - p.z_top)
+"Sets a background state that is step function. There is also a method to save an
+`Array` of this backgorund state to output."
 @inline step_background(x, y, z, t, p) = z > p.z_interface ? p.Cᵤ : p.Cₗ
 
 function get_parameters!(ics::STSingleInterfaceInitialConditions, tracer::Symbol, z_range)
@@ -113,24 +115,24 @@ function get_parameters!(ics::STSingleInterfaceInitialConditions, tracer::Symbol
     Cᵤ, Cₗ = C
     Lz, z_top =  z_range
     Δz = Lz - z_top
-    update_parameters!(ics.background_state, tracer, ΔC, Cᵤ, Cₗ, Δz, Lz, z_interface)
+    update_parameters!(ics.background_state, tracer, ΔC, Cᵤ, Cₗ, Δz, z_top, z_interface)
 
     return nothing
 end
-function update_parameters!(background_state::BackgroundTanh, tracer, ΔC, Cᵤ, Cₗ, Δz, Lz, z_interface)
+function update_parameters!(background_state::BackgroundTanh, tracer, ΔC, Cᵤ, Cₗ, Δz, z_top, z_interface)
 
     D = tracer == :salinity_values ? background_state.S_scale : background_state.T_scale
     background_state.parameters = (; ΔC, Cᵤ, Cₗ, Δz = abs(Δz), z_interface, D)
 
     return nothing
 end
-function update_parameters!(background_state::BackgroundLinear, tracer, ΔC, Cᵤ, Cₗ, Δz, Lz, z_interface)
+function update_parameters!(background_state::BackgroundLinear, tracer, ΔC, Cᵤ, Cₗ, Δz, z_top, z_interface)
 
-    background_state.parameters = (; ΔC, Δz, Cₗ, Lz)
+    background_state.parameters = (; ΔC, Δz, Cₗ, z_top)
 
     return nothing
 end
-function update_parameters!(background_state::BackgroundStep, tracer, ΔC, Cᵤ, Cₗ, Δz, Lz, z_interface)
+function update_parameters!(background_state::BackgroundStep, tracer, ΔC, Cᵤ, Cₗ, Δz, z_top, z_interface)
 
     background_state.parameters = (; Cᵤ, Cₗ, z_interface)
 

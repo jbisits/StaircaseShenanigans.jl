@@ -257,7 +257,7 @@ function φ_interface_flux!(diagnostics_file::AbstractString, tracers::AbstractS
         Δx, Δy, Δz = ds[:Δx_caa][1], ds[:Δy_aca][1], ds[:Δz_aac][1]
         ΔV = Δx * Δy * Δz
         V = (1:length(reshape(φ[:, :, :, 1], :))) * ΔV
-        Lx, Ly = Δx * ds.dim[:x_caa], Δy * ds.dim[:x_yaa]
+        Lx, Ly = Δx * ds.dim[:x_caa], Δy * ds.dim[:y_aca]
         SA = Lx * Ly
         z✶ = V / SA
         save_z✶!(diagnostics_file, z✶)
@@ -303,8 +303,8 @@ function ha_φ_flux!(diagnostics_file::AbstractString, tracers::AbstractString, 
         Δφ₀ = φ[1, 1, 1, 1] - 0.5 * (φ[1, 1, 1, 1] - φ[1, 1, end, 1])
         timestamps = ds[:time][:]
         Δt = diff(timestamps)
-        z = ds[:zC][:]
-        Δz = diff(z)[1]
+        z = ds[:z_aac][:]
+        Δz = ds[:Δz_aac][:]
 
         φ_flux = Array{Float64}(undef, length(z), length(Δt))
         interface_idx = Array{Int64}(undef, length(Δt))
@@ -372,7 +372,7 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
         timestamps = ds[:time][:]
         ΔT = abs.(ds[:Tₗ_mean][:] .- ds[:Tᵤ_mean][:])
         ΔS = abs.(ds[:Sₗ_mean][:] .- ds[:Sᵤ_mean][:])
-        zC = abs.(ds[:zC][:])
+        zC = abs.(ds[:z_aac][:])
 
         Tmidpoint = 0.5 * (ds[:Tₗ_mean][1] .+ ds[:Tᵤ_mean][1])
         Smidpoint = 0.5 * (ds[:Sₗ_mean][1] .+ ds[:Sᵤ_mean][1])
@@ -445,7 +445,7 @@ function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, trac
     ds_tracers = NCDataset(tracers)
 
     timestamps = ds_co[:time][:]
-    zC = ds_co[:zC][:]
+    zC = ds_co[:z_aac][:]
     Δx, Δy, Δz = ds[:Δx_caa][1], ds[:Δy_aca][1], ds[:Δz_aac][1]
 
     Δt = diff(timestamps)

@@ -304,7 +304,7 @@ function ha_φ_flux!(diagnostics_file::AbstractString, tracers::AbstractString, 
         timestamps = ds[:time][:]
         Δt = diff(timestamps)
         z = ds[:z_aac][:]
-        Δz = ds[:Δz_aac][:]
+        Δz = ds[:Δz_aac][1]
 
         φ_flux = Array{Float64}(undef, length(z), length(Δt))
         interface_idx = Array{Int64}(undef, length(Δt))
@@ -446,7 +446,7 @@ function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, trac
 
     timestamps = ds_co[:time][:]
     zC = ds_co[:z_aac][:]
-    Δx, Δy, Δz = ds[:Δx_caa][1], ds[:Δy_aca][1], ds[:Δz_aac][1]
+    Δx, Δy, Δz = ds_co[:Δx_caa][1], ds_co[:Δy_aca][1], ds_co[:Δz_aac][1]
 
     Δt = diff(timestamps)
     Ẽ = similar(Δt)

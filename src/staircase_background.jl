@@ -128,7 +128,7 @@ function update_parameters!(background_state::BackgroundTanh, tracer, ΔC, Cᵤ,
 end
 function update_parameters!(background_state::BackgroundLinear, tracer, ΔC, Cᵤ, Cₗ, Δz, z_top, z_interface)
 
-    background_state.parameters = (; ΔC, Δz, Cₗ, z_top)
+    background_state.parameters = (; ΔC, Δz, Cᵤ, z_top)
 
     return nothing
 end

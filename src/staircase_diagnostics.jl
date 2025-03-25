@@ -154,7 +154,7 @@ Save space, time and any other variable that acts as a dimension (e.g `z✶`).
 """
 function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 
-    dims = ("time", "xC", "yC", "zC")
+    dims = ("time", "x_caa", "y_aca", "z_aaf")
     NCDataset(co) do ds
 
         if isfile(diagnostics_file)
@@ -254,10 +254,10 @@ function φ_interface_flux!(diagnostics_file::AbstractString, tracers::AbstractS
         Δφ₀ = φ[1, 1, 1, 1] - 0.5 * (φ[1, 1, 1, 1] - φ[1, 1, end, 1])
         timestamps = ds[:time][:]
         Δt = diff(timestamps)
-        Δx, Δy, Δz = diff(ds[:xC][1:2])[1], diff(ds[:yC][1:2])[1], diff(ds[:zC][1:2])[1]
+        Δx, Δy, Δz = ds[:Δx_caa][1], ds[:Δy_aca][1], ds[:Δz_aac][1]
         ΔV = Δx * Δy * Δz
         V = (1:length(reshape(φ[:, :, :, 1], :))) * ΔV
-        Lx, Ly = Δx * length(ds[:xC][:]), Δy * length(ds[:yC][:])
+        Lx, Ly = Δx * ds.dim[:x_caa], Δy * ds.dim[:x_yaa]
         SA = Lx * Ly
         z✶ = V / SA
         save_z✶!(diagnostics_file, z✶)
@@ -446,7 +446,7 @@ function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, trac
 
     timestamps = ds_co[:time][:]
     zC = ds_co[:zC][:]
-    Δx, Δy, Δz = diff(ds_co[:xC][:])[1], diff(ds_co[:yC][:])[1], diff(ds_co[:zC][:])[1]
+    Δx, Δy, Δz = ds[:Δx_caa][1], ds[:Δy_aca][1], ds[:Δz_aac][1]
 
     Δt = diff(timestamps)
     Ẽ = similar(Δt)

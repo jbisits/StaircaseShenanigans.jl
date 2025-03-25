@@ -77,25 +77,25 @@ Base.summary(bt::BackgroundTanh) = "$(bt.func)"
 Base.summary(bl::BackgroundLinear) = "$(bl.func)"
 Base.summary(bn::Type{<:NoBackgroundFunction}) = "no background field"
 
-S_and_T_background_fields(ics::STSingleInterfaceInitialConditions, Lz) =
-    S_and_T_background_fields(ics, Lz, ics.background_state)
+S_and_T_background_fields(ics::STSingleInterfaceInitialConditions, z_range) =
+    S_and_T_background_fields(ics, z_range, ics.background_state)
 "Return blank `NamedTuple` so that no `BackgroundField`s are set."
-S_and_T_background_fields(ics, Lz, background_state::Type{<:NoBackground}) = NamedTuple()
+S_and_T_background_fields(ics, z_range, background_state::Type{<:NoBackground}) = NamedTuple()
 """
     function S_and_T_background_fields(initial_conditions)
 Set background fields for the `S` and `T` tracer fields where the domain is triply periodic.
 """
-function S_and_T_background_fields(ics, Lz, background_state)
+function S_and_T_background_fields(ics, z_range, background_state)
 
-    get_parameters!(ics, :salinity_values, Lz)
+    get_parameters!(ics, :salinity_values, z_range)
     S_background = BackgroundField(ics.background_state)
-    get_parameters!(ics, :temperature_values, Lz)
+    get_parameters!(ics, :temperature_values, z_range)
     T_background = BackgroundField(ics.background_state)
 
     return (S = S_background, T = T_background)
 end
 
-S_and_T_background_fields(ics, Lz, background_state::NamedTuple) = background_state
+S_and_T_background_fields(ics, z_range, background_state::NamedTuple) = background_state
 
 "Sets a background state that is hyperbolic tangent. There is also a method to save an
 `Array` of this backgorund state to output."
@@ -105,30 +105,32 @@ tanh_background(z, ΔC, Cₗ, Lz, z_interface, D) = Cₗ - 0.5 * ΔC * (1  + tan
 linear_background(z, ΔC, Cᵤ, Lz) = Cᵤ - ΔC * z / Lz
 @inline step_background(x, y, z, t, p) = z > p.z_interface ? p.Cᵤ : p.Cₗ
 
-function get_parameters!(ics::STSingleInterfaceInitialConditions, tracer::Symbol, Lz)
+function get_parameters!(ics::STSingleInterfaceInitialConditions, tracer::Symbol, z_range)
 
     z_interface = ics.depth_of_interface
     C = Array(getproperty(ics, tracer))
     ΔC = diff(C)[1]
     Cᵤ, Cₗ = C
-    update_parameters!(ics.background_state, tracer, ΔC, Cᵤ, Cₗ, abs(Lz), z_interface)
+    z₁, z₂ =  z_range
+    Δz = z₁ - z₂
+    update_parameters!(ics.background_state, tracer, ΔC, Cᵤ, Cₗ, Δz, z_interface)
 
     return nothing
 end
-function update_parameters!(background_state::BackgroundTanh, tracer, ΔC, Cᵤ, Cₗ, Lz, z_interface)
+function update_parameters!(background_state::BackgroundTanh, tracer, ΔC, Cᵤ, Cₗ, Δz, z_interface)
 
     D = tracer == :salinity_values ? background_state.S_scale : background_state.T_scale
-    background_state.parameters = (; ΔC, Cᵤ, Cₗ, Lz, z_interface, D)
+    background_state.parameters = (; ΔC, Cᵤ, Cₗ, abs(Δz), z_interface, D)
 
     return nothing
 end
-function update_parameters!(background_state::BackgroundLinear, tracer, ΔC, Cᵤ, Cₗ, Lz, z_interface)
+function update_parameters!(background_state::BackgroundLinear, tracer, ΔC, Cᵤ, Cₗ, Δz, z_interface)
 
-    background_state.parameters = (; ΔC, Δz, Cₗ, Lz)
+    background_state.parameters = (; ΔC, Δz, Cₗ, Δz)
 
     return nothing
 end
-function update_parameters!(background_state::BackgroundStep, tracer, ΔC, Cᵤ, Cₗ, Lz, z_interface)
+function update_parameters!(background_state::BackgroundStep, tracer, ΔC, Cᵤ, Cₗ, Δz, z_interface)
 
     background_state.parameters = (; Cᵤ, Cₗ, z_interface)
 

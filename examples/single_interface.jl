@@ -2,7 +2,7 @@ using StaircaseShenanigans
 
 architecture = CPU() # or GPU()
 diffusivities = (ν = 1e-5, κ = (S = 1e-8, T = 1e-6))
-domain_extent = (Lx = 0.1, Ly = 0.1, Lz = -1.0)
+domain_extent = (Lx = 0.1, Ly = 0.1, Lz = (-100.0, -90.0))
 domain_topology = (x = Periodic, y = Periodic, z = Bounded)
 resolution = (Nx = 5, Ny = 5, Nz = 50)
 eos = CustomLinearEquationOfState(-0.5, 34.6)

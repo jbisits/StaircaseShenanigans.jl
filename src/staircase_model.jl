@@ -47,8 +47,9 @@ are applied.
 """
 function StaircaseDNS(model_setup::NamedTuple, initial_conditions::SingleInterfaceICs, initial_noise)
 
-    model_setup.domain_extent.Lz
-    background_fields = S_and_T_background_fields(initial_conditions, model_setup.domain_extent.Lz)
+    Lz = model_setup.domain_extent.Lz
+    z_range = Lz isa Tuple ? Lz : (Lz, 0)
+    background_fields = S_and_T_background_fields(initial_conditions, z_range)
     boundary_conditions = jump_periodic_boundary_conditions(initial_conditions, model_setup.domain_topology.z)
     model = DNSModel(model_setup...; background_fields, boundary_conditions)
 
@@ -75,7 +76,9 @@ chosen.
 ## Function arguments:
 
 - `architecture`, `CPU()` or `GPU()`;
-- `domain_extent` as a `NamedTuple` in the format `(Lx = , Ly = , Lz = )`;
+- `domain_extent` as a `NamedTuple` in the format `(Lx = , Ly = , Lz = )`, x and y directions
+are setup as periodic and z direction can be either a `Tuple` with ``z ∈ [Lz[1], Lz[2]]`` or
+``z ∈ [Lz, 0]`` depending on type passed to `domain_extent`.;
 - `domain_topology`, `NamedTuple` in form `(x = a, y = b, z = c)` where `a`, `b` and `c` are
 Oceananigans.jl topologies see [Oceananigans.jl](https://clima.github.io/OceananigansDocumentation/dev/grids/#grids_tutorial)
 for more info

@@ -27,7 +27,7 @@ struct TanhInterfaceThickness{T}
     hₜ :: T
 end
 "Some defaults that are unstable to diffusive convection."
-TanhInterfaceThickness() = TanhInterfaceThickness(0.05, 3*0.05)
+TanhInterfaceThickness() = TanhInterfaceThickness(0.02, 3*0.02)
 TanhInterfaceThickness(hₛ) = TanhInterfaceThickness(hₛ, 3*hₛ)
 
 Base.summary(p::Type{<:TanhInterfaceSmoothing}) = "tanh smoothing"

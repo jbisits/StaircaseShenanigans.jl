@@ -8,30 +8,30 @@ Container for a tanh background field.
 mutable struct BackgroundTanh{F, T} <: AbstractBackgroundFunction
     "tanh function"
           func :: F
-    "Scale the steepness of the `tanh` change in the salinity field"
-       S_scale :: T
-    "Scale the steepness of the `tanh` change in the temperature field"
-       T_scale :: T
+    "Thickness of salinity interface"
+       hₛ :: T
+    "Thickness of temperature interface"
+       hₜ :: T
     "Parameters for the tanh background field"
     parameters :: NamedTuple
 end
-BackgroundTanh() = BackgroundTanh(tanh_background, 100, 50, NamedTuple())
+BackgroundTanh() = BackgroundTanh(tanh_background, 0.02, 0.04, NamedTuple())
 "Default that makes the temperature interface 3 times larger than the salinity"
 function BackgroundTanh(scale::Number)
 
-    S_scale = scale
-    T_scale = scale / 3
-    _S_scale, _T_scale = promote(S_scale, T_scale) # ensures both are same type
+    hₛ = scale
+    hₜ = 3 * scale
+    _hₛ, _hₜ = promote(hₛ, hₜ) # ensures both are same type
 
-    return BackgroundTanh(tanh_background, _S_scale, _T_scale, NamedTuple())
+    return BackgroundTanh(tanh_background, _hₛ, _hₜ, NamedTuple())
 end
 "Pass a `NamedTuple` in form `(S = , T = )` to set the tanh scaling."
 function BackgroundTanh(scale::NamedTuple)
 
-    S_scale, T_scale = scale.S, scale.T
-    _S_scale, _T_scale = promote(S_scale, T_scale) # ensures both are same type
+    hₛ, hₜ = scale.S, scale.T
+    _hₛ, _hₜ = promote(hₛ, hₜ) # ensures both are same type
 
-    return BackgroundTanh(tanh_background, _S_scale, _T_scale, NamedTuple())
+    return BackgroundTanh(tanh_background, _hₛ, _hₜ, NamedTuple())
 end
 """
     mutable struct BackgroundLinear{F}
@@ -61,8 +61,8 @@ function Base.show(io::IO, bf::AbstractBackgroundFunction)
     if bf isa BackgroundTanh
         println(io, "BackgroundTanh")
         println(io, "┣━━━ function: $(bf.func)")
-        println(io, "┣━━━━ S scale: $(bf.S_scale)")
-        println(io, "┣━━━━ T scale: $(bf.T_scale)")
+        println(io, "┣━━━━ S scale: $(bf.hₛ)")
+        println(io, "┣━━━━ T scale: $(bf.hₜ)")
           print(io, "┗━ parameters: $(bf.parameters)")
     else
         println(io, "$(typeof(bf))")
@@ -99,7 +99,7 @@ S_and_T_background_fields(ics, z_range, background_state::NamedTuple) = backgrou
 
 "Sets a background state that is hyperbolic tangent. There is also a method to save an
 `Array` of this backgorund state to output."
-@inline tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh(p.D * (z - p.z_interface) / p.Δz))
+@inline tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh( (z - p.z_interface) / (p.D * p.Δz)))
 "Sets a background state that is linear. There is also a method to save an
 `Array` of this backgorund state to output."
 @inline linear_background(x, y, z, t, p) = p.Cᵤ + (p.ΔC / p.Δz) * (z - p.z_top)
@@ -121,8 +121,8 @@ function get_parameters!(ics::STSingleInterfaceInitialConditions, tracer::Symbol
 end
 function update_parameters!(background_state::BackgroundTanh, tracer, ΔC, Cᵤ, Cₗ, Δz, z_top, z_interface)
 
-    D = tracer == :salinity_values ? background_state.S_scale : background_state.T_scale
-    background_state.parameters = (; ΔC, Cᵤ, Cₗ, Δz = abs(Δz), z_interface, D)
+    h = tracer == :salinity_values ? background_state.hₛ : background_state.hₜ
+    background_state.parameters = (; ΔC, Cᵤ, Cₗ, Δz = abs(Δz), z_interface, h)
 
     return nothing
 end

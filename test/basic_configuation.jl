@@ -8,3 +8,5 @@ resolution = (Nx = 5, Ny = 5, Nz = 100)
 ## For testing R_ρ calcualtion
 S, Θ = 34.6, -0.5
 eos = CustomLinearEquationOfState(Θ, S)
+
+model_setup = (;architecture, diffusivities, domain_extent, domain_topology, resolution, eos)

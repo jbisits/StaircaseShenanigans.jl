@@ -28,6 +28,20 @@ using Test
         @test all(interior(sdns_noise_range.model.tracers.S, :, :, z_no_noise_range) .== 34.7)
         @test all(interior(sdns_noise_range.model.tracers.T, :, :, z_noise_range) .!= 0.5)
         @test all(interior(sdns_noise_range.model.tracers.T, :, :, z_no_noise_range) .== 0.5)
+
+        include("background_field_setting.jl")
+        S_background_profile = Field(sdns_interface_linear_bf.model.background_fields.tracers.S)
+        compute!(S_background_profile)
+        @test S_background_profile isa Field
+        T_background_profile = Field(sdns_interface_linear_bf.model.background_fields.tracers.T)
+        compute!(T_background_profile)
+        @test T_background_profile isa Field
+        S_background_profile = Field(sdns_interface_tanh_bf.model.background_fields.tracers.S)
+        compute!(S_background_profile)
+        @test S_background_profile isa Field
+        T_background_profile = Field(sdns_interface_tanh_bf.model.background_fields.tracers.T)
+        compute!(T_background_profile)
+        @test T_background_profile isa Field
     end
 
     @testset "R_ρ calculation" begin
@@ -80,7 +94,7 @@ using Test
         @test simulation.Δt == 0.2 * (min_spacing^2 / sdns.model.closure.ν) # tests `initial_timestep`
         run!(simulation)
         compute_R_ρ!(simulation.output_writers[:computed_output].filepath,
-                    simulation.output_writers[:tracers].filepath, eos)
+                     simulation.output_writers[:tracers].filepath, eos)
         diagnostics_file = joinpath(output_path, "test_diagnostics.jld2")
         save_diagnostics!(diagnostics_file,
                           simulation.output_writers[:tracers].filepath,

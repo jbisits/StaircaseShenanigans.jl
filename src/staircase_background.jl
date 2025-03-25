@@ -9,9 +9,9 @@ mutable struct BackgroundTanh{F, T} <: AbstractBackgroundFunction
     "tanh function"
           func :: F
     "Thickness of salinity interface"
-       hₛ :: T
+            hₛ :: T
     "Thickness of temperature interface"
-       hₜ :: T
+            hₜ :: T
     "Parameters for the tanh background field"
     parameters :: NamedTuple
 end
@@ -99,7 +99,7 @@ S_and_T_background_fields(ics, z_range, background_state::NamedTuple) = backgrou
 
 "Sets a background state that is hyperbolic tangent. There is also a method to save an
 `Array` of this backgorund state to output."
-@inline tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh( (z - p.z_interface) / (p.D * p.Δz)))
+@inline tanh_background(x, y, z, t, p) = p.Cₗ - 0.5 * p.ΔC * (1  + tanh( (z - p.z_interface) / (p.h * p.Δz)))
 "Sets a background state that is linear. There is also a method to save an
 `Array` of this backgorund state to output."
 @inline linear_background(x, y, z, t, p) = p.Cᵤ + (p.ΔC / p.Δz) * (z - p.z_top)

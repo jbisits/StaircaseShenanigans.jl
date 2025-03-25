@@ -94,7 +94,7 @@ using Test
         @test simulation.Δt == 0.2 * (min_spacing^2 / sdns.model.closure.ν) # tests `initial_timestep`
         run!(simulation)
         compute_R_ρ!(simulation.output_writers[:computed_output].filepath,
-                    simulation.output_writers[:tracers].filepath, eos)
+                     simulation.output_writers[:tracers].filepath, eos)
         diagnostics_file = joinpath(output_path, "test_diagnostics.jld2")
         save_diagnostics!(diagnostics_file,
                           simulation.output_writers[:tracers].filepath,

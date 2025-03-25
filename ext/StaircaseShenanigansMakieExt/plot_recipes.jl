@@ -6,8 +6,8 @@ function StaircaseShenanigans.animate_tracers(tracers::AbstractString; xslice = 
 
     NCDataset(tracers) do ds
 
-        x = ds["xC"][:]
-        z = ds["zC"][:]
+        x = ds["x_caa"][:]
+        z = ds["z_aac"][:]
         t = ds["time"][:]
 
         n = Observable(1)
@@ -80,8 +80,8 @@ function StaircaseShenanigans.animate_tracers_anomaly(tracers::AbstractString; x
 
     NCDataset(tracers) do ds
 
-        x = ds["xC"][:]
-        z = ds["zC"][:]
+        x = ds["x_caa"][:]
+        z = ds["z_aac"][:]
         t = ds["time"][:]
 
         n = Observable(1)
@@ -158,8 +158,8 @@ function StaircaseShenanigans.animate_density(computed_output::AbstractString, v
 
     NCDataset(computed_output) do ds
 
-        x = ds["xC"][:]
-        z = ds["zC"][:]
+        x = ds["x_caa"][:]
+        z = ds["z_aac"][:]
         t = ds["time"][:]
 
         n = Observable(1)
@@ -212,8 +212,8 @@ function StaircaseShenanigans.animate_density_anomaly(computed_output::AbstractS
 
     NCDataset(computed_output) do ds
 
-        x = ds["xC"][:]
-        z = ds["zC"][:]
+        x = ds["x_caa"][:]
+        z = ds["z_aac"][:]
         t = ds["time"][:]
 
         n = Observable(1)

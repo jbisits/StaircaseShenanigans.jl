@@ -100,7 +100,9 @@ function non_dimensional_numbers!(simulation::Simulation, sdns::StaircaseDNS)
     Le = κₜ / κₛ
     salinity = Array(initial_conditions.salinity_values)
     temperature = Array(initial_conditions.temperature_values)
-    int_depth = initial_conditions.depth_of_interface
+    #TODO: rethink if there should be a difference between the struct names
+    int_depth = initial_conditions isa STSingleInterfaceInitialConditions ? initial_conditions.depth_of_interface :
+                                                                            initial_conditions.depth_of_interfaces
     Lz = model.grid.Lz
     L = Lz - int_depth # lower layer height
     RaS, RaT = compute_Ra(salinity, temperature, κₛ, κₜ, ν, eos, int_depth, L)
@@ -109,6 +111,7 @@ function non_dimensional_numbers!(simulation::Simulation, sdns::StaircaseDNS)
                     "Rᵨ" => initial_conditions.R_ρ)
 
     NCDataset(simulation.output_writers[:computed_output].filepath, "a") do ds
+        ds.attrib["interface_depth"] = int_depth
         ds.attrib["EOS"] = summary(eos.seawater_polynomial)
         ds.attrib["Reference density (kgm⁻³)"] = eos.reference_density
         ds.attrib["ν (m²s⁻¹)"]  = ν

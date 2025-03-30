@@ -109,6 +109,7 @@ function non_dimensional_numbers!(simulation::Simulation, sdns::StaircaseDNS)
                     "Rᵨ" => initial_conditions.R_ρ)
 
     NCDataset(simulation.output_writers[:computed_output].filepath, "a") do ds
+        ds.attrib["interface_depth"] = initial_conditions.interface_depth
         ds.attrib["EOS"] = summary(eos.seawater_polynomial)
         ds.attrib["Reference density (kgm⁻³)"] = eos.reference_density
         ds.attrib["ν (m²s⁻¹)"]  = ν

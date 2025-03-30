@@ -15,6 +15,7 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
 
     ds = NCDataset(tracers)
 
+    interface_depth = ds.attrib[:interface_depth]
     S_u = S_g = ds[:Sᵤ_mean][:]
     S_l = S_f = ds[:Sₗ_mean][:]
     T_u = T_f = ds[:Tᵤ_mean][:]

@@ -13,19 +13,21 @@ interface example).
 """
 function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString, eos)
 
+    interface_depth = NCDataset(computed_output) do co
+                          co.attrib[:interface_depth]
+                      end
     ds = NCDataset(tracers)
 
-    interface_depth = ds.attrib[:interface_depth]
     S_u = S_g = ds[:Sᵤ_mean][:]
     S_l = S_f = ds[:Sₗ_mean][:]
     T_u = T_f = ds[:Tᵤ_mean][:]
     T_l = T_g = ds[:Tₗ_mean][:]
 
     eos_vec = fill(eos, length(S_u))
-    ρ_u = total_density.(T_u, S_u, 0, eos_vec)
-    ρ_l = total_density.(T_l, S_l, 0, eos_vec)
-    ρ_f = total_density.(T_f, S_f, 0, eos_vec)
-    ρ_g = total_density.(T_g, S_g, 0, eos_vec)
+    ρ_u = total_density.(T_u, S_u, interface_depth, eos_vec)
+    ρ_l = total_density.(T_l, S_l, interface_depth, eos_vec)
+    ρ_f = total_density.(T_f, S_f, interface_depth, eos_vec)
+    ρ_g = total_density.(T_g, S_g, interface_depth, eos_vec)
 
     R_ρ = @. (0.5 * (ρ_f - ρ_u) + 0.5 * (ρ_l - ρ_g)) / (0.5 * (ρ_f - ρ_l) + 0.5 * (ρ_u - ρ_g))
 

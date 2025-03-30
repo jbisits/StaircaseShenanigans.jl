@@ -104,7 +104,8 @@ function DNSModel(architecture, diffusivities::NamedTuple, domain_extent::NamedT
                   eos::BoussinesqEquationOfState=TEOS10EquationOfState();
                   forcing = nothing,
                   boundary_conditions = nothing,
-                  background_fields = nothing)
+                  background_fields = nothing,
+                  centred_advection_scheme_order = 2)
 
     Lx, Ly, Lz = domain_extent.Lx, domain_extent.Ly, domain_extent.Lz
     x_top, y_top, z_top = domain_topology.x, domain_topology.y, domain_topology.z
@@ -130,7 +131,7 @@ function DNSModel(architecture, diffusivities::NamedTuple, domain_extent::NamedT
 
     timestepper = :RungeKutta3
 
-    advection = Centered(order = 2)
+    advection = Centered(order = centred_advection_scheme_order)
 
     forcing = isnothing(forcing) ? NamedTuple() : forcing
 

@@ -105,7 +105,8 @@ function DNSModel(architecture, diffusivities::NamedTuple, domain_extent::NamedT
                   forcing = nothing,
                   boundary_conditions = nothing,
                   background_fields = nothing,
-                  centred_advection_scheme_order = 2)
+                  centred_advection_scheme_order = 2,
+                  TD = ExplicitTimeDiscretization())
 
     Lx, Ly, Lz = domain_extent.Lx, domain_extent.Ly, domain_extent.Lz
     x_top, y_top, z_top = domain_topology.x, domain_topology.y, domain_topology.z
@@ -123,11 +124,11 @@ function DNSModel(architecture, diffusivities::NamedTuple, domain_extent::NamedT
     buoyancy = SeawaterBuoyancy(equation_of_state = eos)
     tracers = (:S, :T)
 
-    closure = length(diffusivities) > 2 ? ScalarDiffusivity(; ν = diffusivities.ν, κ = diffusivities.κ,
+    closure = length(diffusivities) > 2 ? ScalarDiffusivity(TD; ν = diffusivities.ν, κ = diffusivities.κ,
                                                             discrete_form = diffusivities.discrete_form,
                                                             loc,
                                                             parameters = diffusivities.parameters) :
-                                          ScalarDiffusivity(ν = diffusivities.ν, κ = diffusivities.κ)
+                                          ScalarDiffusivity(TD; ν = diffusivities.ν, κ = diffusivities.κ)
 
     timestepper = :RungeKutta3
 

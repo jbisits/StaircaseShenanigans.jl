@@ -5,7 +5,7 @@ using Oceananigans: seawater_density
 using Oceananigans.BuoyancyFormulations: buoyancy_frequency
 using Oceananigans.Fields: condition_operand
 import Oceananigans.BackgroundField
-using Oceananigans.TurbulenceClosures: cell_diffusion_timescale
+using Oceananigans.TurbulenceClosures: cell_diffusion_timescale, ExplicitTimeDiscretization
 using SeawaterPolynomials.TEOS10
 using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 using SeawaterPolynomials: BoussinesqEquationOfState

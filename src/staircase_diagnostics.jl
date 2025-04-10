@@ -529,8 +529,7 @@ function ∫gρw!(diagnostics_file::AbstractString, computed_output::AbstractStr
 
     ds_co = NCDataset(computed_output, "a")
     time = ds_co[:time][:]
-    find_num = findfirst('k', ds_co.attrib["Reference density"]) - 1
-    ρ₀ = parse(Float64, ds_co.attrib["Reference density"][1:find_num])
+    ρ₀ = ds_co.attrib["Reference density (kgm⁻³)"]
     ΔV = ds_co[:Δx_caa][1] * ds_co[:Δy_aca][1] * ds_co[:Δz_aac][1]
     ds_vel = NCDataset(velocities)
 

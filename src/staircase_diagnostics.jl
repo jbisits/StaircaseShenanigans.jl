@@ -56,7 +56,7 @@ but they returned output is in `.jld2` format. The kwarg `group` is for creating
 `diagnostics_file`.
 """
 function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractString,
-                           computed_output::AbstractString;
+                           computed_output::AbstractString, velocities::AbstractString;
                            group = nothing,
                            interface_offset = 4)
 
@@ -69,6 +69,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         saved_keys = vcat(saved_keys...)
 
         if group[end-1] ∉ group_keys
+
             "dims" ∈ group_keys ? nothing : dimensions!(diagnostics_file, computed_output)
             save_computed_output!(diagnostics_file, computed_output, group)
             φ_interface_flux!(diagnostics_file, tracers, :S, group)
@@ -77,6 +78,8 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
             ha_φ_flux!(diagnostics_file, tracers, :T, group)
             compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
             interface_thickness!(diagnostics_file, tracers, group)
+            ∫gρw!(diagnostics_file, computed_output, velocities, group)
+
         end
 
     else
@@ -89,6 +92,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         ha_φ_flux!(diagnostics_file, tracers, :T, group)
         compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
         interface_thickness!(diagnostics_file, tracers, group)
+        ∫gρw!(diagnostics_file, computed_output, velocities, group)
 
     end
 
@@ -276,8 +280,7 @@ function φ_interface_flux!(diagnostics_file::AbstractString, tracers::AbstractS
             ∫φdz✶ = cumsum(φₜ * Δz✶, dims = 1)
             dₜ∫φdz✶ = vec(diff(∫φdz✶, dims = 2) ./ Δt[i])
 
-            φₜ_interp = 0.5 * vec(sum(φₜ, dims = 2))
-            interface_idx[i] = ii = findfirst(φₜ_interp .< Δφ₀) - 1
+            interface_idx[i] = ii = findfirst(φₜ[:, 1].< Δφ₀) - 1
             interface_idxs = [ii-1, ii, ii+1]
 
             φ_interface_flux[:, i] .= dₜ∫φdz✶[interface_idxs]
@@ -319,8 +322,7 @@ function ha_φ_flux!(diagnostics_file::AbstractString, tracers::AbstractString, 
             ∫φdz = cumsum(φₜ * Δz, dims = 1)
             dₜ∫φdz = vec(diff(∫φdz, dims = 2) ./ Δt[i])
 
-            φₜ_interp = 0.5 * vec(sum(φₜ, dims = 2))
-            interface_idx[i] = findfirst(φₜ_interp .< Δφ₀) - 1
+            interface_idx[i] = findfirst(φₜ[:, 1] .< Δφ₀) - 1
 
             φ_flux[:, i] .= dₜ∫φdz
 
@@ -517,5 +519,52 @@ function save_Ẽ!(diagnostics_file, Ẽ, T̄_ts, S̄_ts, ρ̄_ts, group)
             file[group*"ρₗ_ρᵤ_ts"] = ρ̄_ts
         end
     end
+    return nothing
+end
+"""
+    function ∫gρw!(diagnostics_file::AbstractString, computed_output::AbstractString, velocities::AbstractString)
+Compute the buoyancy flux from model density and vertical velocity fields.
+"""
+function ∫gρw!(diagnostics_file::AbstractString, computed_output::AbstractString, velocities::AbstractString, group)
+
+    ds_co = NCDataset(computed_output, "a")
+    time = ds_co[:time][:]
+    find_num = findfirst('k', ds_co.attrib["Reference density"]) - 1
+    ρ₀ = parse(Float64, ds_co.attrib["Reference density"][1:find_num])
+    ΔV = ds_co[:Δx_caa][1] * ds_co[:Δy_aca][1] * ds_co[:Δz_aac][1]
+    ds_vel = NCDataset(velocities)
+
+    g = 9.81
+    ∫gρw = similar(time)
+    for t ∈ eachindex(time)
+
+        σ = ds_co[:σ][:, :, :, t]
+        σ1 = @view σ[:, :, 1:end-1]
+        σ2 = @view σ[:, :, 2:end]
+        σ_interp = cat(σ[:, :, 1], 0.5 * (σ1 .+ σ2), σ[:, :, end], dims = 3)
+        w = ds_vel[:w][:, :, :, t]
+
+        ∫gρw[t] = (g / ρ₀) * sum(σ_interp .* w) * ΔV
+
+    end
+    close(ds_co)
+    close(ds_vel)
+
+    save_∫gρw!(diagnostics_file, ∫gρw, group)
+
+    return nothing
+end
+function save_∫gρw!(diagnostics_file, ∫gρw, group)
+
+    if isfile(diagnostics_file)
+        jldopen(diagnostics_file, "a+") do file
+            file[group*"∫gρw"] = ∫gρw
+        end
+    else
+        jldopen(diagnostics_file, "w") do file
+            file[group*"∫gρw"] = ∫gρw
+        end
+    end
+
     return nothing
 end

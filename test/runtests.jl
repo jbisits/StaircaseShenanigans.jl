@@ -87,7 +87,7 @@ using Test
         stop_time = 4  * 60 # seconds
         save_schedule = 60  # seconds
         output_path = joinpath(@__DIR__, "output")
-        simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!;
+        simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!, save_vertical_velocities!;
                                             save_schedule,
                                             output_path, max_Δt = 5)
         min_spacing = abs(domain_extent.Lz) / resolution.Nz
@@ -99,11 +99,13 @@ using Test
         save_diagnostics!(diagnostics_file,
                           simulation.output_writers[:tracers].filepath,
                           simulation.output_writers[:computed_output].filepath,
+                          simulation.output_writers[:velocities].filepath,
                           group = "lineareos")
         @test isfile(diagnostics_file)
         save_diagnostics!(diagnostics_file,
                           simulation.output_writers[:tracers].filepath,
                           simulation.output_writers[:computed_output].filepath,
+                          simulation.output_writers[:velocities].filepath,
                           group = "nonlineareos")
         @test isfile(diagnostics_file)
 
@@ -135,6 +137,7 @@ using Test
         rm(diagnostics_file)
         rm(simulation.output_writers[:tracers].filepath)
         rm(simulation.output_writers[:computed_output].filepath)
+        rm(simulation.output_writers[:velocities].filepath)
     end
 
 

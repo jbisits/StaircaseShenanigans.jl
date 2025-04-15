@@ -152,4 +152,22 @@ using Test
         @test simulation.model.clock.time ≥ stop_time
     end
 
+    @testset "Diffusivity from non-dim numbers" begin
+
+        ν = 1e-6
+        κₜ, κₛ = κₛ_and_κₜ_from_ν(ν, Pr = 10)
+        @test κₜ == 1e-7
+        @test κₛ == 1e-9
+        κₜ, κₛ = κₛ_and_κₜ_from_ν(ν, τ = 0.1, Pr = 10)
+        @test κₜ == 1e-7
+        @test κₛ == 1e-8
+        κₜ = 1e-7
+        ν, κₛ = ν_and_κₛ_from_κₜ(κₜ, Pr = 10)
+        @test ν == 1e-6
+        @test κₛ == 1e-9
+        ν, κₛ = ν_and_κₛ_from_κₜ(κₜ, τ = 0.1, Pr = 10)
+        @test ν == 1e-6
+        @test κₛ == 1e-8
+
+    end
 end

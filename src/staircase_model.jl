@@ -157,3 +157,27 @@ Enhance the isotropic, scalar diffusiviy applied to the temperature field by `p.
 time `p.diff_change`. Note `p.diff_change` is expeceted in minutes.
 """
 @inline enhance_κₜ(i, j, k, grid, clock, fields, p) = clock.time < p.diff_change * 60 ? p.κₜ : p.κₜ * p.enhance
+"""
+    function κ_from_ν(ν; τ = 0.01, Pr = 7)
+Get the salinity and temperature diffusivities from a set kinematic viscosity and diffusivity
+ratio and Prandtl number.
+"""
+function κₛ_and_κₜ_from_ν(ν; τ = 0.01, Pr = 7)
+
+    κₜ = round(ν / Pr, digits = 8)
+    κₛ = round(τ * κₜ, digits = 10)
+
+    return κₜ, κₛ
+end
+"""
+    function ν_and_κₛ_from_κₜ(κₜ; τ = 0.01, Pr = 7)
+Get kinematic viscosity and salinity diffusivity from a set temperature diffusivity and
+diffusivity and Prandtl number.
+"""
+function ν_and_κₛ_from_κₜ(κₜ; τ = 0.01, Pr = 7)
+
+    ν = round(Pr * κₜ, digits = 7)
+    κₛ = round(τ * κₜ, digits = 10)
+
+    return ν, κₛ
+end

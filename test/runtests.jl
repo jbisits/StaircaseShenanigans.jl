@@ -155,20 +155,20 @@ using Test
     @testset "Diffusivity from non-dim numbers" begin
 
         ν = 1e-6
-        diffs = κₛ_and_κₜ_from_ν(ν, Pr = 10)
+        diffs = diffusivities_from_ν(ν, Pr = 10)
         @test diffs.ν == ν
         @test diffs.κ.T == 1e-7
         @test diffs.κ.S == 1e-9
-        diffs = κₛ_and_κₜ_from_ν(ν, τ = 0.1, Pr = 10)
+        diffs = diffusivities_from_ν(ν, τ = 0.1, Pr = 10)
         @test diffs.κ.T == 1e-7
         @test diffs.κ.S == 1e-8
         @test diffs.ν == ν
         κₜ = 1e-7
-        diffs = ν_and_κₛ_from_κₜ(κₜ, Pr = 10)
+        diffs = diffusivities_from_κₜ(κₜ, Pr = 10)
         @test diffs.ν == 1e-6
         @test diffs.κ.S == 1e-9
         @test diffs.κ.T == κₜ
-        diffs = ν_and_κₛ_from_κₜ(κₜ, τ = 0.1, Pr = 10)
+        diffs = diffusivities_from_κₜ(κₜ, τ = 0.1, Pr = 10)
         @test diffs.ν == 1e-6
         @test diffs.κ.S == 1e-8
         @test diffs.κ.T == κₜ

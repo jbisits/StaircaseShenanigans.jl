@@ -94,7 +94,7 @@ function non_dimensional_numbers!(simulation::Simulation, sdns::StaircaseDNS)
     model, initial_conditions = sdns.model, sdns.initial_conditions
     eos = model.buoyancy.formulation.equation_of_state
     ν = model.closure.ν
-    κₛ, κₜ = model.closure.κ
+    κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
     Pr = ν / κₜ
     Sc = ν / κₛ
     Le = κₜ / κₛ

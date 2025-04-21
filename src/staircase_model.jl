@@ -160,24 +160,24 @@ time `p.diff_change`. Note `p.diff_change` is expeceted in minutes.
 """
     function κ_from_ν(ν; τ = 0.01, Pr = 7)
 Get the salinity and temperature diffusivities from a set kinematic viscosity and diffusivity
-ratio and Prandtl number.
+ratio and Prandtl number. Returns a `NamedTuple` which can be passed to build a model.
 """
 function κₛ_and_κₜ_from_ν(ν; τ = 0.01, Pr = 7)
 
     κₜ = round(ν / Pr, digits = 8)
     κₛ = round(τ * κₜ, digits = 10)
 
-    return κₜ, κₛ
+    return (; ν, κ=(T=κₜ, S=κₛ))
 end
 """
     function ν_and_κₛ_from_κₜ(κₜ; τ = 0.01, Pr = 7)
 Get kinematic viscosity and salinity diffusivity from a set temperature diffusivity and
-diffusivity and Prandtl number.
+diffusivity and Prandtl number. Returns a `NamedTuple` which can be passed to build a model.
 """
 function ν_and_κₛ_from_κₜ(κₜ; τ = 0.01, Pr = 7)
 
     ν = round(Pr * κₜ, digits = 7)
     κₛ = round(τ * κₜ, digits = 10)
 
-    return ν, κₛ
+    return (; ν, κ=(T=κₜ, S=κₛ))
 end

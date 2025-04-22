@@ -167,7 +167,7 @@ function diffusivities_from_ν(ν; τ = 0.01, Pr = 7)
     κₜ = round(ν / Pr, digits = 8)
     κₛ = round(τ * κₜ, digits = 10)
 
-    return (; ν, κ=(T=κₜ, S=κₛ))
+    return (; ν, κ=(S=κₛ, T=κₜ))
 end
 """
     function diffusivities_from_κₜ(κₜ; τ = 0.01, Pr = 7)
@@ -179,5 +179,5 @@ function diffusivities_from_κₜ(κₜ; τ = 0.01, Pr = 7)
     ν = round(Pr * κₜ, digits = 7)
     κₛ = round(τ * κₜ, digits = 10)
 
-    return (; ν, κ=(T=κₜ, S=κₛ))
+    return (; ν, κ=(S=κₛ, T=κₜ))
 end

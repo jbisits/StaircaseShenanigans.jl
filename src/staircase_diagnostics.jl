@@ -79,6 +79,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
             compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
             interface_thickness!(diagnostics_file, tracers, group)
             ∫gρw!(diagnostics_file, computed_output, velocities, group)
+            initial_non_dim_numbers!(diagnostics_file, computed_output)
 
         end
 
@@ -93,6 +94,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
         interface_thickness!(diagnostics_file, tracers, group)
         ∫gρw!(diagnostics_file, computed_output, velocities, group)
+        initial_non_dim_numbers!(diagnostics_file, computed_output)
 
     end
 
@@ -180,6 +182,38 @@ function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 
     end
 
+    return nothing
+end
+
+function initial_non_dim_numbers!(diagnostics_file::AbstractString, computed_output::AbstractString)
+
+    nd_nums = ("Pr", "Sc", "Le", "RaS", "RaT", "Rᵨ", )
+    other_attribs = ("interface_depth", "EOS", "Reference density (kgm⁻³)", "ν (m²s⁻¹)",
+                     "κₛ (m²s⁻¹)", "κₜ (m²s⁻¹)")
+
+    NCDataset(computed_output) do ds
+
+        if isfile(diagnostics_file)
+            jldopen(diagnostics_file, "a+") do file
+                for nd ∈ nd_nums
+                    file["attrib/"*d] = ds.attrib[nd]
+                end
+                for oa ∈ other_attribs
+                    file["attrib/"*oa] = ds.attrib[oa]
+                end
+            end
+        else
+            jldopen(diagnostics_file, "w") do file
+                for nd ∈ nd_nums
+                    file["attrib/"*d] = ds.attrib[nd]
+                end
+                for oa ∈ other_attribs
+                    file["attrib/"*oa] = ds.attrib[oa]
+                end
+            end
+        end
+
+    end
     return nothing
 end
 """

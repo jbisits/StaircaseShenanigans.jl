@@ -1,5 +1,6 @@
 """
-
+    function check_for_halos(ds)
+Check for halos and adjust the plotting so that only interior points are animated.
 """
 function check_for_halos(ds)
 

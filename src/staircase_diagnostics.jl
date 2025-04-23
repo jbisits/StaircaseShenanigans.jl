@@ -196,7 +196,7 @@ function initial_non_dim_numbers!(diagnostics_file::AbstractString, computed_out
         if isfile(diagnostics_file)
             jldopen(diagnostics_file, "a+") do file
                 for nd ∈ nd_nums
-                    file["attrib/"*d] = ds.attrib[nd]
+                    file["attrib/"*nd] = ds.attrib[nd]
                 end
                 for oa ∈ other_attribs
                     file["attrib/"*oa] = ds.attrib[oa]
@@ -205,7 +205,7 @@ function initial_non_dim_numbers!(diagnostics_file::AbstractString, computed_out
         else
             jldopen(diagnostics_file, "w") do file
                 for nd ∈ nd_nums
-                    file["attrib/"*d] = ds.attrib[nd]
+                    file["attrib/"*nd] = ds.attrib[nd]
                 end
                 for oa ∈ other_attribs
                     file["attrib/"*oa] = ds.attrib[oa]

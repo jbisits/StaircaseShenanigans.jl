@@ -182,11 +182,13 @@ function StaircaseShenanigans.animate_density(computed_output::AbstractString, v
 
         n = Observable(1)
         σ = @lift ds[variable][xidx, yslice, zidx, $n]
+        N² = @lift ds[:N²][xidx, yslice, zidx, $n]
         σ_profile = @lift ds[variable][xslice, yslice, zidx, $n]
+        N²_profile = @lift ds[:N²][xslice, yslice, zidx, $n]
         time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
-        fig = Figure(size = (1000, 500))
-        ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
+        fig = Figure(size = (1000, 1000))
+        ax = [Axis(fig[j, i], title = (i == 1 && j == 1) ? time_title : "") for i ∈ 1:2, j ∈ 1:2]
 
         lines!(ax[1], σ_profile, z)
         ax[1].xlabel = "σ₀ kgm⁻³"
@@ -207,6 +209,23 @@ function StaircaseShenanigans.animate_density(computed_output::AbstractString, v
 
         linkyaxes!(ax[1], ax[2])
         hideydecorations!(ax[2], ticks = false)
+
+        lines!(ax[3], N²_profile, z)
+        ax[1].xlabel = "σ₀ kgm⁻³"
+        ax[1].ylabel = "z"
+        ax[1].xaxisposition = :top
+        ax[1].xticklabelrotation = π / 4
+        xlims!(ax[3], extrema(ds[N²][xidx, yidx, zidx, end]))
+
+        colormap = cgrad(:dense)[2:end-1]
+        colorrange = extrema(ds[N²][xidx, yidx, zidx, end])
+        lowclip = cgrad(:dense)[1]
+        highclip = cgrad(:dense)[end]
+        hm = heatmap!(ax[4], x, z, N²; colorrange, colormap, lowclip, highclip)
+
+        ax[4].xlabel = "x (m)"
+        ax[4].ylabel = "z (m)"
+        Colorbar(fig[2, 3], hm, label = "N² (s⁻¹)")
 
         frames = eachindex(t)
         record(fig, joinpath(pwd(), "density.mp4"),

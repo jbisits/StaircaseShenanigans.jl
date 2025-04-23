@@ -79,7 +79,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
             compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
             interface_thickness!(diagnostics_file, tracers, group)
             ∫gρw!(diagnostics_file, computed_output, velocities, group)
-            initial_non_dim_numbers!(diagnostics_file, computed_output)
+            initial_non_dim_numbers!(diagnostics_file, computed_output, group)
 
         end
 
@@ -94,7 +94,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
         interface_thickness!(diagnostics_file, tracers, group)
         ∫gρw!(diagnostics_file, computed_output, velocities, group)
-        initial_non_dim_numbers!(diagnostics_file, computed_output)
+        initial_non_dim_numbers!(diagnostics_file, computed_output, group)
 
     end
 

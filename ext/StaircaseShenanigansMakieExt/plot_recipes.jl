@@ -18,11 +18,12 @@ end
     function StaircaseShenanigans.animate_tracers(tracers::AbstractString)
 Animate the salinity and temperature `tracers` from saved `.nc` output.
 """
-function StaircaseShenanigans.animate_tracers(tracers::AbstractString; xslice = 52, yslice = 52)
+function StaircaseShenanigans.animate_tracers(tracers::AbstractString;
+                                                xslice = 52, yslice = 52, with_halos = false)
 
     NCDataset(tracers) do ds
 
-        xidx, yidx, zidx = check_for_halos(ds)
+        xidx, yidx, zidx = with_halos ? (:, :, :) : check_for_halos(ds)
         x = ds["x_caa"][xidx]
         z = ds["z_aac"][zidx]
         t = ds["time"][:]
@@ -93,11 +94,12 @@ end
     function StaircaseShenanigans.animate_tracers_anomaly(tracers::AbstractString)
 Animate the salinity and temperature `tracers` anomalies from saved `.nc` output.
 """
-function StaircaseShenanigans.animate_tracers_anomaly(tracers::AbstractString; xslice = 52, yslice = 52)
+function StaircaseShenanigans.animate_tracers_anomaly(tracers::AbstractString;
+                                                        xslice = 52, yslice = 52, with_halos = false)
 
     NCDataset(tracers) do ds
 
-        xidx, yidx, zidx = check_for_halos(ds)
+        xidx, yidx, zidx = with_halos ? (:, :, :) : check_for_halos(ds)
         x = ds["x_caa"][xidx]
         z = ds["z_aac"][zidx]
         t = ds["time"][:]
@@ -172,11 +174,11 @@ end
 Animate the density variable in `computed_output`.
 """
 function StaircaseShenanigans.animate_density(computed_output::AbstractString, variable::AbstractString;
-                               xslice = 52, yslice = 52)
+                               xslice = 52, yslice = 52, with_halos = false)
 
     NCDataset(computed_output) do ds
 
-        xidx, yidx, zidx = check_for_halos(ds)
+        xidx, yidx, zidx = with_halos ? (:, :, :) : check_for_halos(ds)
         x = ds["x_caa"][xidx]
         z = ds["z_aac"][zidx]
         t = ds["time"][:]
@@ -246,11 +248,11 @@ end
 Animate the density anomaly from `variable` and the background `variable` in `computed_output`.
 """
 function StaircaseShenanigans.animate_density_anomaly(computed_output::AbstractString, variable::AbstractString;
-                               xslice = 52, yslice = 52)
+                               xslice = 52, yslice = 52, with_halos = false)
 
     NCDataset(computed_output) do ds
 
-        xidx, yidx, zidx = check_for_halos(ds)
+        xidx, yidx, zidx = with_halos ? (:, :, :) : check_for_halos(ds)
         x = ds["x_caa"][xidx]
         z = ds["z_aac"][zidx]
         t = ds["time"][:]
@@ -307,11 +309,12 @@ Setting `anomaly = true` will use the saved temperature anomaly.
 """
 function StaircaseShenanigans.animate_profile_in_S_Θ_space(tracers::AbstractString;
                                                             anomaly = false,
-                                                            xslice = 52, yslice = 52)
+                                                            xslice = 52, yslice = 52,
+                                                            with_halos = false)
 
     NCDataset(tracers) do ds
 
-        xidx, yidx, zidx = check_for_halos(ds)
+        xidx, yidx, zidx = with_halos ? (:, :, :) : check_for_halos(ds)
         x = ds["x_caa"][xidx]
         z = ds["z_aac"][zidx]
         t = ds["time"][:]

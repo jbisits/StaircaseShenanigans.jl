@@ -185,7 +185,7 @@ function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
     return nothing
 end
 
-function initial_non_dim_numbers!(diagnostics_file::AbstractString, computed_output::AbstractString)
+function initial_non_dim_numbers!(diagnostics_file::AbstractString, computed_output::AbstractString, group)
 
     nd_nums = ("Pr", "Sc", "Le", "RaS", "RaT", "Rᵨ", )
     other_attribs = ("interface_depth", "EOS", "Reference density (kgm⁻³)", "ν (m²s⁻¹)",
@@ -196,19 +196,19 @@ function initial_non_dim_numbers!(diagnostics_file::AbstractString, computed_out
         if isfile(diagnostics_file)
             jldopen(diagnostics_file, "a+") do file
                 for nd ∈ nd_nums
-                    file["attrib/"*nd] = ds.attrib[nd]
+                    file[group*"attrib/"*nd] = ds.attrib[nd]
                 end
                 for oa ∈ other_attribs
-                    file["attrib/"*oa] = ds.attrib[oa]
+                    file[group*"attrib/"*oa] = ds.attrib[oa]
                 end
             end
         else
             jldopen(diagnostics_file, "w") do file
                 for nd ∈ nd_nums
-                    file["attrib/"*nd] = ds.attrib[nd]
+                    file[group*"attrib/"*nd] = ds.attrib[nd]
                 end
                 for oa ∈ other_attribs
-                    file["attrib/"*oa] = ds.attrib[oa]
+                    file[group*"attrib/"*oa] = ds.attrib[oa]
                 end
             end
         end

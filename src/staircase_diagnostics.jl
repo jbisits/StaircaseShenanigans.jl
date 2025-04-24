@@ -1,8 +1,12 @@
 "Condition for lower quarter of domain."
-lower_quarter(i, j, k, grid, c) = k < grid.Nz / 4
+lower_quarter(i, j, k, grid, c) = k < 0.25 * grid.Nz
 "Condition for lower quarter of domain."
-upper_quarter(i, j, k, grid, c) = 3 * grid.Nz / 4 < k < grid.Nz
+upper_quarter(i, j, k, grid, c) = 0.75 * grid.Nz < k < grid.Nz
 
+"Condition for middle fifth of upper half of domain."
+upper_middle_fifth(i, j, k, grid, c) = 0.2 * grid.Nz < k < 0.4 * grid.Nz
+"Condition for middle fifth of lower half of domain."
+lower_middle_fifth(i, j, k, grid, c) = 0.6 * grid.Nz < k < 0.8 * grid.Nz
 """
     function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString, eos)
 From saved `tracers` output get the averaged salinity and temperature and lower and upper

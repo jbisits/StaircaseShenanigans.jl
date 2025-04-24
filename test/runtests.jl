@@ -1,7 +1,7 @@
 using StaircaseShenanigans, GibbsSeaWater, JLD2
 using SeawaterPolynomials: thermal_expansion, haline_contraction
 using StaircaseShenanigans: φ_interface_flux!
-using Test
+using Test, CairoMakie
 
 @testset "StaircaseShenanigans.jl" begin
 
@@ -75,7 +75,7 @@ using Test
 
     end
 
-    @testset "Diagnostic saving" begin
+    @testset "Diagnostic saving and plotting" begin
         ## This does not test accuracy just that a file is saved
         model = DNSModel(architecture, diffusivities, domain_extent, domain_topology, resolution, eos)
         depth_of_interface = -0.5
@@ -84,7 +84,7 @@ using Test
         interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature, interface_smoothing = TanhInterfaceThickness())
         sdns = StaircaseDNS(model, interface_ics, nothing)
         set_initial_conditions!(sdns)
-        stop_time = 4  * 60 # seconds
+        stop_time = 4 * 60 # seconds
         save_schedule = 60  # seconds
         output_path = joinpath(@__DIR__, "output")
         simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!, save_vertical_velocities!;
@@ -95,6 +95,15 @@ using Test
         run!(simulation)
         compute_R_ρ!(simulation.output_writers[:computed_output].filepath,
                      simulation.output_writers[:tracers].filepath, eos)
+
+        # Plotting
+        animate_density(simulation.output_writers[:computed_output].filepath, "σ", xslice = 2, yslice = 2)
+        @test isfile("density.mp4")
+        rm("density.mp4")
+        animate_tracers(simulation.output_writers[:tracers].filepath, xslice = 2, yslice = 2)
+        @test isfile("tracers.mp4")
+        rm("tracers.mp4")
+        # Diagnositcs
         diagnostics_file = joinpath(output_path, "test_diagnostics.jld2")
         save_diagnostics!(diagnostics_file,
                           simulation.output_writers[:tracers].filepath,

@@ -1,7 +1,7 @@
 name = "StaircaseShenanigans"
 uuid = "c2bb06a8-94f3-4279-b990-30bf3ab8ba6f"
 authors = ["Josef Bisits <jbisits@gmail.com>"]
-version = "0.7.0"
+version = "0.7.1"
 
 [deps]
 GibbsSeaWater = "9a22fb26-0b63-4589-b28e-8f9d0b5c3d05"
@@ -34,6 +34,7 @@ julia = "1.10"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 
 [targets]
-test = ["Test"]
+test = ["Test", "CairoMakie"]

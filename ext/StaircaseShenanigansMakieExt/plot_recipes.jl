@@ -1,20 +1,38 @@
 """
+    function check_for_halos(ds)
+Check for halos and adjust the plotting so that only interior points are animated.
+"""
+function check_for_halos(ds)
+
+    Hx, Hy, Hz = ds.group["grid_reconstruction"].attrib[:Hx],
+                 ds.group["grid_reconstruction"].attrib[:Hy],
+                 ds.group["grid_reconstruction"].attrib[:Hz]
+    Nz = ds.group["grid_reconstruction"].attrib[:Nz]
+    xc, yc, zc = ds[:x_caa], ds[:y_aca], ds[:z_aac]
+    interior_idx = ds.dim[:z_aac] == Nz ? (:, :, :) :
+                                          (eachindex(xc[Hx+1:end-Hx]), eachindex(yc[Hy+1:end-Hy]), eachindex(zc[Hz+1:end-Hz]))
+
+    return interior_idx
+end
+"""
     function StaircaseShenanigans.animate_tracers(tracers::AbstractString)
 Animate the salinity and temperature `tracers` from saved `.nc` output.
 """
-function StaircaseShenanigans.animate_tracers(tracers::AbstractString; xslice = 52, yslice = 52)
+function StaircaseShenanigans.animate_tracers(tracers::AbstractString;
+                                                xslice = 52, yslice = 52, with_halos = false)
 
     NCDataset(tracers) do ds
 
-        x = ds["x_caa"][:]
-        z = ds["z_aac"][:]
+        xidx, yidx, zidx = with_halos ? (:, :, :) : check_for_halos(ds)
+        x = ds["x_caa"][xidx]
+        z = ds["z_aac"][zidx]
         t = ds["time"][:]
 
         n = Observable(1)
-        S = @lift ds["S"][:, yslice, :, $n]
-        S_profile = @lift ds["S"][xslice, yslice, :, $n]
-        Θ = @lift ds["T"][:, yslice, :, $n]
-        Θ_profile = @lift ds["T"][xslice, yslice, :, $n]
+        S = @lift ds["S"][xidx, yslice, zidx, $n]
+        S_profile = @lift ds["S"][xslice, yslice, zidx, $n]
+        Θ = @lift ds["T"][xidx, yslice, zidx, $n]
+        Θ_profile = @lift ds["T"][xslice, yslice, zidx, $n]
         time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
         fig = Figure(size = (1000, 1000))
@@ -27,7 +45,7 @@ function StaircaseShenanigans.animate_tracers(tracers::AbstractString; xslice = 
         ax[1].xaxisposition = :top
 
         Scmap = cgrad(:haline)[2:end-1]
-        Srange = extrema(ds[:S][:, :, :, 1])
+        Srange = extrema(ds[:S][xidx, yidx, zidx, 1])
         Slow = cgrad(:haline)[1]
         Shigh = cgrad(:haline)[end]
         hmS = heatmap!(ax[2], x, z, S, colorrange = Srange, colormap = Scmap,
@@ -47,7 +65,7 @@ function StaircaseShenanigans.animate_tracers(tracers::AbstractString; xslice = 
         ax[3].xaxisposition = :top
 
         Θcmap = cgrad(:thermal)[2:end-1]
-        Θrange = extrema(ds[:T][:, :, :, 1])
+        Θrange = extrema(ds[:T][xidx, yidx, zidx, 1])
         Θlow = cgrad(:thermal)[1]
         Θhigh = cgrad(:thermal)[end]
         hmΘ = heatmap!(ax[4], x, z, Θ, colorrange = Θrange, colormap = Θcmap,
@@ -76,26 +94,28 @@ end
     function StaircaseShenanigans.animate_tracers_anomaly(tracers::AbstractString)
 Animate the salinity and temperature `tracers` anomalies from saved `.nc` output.
 """
-function StaircaseShenanigans.animate_tracers_anomaly(tracers::AbstractString; xslice = 52, yslice = 52)
+function StaircaseShenanigans.animate_tracers_anomaly(tracers::AbstractString;
+                                                        xslice = 52, yslice = 52, with_halos = false)
 
     NCDataset(tracers) do ds
 
-        x = ds["x_caa"][:]
-        z = ds["z_aac"][:]
+        xidx, yidx, zidx = with_halos ? (:, :, :) : check_for_halos(ds)
+        x = ds["x_caa"][xidx]
+        z = ds["z_aac"][zidx]
         t = ds["time"][:]
 
         n = Observable(1)
-        S = @lift ds[:S′][:, yslice, :, $n]
-        S_profile = @lift ds[:S′][xslice, yslice, :, $n]
-        Θ = @lift ds[:T′][:, yslice, :, $n]
-        Θ_profile = @lift ds[:T′][xslice, yslice, :, $n]
+        S = @lift ds[:S′][xidx, yslice, zidx, $n]
+        S_profile = @lift ds[:S′][xslice, yslice, zidx, $n]
+        Θ = @lift ds[:T′][xidx, yslice, zidx, $n]
+        Θ_profile = @lift ds[:T′][xslice, yslice, zidx, $n]
         time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
         fig = Figure(size = (1000, 1000))
         ax = [Axis(fig[j, i], title = (i == 1 && j == 1) ? time_title : "") for i ∈ 1:2, j ∈ 1:2]
 
         # Salinity
-        Srange = extrema(ds[:S′][:, :, :, end])
+        Srange = extrema(ds[:S′][xidx, yidx, zidx, end])
         lines!(ax[1], S_profile, z)
         ax[1].xlabel = "S′ gkg⁻¹"
         ax[1].ylabel = "z (m)"
@@ -116,7 +136,7 @@ function StaircaseShenanigans.animate_tracers_anomaly(tracers::AbstractString; x
         hideydecorations!(ax[2], ticks = false)
 
         # Temperature
-        Θrange = extrema(ds[:T′][:, :, :, end])
+        Θrange = extrema(ds[:T′][xidx, yidx, zidx, end])
         lines!(ax[3], Θ_profile, z)
         ax[3].xlabel = "Θ°C"
         ax[3].ylabel = "z (m)"
@@ -154,31 +174,34 @@ end
 Animate the density variable in `computed_output`.
 """
 function StaircaseShenanigans.animate_density(computed_output::AbstractString, variable::AbstractString;
-                               xslice = 52, yslice = 52)
+                               xslice = 52, yslice = 52, with_halos = false)
 
     NCDataset(computed_output) do ds
 
-        x = ds["x_caa"][:]
-        z = ds["z_aac"][:]
+        xidx, yidx, zidx = with_halos ? (:, :, :) : check_for_halos(ds)
+        x = ds["x_caa"][xidx]
+        z = ds["z_aac"][zidx]
         t = ds["time"][:]
 
         n = Observable(1)
-        σ = @lift ds[variable][:, yslice, :, $n]
-        σ_profile = @lift ds[variable][xslice, yslice, :, $n]
+        σ = @lift ds[variable][xidx, yslice, zidx, $n]
+        N² = @lift ds[:N²][xidx, yslice, zidx, $n]
+        σ_profile = @lift ds[variable][xslice, yslice, zidx, $n]
+        N²_profile = @lift ds[:N²][xslice, yslice, zidx, $n]
         time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
-        fig = Figure(size = (1000, 500))
-        ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
+        fig = Figure(size = (1000, 1000))
+        ax = [Axis(fig[j, i], title = (i == 1 && j == 1) ? time_title : "") for i ∈ 1:2, j ∈ 1:2]
 
         lines!(ax[1], σ_profile, z)
         ax[1].xlabel = "σ₀ kgm⁻³"
         ax[1].ylabel = "z"
         ax[1].xaxisposition = :top
         ax[1].xticklabelrotation = π / 4
-        xlims!(ax[1], extrema(ds[variable][:, :, :, end]))
+        xlims!(ax[1], extrema(ds[variable][xidx, yidx, zidx, end]))
 
         colormap = cgrad(:dense)[2:end-1]
-        colorrange = extrema(ds[variable][:, :, :, end])
+        colorrange = extrema(ds[variable][xidx, yidx, zidx, end])
         lowclip = cgrad(:dense)[1]
         highclip = cgrad(:dense)[end]
         hm = heatmap!(ax[2], x, z, σ; colorrange, colormap, lowclip, highclip)
@@ -189,6 +212,24 @@ function StaircaseShenanigans.animate_density(computed_output::AbstractString, v
 
         linkyaxes!(ax[1], ax[2])
         hideydecorations!(ax[2], ticks = false)
+
+        zf = ds["z_aaf"][zidx]
+        lines!(ax[3], N²_profile, zf)
+        ax[3].xlabel = "σ₀ kgm⁻³"
+        ax[3].ylabel = "z"
+        ax[3].xaxisposition = :top
+        ax[3].xticklabelrotation = π / 4
+        xlims!(ax[3], extrema(ds[:N²][xidx, yidx, zidx, end]))
+
+        colormap = cgrad(:dense)[2:end-1]
+        colorrange = extrema(ds[:N²][xidx, yidx, zidx, end])
+        lowclip = cgrad(:dense)[1]
+        highclip = cgrad(:dense)[end]
+        hm = heatmap!(ax[4], x, z, N²; colorrange, colormap, lowclip, highclip)
+
+        ax[4].xlabel = "x (m)"
+        ax[4].ylabel = "z (m)"
+        Colorbar(fig[2, 3], hm, label = "N² (s⁻¹)")
 
         frames = eachindex(t)
         record(fig, joinpath(pwd(), "density.mp4"),
@@ -208,25 +249,26 @@ end
 Animate the density anomaly from `variable` and the background `variable` in `computed_output`.
 """
 function StaircaseShenanigans.animate_density_anomaly(computed_output::AbstractString, variable::AbstractString;
-                               xslice = 52, yslice = 52)
+                               xslice = 52, yslice = 52, with_halos = false)
 
     NCDataset(computed_output) do ds
 
-        x = ds["x_caa"][:]
-        z = ds["z_aac"][:]
+        xidx, yidx, zidx = with_halos ? (:, :, :) : check_for_halos(ds)
+        x = ds["x_caa"][xidx]
+        z = ds["z_aac"][zidx]
         t = ds["time"][:]
 
         n = Observable(1)
-        σ_backgroud = ds[variable*"_background"][:, yslice, :]
-        σ = @lift ds[variable][:, yslice, :, $n] .- σ_backgroud
-        σ_backgroud_profile =  ds[variable*"_background"][xslice, yslice, :]
-        σ_profile = @lift ds[variable][xslice, yslice, :, $n] .- σ_backgroud_profile
+        σ_backgroud = ds[variable*"_background"][xidx, yslice, zidx]
+        σ = @lift ds[variable][xidx, yslice, zidx, $n] .- σ_backgroud
+        σ_backgroud_profile =  ds[variable*"_background"][xslice, yslice, zidx]
+        σ_profile = @lift ds[variable][xslice, yslice, zidx, $n] .- σ_backgroud_profile
         time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
         fig = Figure(size = (1000, 500))
         ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
 
-        colorrange = extrema(ds[variable][:, :, :, end] .- ds[variable*"_background"][:, :, :])
+        colorrange = extrema(ds[variable][xidx, yidx, zidx, end] .- ds[variable*"_background"][xidx, yidx, zidx])
 
         lines!(ax[1], σ_profile, z)
         ax[1].xlabel = "σ₀′ kgm⁻³"
@@ -268,17 +310,21 @@ Setting `anomaly = true` will use the saved temperature anomaly.
 """
 function StaircaseShenanigans.animate_profile_in_S_Θ_space(tracers::AbstractString;
                                                             anomaly = false,
-                                                            xslice = 52, yslice = 52)
+                                                            xslice = 52, yslice = 52,
+                                                            with_halos = false)
 
     NCDataset(tracers) do ds
 
+        xidx, yidx, zidx = with_halos ? (:, :, :) : check_for_halos(ds)
+        x = ds["x_caa"][xidx]
+        z = ds["z_aac"][zidx]
         t = ds["time"][:]
 
         tracer_names = anomaly == false ? (S = :S, T = :T) : (S = :S′, T = :T′)
 
         n = Observable(1)
-        S_profile = @lift ds[tracer_names.S][xslice, yslice, :, $n]
-        T_profile = @lift ds[tracer_names.T][xslice, yslice, :, $n]
+        S_profile = @lift ds[tracer_names.S][xslice, yslice, zidx, $n]
+        T_profile = @lift ds[tracer_names.T][xslice, yslice, zidx, $n]
         time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
         fig = Figure(size = (500, 500))

@@ -170,10 +170,10 @@ function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
     S = typeof(ics.background_state) <: NoBackground ? model.tracers.S : Field(model.background_fields.tracers.S + model.tracers.S)
     T = typeof(ics.background_state) <: NoBackground ? model.tracers.T : Field(model.background_fields.tracers.T + model.tracers.T)
 
-    Sᵤ_mean = Average(condition_operand(identity, S, upper_quarter, 0))
-    Sₗ_mean = Average(condition_operand(identity, S, lower_quarter, 0))
-    Tᵤ_mean = Average(condition_operand(identity, T, upper_quarter, 0))
-    Tₗ_mean = Average(condition_operand(identity, T, lower_quarter, 0))
+    Sᵤ_mean = Average(condition_operand(identity, S, upper_middle_fifth, 0))
+    Sₗ_mean = Average(condition_operand(identity, S, lower_middle_fifth, 0))
+    Tᵤ_mean = Average(condition_operand(identity, T, upper_middle_fifth, 0))
+    Tₗ_mean = Average(condition_operand(identity, T, lower_middle_fifth, 0))
 
     tracers = Dict("S" => S, "Sᵤ_mean" => Sᵤ_mean, "Sₗ_mean" => Sₗ_mean,
                    "T" => T, "Tᵤ_mean" => Tᵤ_mean, "Tₗ_mean" => Tₗ_mean)

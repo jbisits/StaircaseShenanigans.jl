@@ -8,7 +8,7 @@ function check_for_halos(ds)
                  ds.group["grid_reconstruction"].attrib[:Hy],
                  ds.group["grid_reconstruction"].attrib[:Hz]
     Nz = ds.group["grid_reconstruction"].attrib[:Nz]
-    xc, yc, zc = ds[:x_caa], ds[:y_caa], ds[:z_caa]
+    xc, yc, zc = ds[:x_caa], ds[:y_aca], ds[:z_aac]
     interior_idx = ds.dim[:z_aac] == Nz ? (:, :, :) :
                                           (eachindex(xc[Hx+1:end-Hx]), eachindex(yc[Hy+1:end-Hy]), eachindex(zc[Hz+1:end-Hz]))
 
@@ -213,15 +213,16 @@ function StaircaseShenanigans.animate_density(computed_output::AbstractString, v
         linkyaxes!(ax[1], ax[2])
         hideydecorations!(ax[2], ticks = false)
 
-        lines!(ax[3], N²_profile, z)
-        ax[1].xlabel = "σ₀ kgm⁻³"
-        ax[1].ylabel = "z"
-        ax[1].xaxisposition = :top
-        ax[1].xticklabelrotation = π / 4
-        xlims!(ax[3], extrema(ds[N²][xidx, yidx, zidx, end]))
+        zf = ds["z_aaf"][zidx]
+        lines!(ax[3], N²_profile, zf)
+        ax[3].xlabel = "σ₀ kgm⁻³"
+        ax[3].ylabel = "z"
+        ax[3].xaxisposition = :top
+        ax[3].xticklabelrotation = π / 4
+        xlims!(ax[3], extrema(ds[:N²][xidx, yidx, zidx, end]))
 
         colormap = cgrad(:dense)[2:end-1]
-        colorrange = extrema(ds[N²][xidx, yidx, zidx, end])
+        colorrange = extrema(ds[:N²][xidx, yidx, zidx, end])
         lowclip = cgrad(:dense)[1]
         highclip = cgrad(:dense)[end]
         hm = heatmap!(ax[4], x, z, N²; colorrange, colormap, lowclip, highclip)

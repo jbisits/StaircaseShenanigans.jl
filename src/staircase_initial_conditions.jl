@@ -32,6 +32,17 @@ function STStaircaseInitialConditions(model, number_of_interfaces, depth_of_inte
                                         temperature, interface_smoothing, background_state, R_ρ)
 
 end
+function STStaircaseInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface,
+                                        salinity, temperature;
+                                        interface_smoothing = NoSmoothing,
+                                        background_state = NoBackground)
+
+R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
+
+return STStaircaseInitialConditions(depth_of_interface, salinity, temperature,
+                                    interface_smoothing, background_state, R_ρ)
+
+end
 const StaircaseICs = STStaircaseInitialConditions # alias
 Base.summary(ics::StaircaseICs) = "Multiple S-T interfaces at z = $(ics.depth_of_interfaces)"
 

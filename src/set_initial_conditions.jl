@@ -24,15 +24,6 @@ function set_initial_conditions!(model, ics::STStaircaseInitialConditions)
 
     return nothing
 end
-function set_initial_conditions!(model, ics::SmoothSTStaircaseInitialConditions)
-
-    # TODO: write methods to set smooth changes using the function provied in
-    # `ics::SmoothSTStaircaseInitialConditions`. I can use something like the above
-    # normalise then set with the smoothing function
-    #set!(model, S = initial_S_steps, T = initial_T_steps)
-
-    return nothing
-end
 """
     function set_initial_conditions!(model, ics::SingleInterfaceICs)
 Set the initial conditions for a single interface. When there is no smoothing the initial

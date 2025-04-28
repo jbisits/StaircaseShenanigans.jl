@@ -56,8 +56,28 @@ Compute an initial timestep from the diffusivities set in the model. The timeste
 a sensible choice based on the diffusivities set in the simulation.
 """
 initial_timestep(sdns) = 0.2 * cell_diffusion_timescale(sdns.model)
+function compute_Ra(ics::SingleInterfaceICs, κₛ, κₜ, ν, eos, int_depth, L; g = 9.81)
+
+    salinity = Array(icss.salinity_values)
+    temperature = Array(ics.temperature_values)
+
+    return compute_Ra(salinity, temperature, κₛ, κₜ, ν, eos, int_depth, L, g)
+end
+function compute_Ra(ics::StaircaseICs, κₛ, κₜ, ν, eos, int_depth, L; g = 9.81)
+
+    salinity = Array(ics.salinity_values)
+    temperature = Array(ics.temperature_values)
+    RaS = Array{Float64}(undef, length(salinity)-1)
+    RaT = similar(RaS)
+
+    for i ∈ eachindex(RaS)
+        RaS[i], RaT[i] = compute_Ra(salinity[i:i+1], temperature[i:i+1], κₛ, κₜ, ν, eos, int_depth, L, g)
+    end
+
+    return RaS, RaT
+end
 "Salinity and temperature Rayleigh numbers."
-function compute_Ra(salinity, temperature, κₛ, κₜ, ν, eos, int_depth, L; g = 9.81)
+function compute_Ra(salinity, temperature, κₛ, κₜ, ν, eos, int_depth, L, g)
 
     S₀ᵘ, S₀ˡ = salinity
     T₀ᵘ, T₀ˡ = temperature
@@ -99,14 +119,10 @@ function non_dimensional_numbers!(simulation::Simulation, sdns::StaircaseDNS)
     Pr = ν / κₜ
     Sc = ν / κₛ
     Le = κₜ / κₛ
-    salinity = Array(initial_conditions.salinity_values)
-    temperature = Array(initial_conditions.temperature_values)
-    #TODO: rethink if there should be a difference between the struct names
-    int_depth = initial_conditions isa STSingleInterfaceInitialConditions ? initial_conditions.depth_of_interface :
-                                                                            initial_conditions.depth_of_interfaces
     Lz = model.grid.Lz
-    L = Lz - int_depth # lower layer height
-    RaS, RaT = compute_Ra(salinity, temperature, κₛ, κₜ, ν, eos, int_depth, L)
+    int_depth = interface_depth(initial_conditions)
+    L = Lz - int_depth #
+    RaS, RaT = compute_Ra(initial_conditions, κₛ, κₜ, ν, eos, int_depth, L)
 
     nd_nums = Dict("Pr" => Pr, "Sc" => Sc, "Le" => Le, "RaS" => RaS, "RaT" => RaT,
                     "Rᵨ" => initial_conditions.R_ρ)
@@ -126,6 +142,8 @@ function non_dimensional_numbers!(simulation::Simulation, sdns::StaircaseDNS)
     return nothing
 
 end
+interface_depth(ics::SingleInterfaceICs) = ics.depth_of_interface
+interface_depth(ics::StaircaseICs) = ics.depth_of_interfaces[end]
 """
     function output_directory(sdns::StaircaseDNS, stop_time::Number, output_path)
 Create an `output_directory` for saved output based on the `initial_conditions` and

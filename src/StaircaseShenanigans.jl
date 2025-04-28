@@ -29,7 +29,7 @@ abstract type AbstractInterfaceSmoothing end
 export StaircaseDNS, DNSModel, SDNS_simulation_setup, enhance_κₛ, enhance_κₜ,
        diffusivities_from_ν, diffusivities_from_κₜ
 
-export STStaircaseInitialConditions, StaircaseICs, SmoothSTStaircaseInitialConditions,
+export STStaircaseInitialConditions, StaircaseICs,
        STSingleInterfaceInitialConditions, SingleInterfaceICs,
        set_initial_conditions!
 

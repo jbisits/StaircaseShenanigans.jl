@@ -4,45 +4,36 @@ Base.iterate(sics::AbstractStaircaseInitialConditions, state = 1) =
     state > length(fieldnames(sics)) ? nothing : (getfield(sics, state), state + 1)
 
 "Container for initial conditions that have well mixed layers seperated by sharp step interfaces."
-struct STStaircaseInitialConditions{T} <: AbstractStaircaseInitialConditions
+struct STStaircaseInitialConditions{I, T, IS, BF} <: AbstractStaircaseInitialConditions
     "Number of interfaces in the initial state"
-    number_of_interfaces :: Int
+    number_of_interfaces :: I
     "The depth of the interfaces, note length(depth_of_interfaces) == number_of_interfaces"
      depth_of_interfaces :: T
     "Salinity values in each layer"
          salinity_values :: T
     "Temperature values in each layer"
       temperature_values :: T
+      "Initial smoothing function overeach interface"
+     interface_smoothing :: IS
+      "`BackgroundField` about which anomaly is advected. Should be an `AbstractBackgroundFunction`."
+        background_state :: BF
     "Initial R_ρ at each step interface"
                      R_ρ :: T
 end
-function STStaircaseInitialConditions(model, number_of_interfaces, depth_of_interfaces, salinity, temperature)
+function STStaircaseInitialConditions(model, number_of_interfaces, depth_of_interfaces, salinity, temperature;
+                                        interface_smoothing = NoSmoothing,
+                                        background_state = NoBackground)
 
     eos = model.buoyancy.formulation.equation_of_state
 
     R_ρ = compute_R_ρ(salinity, temperature, depth_of_interfaces, eos)
 
-    return STStaircaseInitialConditions(number_of_interfaces, depth_of_interfaces, salinity, temperature, R_ρ)
+    return STStaircaseInitialConditions(number_of_interfaces, depth_of_interfaces, salinity,
+                                        temperature, interface_smoothing, background_state, R_ρ)
 
 end
 const StaircaseICs = STStaircaseInitialConditions # alias
 Base.summary(ics::StaircaseICs) = "Multiple S-T interfaces at z = $(ics.depth_of_interfaces)"
-
-
-# TODO: implement this so it is an option.
-"Container for initial conditions that have well mixed layers seperated by smoothed step interfaces."
-struct SmoothSTStaircaseInitialConditions{T, F} <: AbstractStaircaseInitialConditions
-    "Number of interfaces in the initial state"
-    number_of_interfaces :: Int
-    "The depth of the interfaces, **note:** length (depth_of_interfaces) == number_of_interfaces"
-     depth_of_interfaces :: T
-    "Salinity values in each layer"
-         salinity_values :: T
-    "Temperature values in each layer"
-      temperature_values :: T
-    "Function to smooth step transition"
-      smoothing_funciton :: F
-end
 
 """
     function compute_R_ρ(salinity, temperature, depth_of_interfaces, eos)
@@ -72,19 +63,12 @@ function compute_R_ρ(salinity, temperature, depth_of_interfaces::Array, eos)
 end
 
 function Base.show(io::IO, sics::AbstractStaircaseInitialConditions)
-    if sics isa STStaircaseInitialConditions
-        println(io, "STStaircaseInitialConditions")
-        println(io, "┣━ number_of_interfaces: $(sics.number_of_interfaces)")
-        println(io, "┣━━ depth_of_interfaces: $(sics.depth_of_interfaces)")
-        println(io, "┣━━━━━━ salinity_values: $(sics.salinity_values)")
-        println(io, "┣━━━ temperature_values: $(sics.temperature_values)")
-        print(io,   "┗━━━━━━━━━━━━━━━━━━ R_ρ: $(round.(sics.R_ρ; digits = 2))")
-    elseif sics isa SmoothSTStaircaseInitialConditions
-        println(io, "STStaircaseInitialConditions")
-        println(io, "┣━ number_of_interfaces: $(sics.number_of_interfaces)")
-        println(io, "┣━━ depth_of_interfaces: $(sics.depth_of_interfaces)")
-        println(io, "┣━━━━━━ salinity_values: $(sics.salinity_values)")
-        println(io, "┣━━━ temperature_values: $(sics.temperature_values)")
-        print(io,   "┗━━━ smoothing_funciton: $(sics.smoothing_funciton)")
-    end
+    println(io, "STStaircaseInitialConditions")
+    println(io, "┣━ number_of_interfaces: $(sics.number_of_interfaces)")
+    println(io, "┣━━ depth_of_interfaces: $(sics.depth_of_interfaces)")
+    println(io, "┣━━━━━━ salinity_values: $(sics.salinity_values)")
+    println(io, "┣━━━ temperature_values: $(sics.temperature_values)")
+    println(io, "┣━ interface_smoothing: $(summary(sics.interface_smoothing))")
+    println(io, "┣━━━━ background_state: $(summary(sics.background_state))")
+    print(io,   "┗━━━━━━━━━━━━━━━━━━ R_ρ: $(round.(sics.R_ρ; digits = 2))")
 end

@@ -58,7 +58,7 @@ a sensible choice based on the diffusivities set in the simulation.
 initial_timestep(sdns) = 0.2 * cell_diffusion_timescale(sdns.model)
 function compute_Ra(ics::SingleInterfaceICs, κₛ, κₜ, ν, eos, int_depth, L; g = 9.81)
 
-    salinity = Array(icss.salinity_values)
+    salinity = Array(ics.salinity_values)
     temperature = Array(ics.temperature_values)
 
     return compute_Ra(salinity, temperature, κₛ, κₜ, ν, eos, int_depth, L, g)

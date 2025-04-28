@@ -20,9 +20,10 @@ struct STStaircaseInitialConditions{I, T, IS, BF} <: AbstractStaircaseInitialCon
     "Initial R_ρ at each step interface"
                      R_ρ :: T
 end
-function STStaircaseInitialConditions(model, number_of_interfaces, depth_of_interfaces, salinity, temperature;
-                                        interface_smoothing = NoSmoothing,
-                                        background_state = NoBackground)
+function STStaircaseInitialConditions(model, number_of_interfaces, depth_of_interfaces,
+                                      salinity, temperature;
+                                      interface_smoothing = NoSmoothing,
+                                      background_state = NoBackground)
 
     eos = model.buoyancy.formulation.equation_of_state
 
@@ -32,15 +33,15 @@ function STStaircaseInitialConditions(model, number_of_interfaces, depth_of_inte
                                         temperature, interface_smoothing, background_state, R_ρ)
 
 end
-function STStaircaseInitialConditions(eos::BoussinesqEquationOfState, depth_of_interface,
-                                        salinity, temperature;
-                                        interface_smoothing = NoSmoothing,
-                                        background_state = NoBackground)
+function STStaircaseInitialConditions(eos::BoussinesqEquationOfState, number_of_interfaces,
+                                      depth_of_interfaces, salinity, temperature;
+                                      interface_smoothing = NoSmoothing,
+                                      background_state = NoBackground)
 
-R_ρ = compute_R_ρ(salinity, temperature, depth_of_interface, eos)
+    R_ρ = compute_R_ρ(salinity, temperature, depth_of_interfaces, eos)
 
-return STStaircaseInitialConditions(depth_of_interface, salinity, temperature,
-                                    interface_smoothing, background_state, R_ρ)
+    return STStaircaseInitialConditions(number_of_interfaces, depth_of_interfaces, salinity,
+                                        temperature, interface_smoothing, background_state, R_ρ)
 
 end
 const StaircaseICs = STStaircaseInitialConditions # alias

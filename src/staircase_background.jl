@@ -75,6 +75,7 @@ struct NoBackgroundFunction <: AbstractBackgroundFunction end
 const NoBackground = NoBackgroundFunction
 Base.summary(bt::BackgroundTanh) = "$(bt.func)"
 Base.summary(bl::BackgroundLinear) = "$(bl.func)"
+Base.summary(bt::NamedTuple) = "Custom backgorund fields"
 Base.summary(bn::Type{<:NoBackgroundFunction}) = "no background field"
 
 S_and_T_background_fields(ics::STSingleInterfaceInitialConditions, z_range) =

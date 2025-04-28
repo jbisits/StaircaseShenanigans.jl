@@ -215,7 +215,7 @@ function StaircaseShenanigans.animate_density(computed_output::AbstractString, v
 
         zf = ds["z_aaf"][zidx]
         lines!(ax[3], N²_profile, zf)
-        ax[3].xlabel = "σ₀ kgm⁻³"
+        ax[3].xlabel = "N² (s⁻¹)"
         ax[3].ylabel = "z"
         ax[3].xaxisposition = :top
         ax[3].xticklabelrotation = π / 4

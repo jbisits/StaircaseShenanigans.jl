@@ -13,7 +13,9 @@ using Test, CairoMakie
         for interface_smoothing ∈ smoothing
             for background_state ∈ background
                 @test SingleInterfaceICs(eos, depth_of_interface, salinity, temperature;
-                                        interface_smoothing, background_state) isa STSingleInterfaceInitialConditions
+                                         interface_smoothing, background_state) isa STSingleInterfaceInitialConditions
+                @test StaircaseICs(eos, number_of_interfaces, depth_of_interfaces, salinities, temperatures;
+                                   interface_smoothing, background_state) isa STStaircaseInitialConditions
             end
         end
 

@@ -19,7 +19,8 @@ end
 Animate the salinity and temperature `tracers` from saved `.nc` output.
 """
 function StaircaseShenanigans.animate_tracers(tracers::AbstractString;
-                                                xslice = 52, yslice = 52, with_halos = false)
+                                              xslice = 52, yslice = 52, with_halos = false,
+                                              rundown = true)
 
     NCDataset(tracers) do ds
 
@@ -39,15 +40,17 @@ function StaircaseShenanigans.animate_tracers(tracers::AbstractString;
         ax = [Axis(fig[j, i], title = (i == 1 && j == 1) ? time_title : "") for i ∈ 1:2, j ∈ 1:2]
 
         # Salinity
+        Scmap = cgrad(:haline)[2:end-1]
+        Srange = rundown ? extrema(ds[:S][xidx, yidx, zidx, 1]) : extrema(ds[:S][xidx, yidx, zidx, end])
+        Slow = cgrad(:haline)[1]
+        Shigh = cgrad(:haline)[end]
+
         lines!(ax[1], S_profile, z)
         ax[1].xlabel = "S gkg⁻¹"
         ax[1].ylabel = "z (m)"
         ax[1].xaxisposition = :top
+        xlims!(ax[1], Srange)
 
-        Scmap = cgrad(:haline)[2:end-1]
-        Srange = extrema(ds[:S][xidx, yidx, zidx, 1])
-        Slow = cgrad(:haline)[1]
-        Shigh = cgrad(:haline)[end]
         hmS = heatmap!(ax[2], x, z, S, colorrange = Srange, colormap = Scmap,
                         lowclip = Slow, highclip = Shigh)
 
@@ -59,15 +62,17 @@ function StaircaseShenanigans.animate_tracers(tracers::AbstractString;
         hideydecorations!(ax[2], ticks = false)
 
         # Temperature
+        Θcmap = cgrad(:thermal)[2:end-1]
+        Θrange = rundown ? extrema(ds[:T][xidx, yidx, zidx, 1]) : extrema(ds[:T][xidx, yidx, zidx, end])
+        Θlow = cgrad(:thermal)[1]
+        Θhigh = cgrad(:thermal)[end]
+
         lines!(ax[3], Θ_profile, z)
         ax[3].xlabel = "Θ°C"
         ax[3].ylabel = "z (m)"
         ax[3].xaxisposition = :top
+        xlims!(ax[3], Θrange)
 
-        Θcmap = cgrad(:thermal)[2:end-1]
-        Θrange = extrema(ds[:T][xidx, yidx, zidx, 1])
-        Θlow = cgrad(:thermal)[1]
-        Θhigh = cgrad(:thermal)[end]
         hmΘ = heatmap!(ax[4], x, z, Θ, colorrange = Θrange, colormap = Θcmap,
                         lowclip = Θlow, highclip = Θhigh)
 

@@ -71,7 +71,7 @@ function StaircaseShenanigans.animate_tracers(tracers::AbstractString;
         ax[3].xlabel = "Θ°C"
         ax[3].ylabel = "z (m)"
         ax[3].xaxisposition = :top
-        xlims(ax[3], Θrange)
+        xlims!(ax[3], Θrange)
 
         hmΘ = heatmap!(ax[4], x, z, Θ, colorrange = Θrange, colormap = Θcmap,
                         lowclip = Θlow, highclip = Θhigh)

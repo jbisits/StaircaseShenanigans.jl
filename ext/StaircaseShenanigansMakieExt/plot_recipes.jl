@@ -20,7 +20,8 @@ Animate the salinity and temperature `tracers` from saved `.nc` output.
 """
 function StaircaseShenanigans.animate_tracers(tracers::AbstractString;
                                               xslice = 52, yslice = 52, with_halos = false,
-                                              rundown = true)
+                                              S_limit_adjusment = 0,
+                                              Θ_limit_adjustment = 0)
 
     NCDataset(tracers) do ds
 
@@ -41,7 +42,7 @@ function StaircaseShenanigans.animate_tracers(tracers::AbstractString;
 
         # Salinity
         Scmap = cgrad(:haline)[2:end-1]
-        Srange = rundown ? extrema(ds[:S][xidx, yidx, zidx, 1]) : extrema(ds[:S][xidx, yidx, zidx, end])
+        Srange = extrema(ds[:S][xidx, yidx, zidx, end]) .+ [-S_limit_adjusment, S_limit_adjusment]
         Slow = cgrad(:haline)[1]
         Shigh = cgrad(:haline)[end]
 
@@ -63,7 +64,7 @@ function StaircaseShenanigans.animate_tracers(tracers::AbstractString;
 
         # Temperature
         Θcmap = cgrad(:thermal)[2:end-1]
-        Θrange = rundown ? extrema(ds[:T][xidx, yidx, zidx, 1]) : extrema(ds[:T][xidx, yidx, zidx, end])
+        Θrange = extrema(ds[:T][xidx, yidx, zidx, end]) .+ [-Θ_limit_adjustment, Θ_limit_adjustment]
         Θlow = cgrad(:thermal)[1]
         Θhigh = cgrad(:thermal)[end]
 
@@ -100,7 +101,7 @@ end
 Animate the salinity and temperature `tracers` anomalies from saved `.nc` output.
 """
 function StaircaseShenanigans.animate_tracers_anomaly(tracers::AbstractString;
-                                                        xslice = 52, yslice = 52, with_halos = false)
+                                                      xslice = 52, yslice = 52, with_halos = false)
 
     NCDataset(tracers) do ds
 
@@ -179,7 +180,8 @@ end
 Animate the density variable in `computed_output`.
 """
 function StaircaseShenanigans.animate_density(computed_output::AbstractString, variable::AbstractString;
-                               xslice = 52, yslice = 52, with_halos = false)
+                                              xslice = 52, yslice = 52, with_halos = false,
+                                              density_limit_adjustment = 0)
 
     NCDataset(computed_output) do ds
 
@@ -206,7 +208,7 @@ function StaircaseShenanigans.animate_density(computed_output::AbstractString, v
         xlims!(ax[1], extrema(ds[variable][xidx, yidx, zidx, end]))
 
         colormap = cgrad(:dense)[2:end-1]
-        colorrange = extrema(ds[variable][xidx, yidx, zidx, end])
+        colorrange = extrema(ds[variable][xidx, yidx, zidx, 1]) .+ [-density_limit_adjustment, density_limit_adjustment]
         lowclip = cgrad(:dense)[1]
         highclip = cgrad(:dense)[end]
         hm = heatmap!(ax[2], x, z, σ; colorrange, colormap, lowclip, highclip)

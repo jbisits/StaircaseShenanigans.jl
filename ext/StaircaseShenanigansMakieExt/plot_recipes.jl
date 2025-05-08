@@ -20,7 +20,7 @@ Animate the salinity and temperature `tracers` from saved `.nc` output.
 """
 function StaircaseShenanigans.animate_tracers(tracers::AbstractString;
                                               xslice = 52, yslice = 52, with_halos = false,
-                                              S_limit_adjusment = 0,
+                                              S_limit_adjustment = 0,
                                               Θ_limit_adjustment = 0)
 
     NCDataset(tracers) do ds
@@ -42,7 +42,7 @@ function StaircaseShenanigans.animate_tracers(tracers::AbstractString;
 
         # Salinity
         Scmap = cgrad(:haline)[2:end-1]
-        Srange = extrema(ds[:S][xidx, yidx, zidx, end]) .+ [-S_limit_adjusment, S_limit_adjusment]
+        Srange = extrema(ds[:S][xidx, yidx, zidx, end]) .+ [-S_limit_adjustment, S_limit_adjustment]
         Slow = cgrad(:haline)[1]
         Shigh = cgrad(:haline)[end]
 
@@ -205,13 +205,13 @@ function StaircaseShenanigans.animate_density(computed_output::AbstractString, v
         ax[1].ylabel = "z"
         ax[1].xaxisposition = :top
         ax[1].xticklabelrotation = π / 4
-        xlims!(ax[1], extrema(ds[variable][xidx, yidx, zidx, end]))
+        σ_range = extrema(ds[variable][xidx, yidx, zidx, 1]) .+ [-density_limit_adjustment, density_limit_adjustment]
+        xlims!(ax[1], σ_range)
 
         colormap = cgrad(:dense)[2:end-1]
-        colorrange = extrema(ds[variable][xidx, yidx, zidx, 1]) .+ [-density_limit_adjustment, density_limit_adjustment]
         lowclip = cgrad(:dense)[1]
         highclip = cgrad(:dense)[end]
-        hm = heatmap!(ax[2], x, z, σ; colorrange, colormap, lowclip, highclip)
+        hm = heatmap!(ax[2], x, z, σ; colorrange = σ_range, colormap, lowclip, highclip)
 
         ax[2].xlabel = "x (m)"
         ax[2].ylabel = "z (m)"

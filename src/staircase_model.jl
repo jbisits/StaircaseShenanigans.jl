@@ -106,7 +106,7 @@ function DNSModel(architecture, diffusivities::NamedTuple, domain_extent::NamedT
                   boundary_conditions = nothing,
                   background_fields = nothing,
                   centred_advection_scheme_order = 2,
-                  TD = ExplicitTimeDiscretization())
+                  TD = VerticallyImplicitTimeDiscretization())
 
     Lx, Ly, Lz = domain_extent.Lx, domain_extent.Ly, domain_extent.Lz
     x_top, y_top, z_top = domain_topology.x, domain_topology.y, domain_topology.z

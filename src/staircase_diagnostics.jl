@@ -446,7 +446,7 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
             ΔT = abs.(mean(ds[:T_ha][1:find_interface-interface_offfset]) .- mean(ds[:T_ha][find_interface+interface_offfset:end]))
             find = findall(Tmidpoint - (ΔT/4) .<  T .< Tmidpoint + (ΔT/4))
             intercept, slope = [ones(length(find)) zC[find]] \ T[find]
-            hₜ[t] = ΔT[t] / slope
+            hₜ[t] = ΔT / slope
         end
 
         for t ∈ eachindex(hₛ)
@@ -455,7 +455,7 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
             ΔS = abs.(mea(ds[:S_ha][1:find_interface-interface_offfset]) .- mean(ds[:S_ha][find_interface+interface_offfset:end]))
             find = findall(Smidpoint - (ΔS/4) .<  S .< Smidpoint + (ΔS/4))
             intercept, slope = [ones(length(find)) zC[find]] \ S[find]
-            hₛ[t] = ΔS[t] / slope
+            hₛ[t] = ΔS / slope
         end
 
         r = hₜ ./ hₛ

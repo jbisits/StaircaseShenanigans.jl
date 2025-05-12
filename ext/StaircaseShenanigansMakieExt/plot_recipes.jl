@@ -239,7 +239,7 @@ function StaircaseShenanigans.animate_density(computed_output::AbstractString, v
         Colorbar(fig[2, 3], hm, label = "N² (s⁻¹)")
 
         frames = eachindex(t)
-        record(fig, joinpath(pwd(), "density.mp4"),
+        record(fig, joinpath(pwd(), "density_Nsquared.mp4"),
             frames, framerate=8) do i
             msg = string("Plotting frame ", i, " of ", frames[end])
             print(msg * " \r")

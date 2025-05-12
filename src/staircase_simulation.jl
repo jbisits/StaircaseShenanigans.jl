@@ -252,11 +252,11 @@ function save_all_velocities!(simulation, sdns, save_schedule, save_file, output
                                                 with_halos
                                                 ) :
                                 JLD2Writer(model, velocities;
-                                                filename = "velocities",
-                                                dir = output_dir,
-                                                schedule = TimeInterval(save_schedule),
-                                                overwrite_existing = overwrite_saved_output,
-                                                with_halos)
+                                            filename = "velocities",
+                                            dir = output_dir,
+                                            schedule = TimeInterval(save_schedule),
+                                            overwrite_existing = overwrite_saved_output,
+                                            with_halos)
 
     return nothing
 

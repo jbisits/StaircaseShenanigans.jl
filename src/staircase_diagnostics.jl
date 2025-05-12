@@ -28,10 +28,10 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
     upper_range = findall(upper[1] .< z .< upper[2])
     lower_range = findall(lower[1] .< z .< lower[2])
 
-    S_u = S_g = mean(ds[:S_ha][upper_range, :], dims = 1)
-    S_l = S_f = mean(ds[:S_ha][lower_range, :], dims = 1)
-    T_u = T_f = mean(ds[:T_ha][upper_range, :], dims = 1)
-    T_l = T_g = mean(ds[:T_ha][lower_range, :], dims = 1)
+    S_u = S_g = reshape(mean(ds[:S_ha][upper_range, :], dims = 1), :)
+    S_l = S_f = reshape(mean(ds[:S_ha][lower_range, :], dims = 1), :)
+    T_u = T_f = reshape(mean(ds[:T_ha][upper_range, :], dims = 1), :)
+    T_l = T_g = reshape(mean(ds[:T_ha][lower_range, :], dims = 1), :)
 
     eos_vec = fill(eos, length(S_u))
     ρ_u = total_density.(T_u, S_u, interface_depth, eos_vec)
@@ -40,7 +40,6 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
     ρ_g = total_density.(T_g, S_g, interface_depth, eos_vec)
 
     R_ρ = @. (0.5 * (ρ_f - ρ_u) + 0.5 * (ρ_l - ρ_g)) / (0.5 * (ρ_f - ρ_l) + 0.5 * (ρ_u - ρ_g))
-    R_ρ = reshape(R_ρ, :)
 
     NCDataset(computed_output, "a") do ds2
         if haskey(ds2, "R_ρ"*i)

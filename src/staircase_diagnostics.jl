@@ -439,6 +439,8 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
 
         hₜ = similar(timestamps[1:end-1])
         hₛ = similar(timestamps[1:end-1])
+        ΔT = similar(timestamps[1:end-1])
+        ΔS = similar(timestamps[1:end-1])
 
         interface_offfset = 50 # how far from the interface the mean S and T for a layer are calculate
 
@@ -449,6 +451,7 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
             find = findall(Tmidpoint - (ΔT/4) .<  T .< Tmidpoint + (ΔT/4))
             intercept, slope = [ones(length(find)) zC[find]] \ T[find]
             hₜ[t] = ΔT / slope
+            ΔT[t] = ΔT
         end
 
         for t ∈ eachindex(hₛ)
@@ -458,6 +461,7 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
             find = findall(Smidpoint - (ΔS/4) .<  S .< Smidpoint + (ΔS/4))
             intercept, slope = [ones(length(find)) zC[find]] \ S[find]
             hₛ[t] = ΔS / slope
+            ΔS[t] = ΔS
         end
 
         r = hₜ ./ hₛ

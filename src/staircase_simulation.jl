@@ -139,6 +139,18 @@ function non_dimensional_numbers!(simulation::Simulation, sdns::StaircaseDNS)
         end
     end
 
+    NCDataset(simulation.output_writers[:tracers].filepath, "a") do ds
+        ds.attrib["interface_depth"] = int_depth
+        ds.attrib["EOS"] = summary(eos.seawater_polynomial)
+        ds.attrib["Reference density (kgm⁻³)"] = eos.reference_density
+        ds.attrib["ν (m²s⁻¹)"]  = ν
+        ds.attrib["κₛ (m²s⁻¹)"] = κₛ
+        ds.attrib["κₜ (m²s⁻¹)"] = κₜ
+        for key ∈ keys(nd_nums)
+            ds.attrib[key] = nd_nums[key]
+        end
+    end
+
     return nothing
 
 end

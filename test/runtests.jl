@@ -96,7 +96,8 @@ using Test, CairoMakie
         @test simulation.Δt == 0.2 * (min_spacing^2 / sdns.model.closure.ν) # tests `initial_timestep`
         run!(simulation)
         compute_R_ρ!(simulation.output_writers[:computed_output].filepath,
-                     simulation.output_writers[:tracers].filepath, eos)
+                     simulation.output_writers[:tracers].filepath,
+                     (-0.4, -0.2), (-0.8, -0.6), eos)
 
         # Plotting
         animate_density(simulation.output_writers[:computed_output].filepath, "σ", xslice = 2, yslice = 2)

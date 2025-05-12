@@ -187,7 +187,7 @@ function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
     model  = sdns.model
     ics = sdns.initial_conditions
     S = !(ics.background_state isa Type{<:NoBackground}) ? model.tracers.S : Field(model.background_fields.tracers.S + model.tracers.S)
-    T = !(ics.background_state isa Type{<:NoBackground}) : Field(model.background_fields.tracers.T + model.tracers.T)
+    T = !(ics.background_state isa Type{<:NoBackground}) ? model.tracers.T : Field(model.background_fields.tracers.T + model.tracers.T)
 
     S_ha = Average(S, dims = (1, 2))
     T_ha = Average(T, dims = (1, 2))

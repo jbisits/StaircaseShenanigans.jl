@@ -15,17 +15,23 @@ quarter of the domain, compute the density ratio and save to `computed_output`.
 compute this at the end of a script so everything can be easily accessed (see a singlge
 interface example).
 """
-function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString, eos)
+function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
+                      upper::Tuple, lower::Tuple, eos)
 
     interface_depth = NCDataset(computed_output) do co
                           co.attrib[:interface_depth]
                       end
     ds = NCDataset(tracers)
 
-    S_u = S_g = ds[:S_ha][:, :]
-    S_l = S_f = ds[:S_ha][:, :]
-    T_u = T_f = ds[:T_ha][:, :]
-    T_l = T_g = ds[:T_ha][:, :]
+    z = ds[:z_aac][:]
+
+    upper_range = findall(upper[1] .< z .< upper[2])
+    lower_range = findall(lower[1] .< z .< lower[2])
+
+    S_u = S_g = mean(ds[:S_ha][upper_range, :], dims = 1)
+    S_l = S_f = mean(ds[:S_ha][lower_range, :], dims = 1)
+    T_u = T_f = mean(ds[:T_ha][upper_range, :], dims = 1)
+    T_l = T_g = mean(ds[:T_ha][lower_range, :], dims = 1)
 
     eos_vec = fill(eos, length(S_u))
     ρ_u = total_density.(T_u, S_u, interface_depth, eos_vec)
@@ -34,6 +40,7 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
     ρ_g = total_density.(T_g, S_g, interface_depth, eos_vec)
 
     R_ρ = @. (0.5 * (ρ_f - ρ_u) + 0.5 * (ρ_l - ρ_g)) / (0.5 * (ρ_f - ρ_l) + 0.5 * (ρ_u - ρ_g))
+    R_ρ = reshape(R_ρ, :)
 
     NCDataset(computed_output, "a") do ds2
         if haskey(ds2, "R_ρ")

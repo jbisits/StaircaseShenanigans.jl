@@ -591,14 +591,14 @@ Compute the buoyancy flux from model density and vertical velocity fields.
 function ∫gρw!(diagnostics_file::AbstractString, computed_output::AbstractString, velocities::AbstractString, group)
 
     ds_co = NCDataset(computed_output, "a")
-    time = ds_co[:time][:]
+    timestamps = ds_co[:time][:]
     ρ₀ = ds_co.attrib["Reference density (kgm⁻³)"]
     ΔV = ds_co[:Δx_caa][1] * ds_co[:Δy_aca][1] * ds_co[:Δz_aac][1]
     ds_vel = NCDataset(velocities)
 
     g = 9.81
-    ∫gρw = similar(time)
-    for t ∈ eachindex(time)
+    ∫gρw = similar(timestamps)
+    for t ∈ eachindex(timestamps)
 
         σ = ds_co[:σ][:, :, :, t]
         σ1 = @view σ[:, :, 1:end-1]

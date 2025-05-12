@@ -508,9 +508,9 @@ function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, trac
     ds_co = NCDataset(co)
     ds_tracers = NCDataset(tracers)
 
-    timestamps = ds_co[:time][:]
-    zC = ds_co[:z_aac][:]
-    Δx, Δy, Δz = ds_co[:Δx_caa][1], ds_co[:Δy_aca][1], ds_co[:Δz_aac][1]
+    timestamps = ds_tracers[:time][:]
+    zC = ds_tracers[:z_aac][:]
+    Δx, Δy, Δz = ds_tracers[:Δx_caa][1], ds_tracers[:Δy_aca][1], ds_tracers[:Δz_aac][1]
 
     Δt = diff(timestamps)
     Ẽ = similar(Δt)

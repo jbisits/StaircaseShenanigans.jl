@@ -139,6 +139,18 @@ function non_dimensional_numbers!(simulation::Simulation, sdns::StaircaseDNS)
         end
     end
 
+    NCDataset(simulation.output_writers[:tracers].filepath, "a") do ds
+        ds.attrib["interface_depth"] = int_depth
+        ds.attrib["EOS"] = summary(eos.seawater_polynomial)
+        ds.attrib["Reference density (kgm⁻³)"] = eos.reference_density
+        ds.attrib["ν (m²s⁻¹)"]  = ν
+        ds.attrib["κₛ (m²s⁻¹)"] = κₛ
+        ds.attrib["κₜ (m²s⁻¹)"] = κₜ
+        for key ∈ keys(nd_nums)
+            ds.attrib[key] = nd_nums[key]
+        end
+    end
+
     return nothing
 
 end
@@ -186,18 +198,15 @@ function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
 
     model  = sdns.model
     ics = sdns.initial_conditions
-    S = typeof(ics.background_state) <: NoBackground ? model.tracers.S : Field(model.background_fields.tracers.S + model.tracers.S)
-    T = typeof(ics.background_state) <: NoBackground ? model.tracers.T : Field(model.background_fields.tracers.T + model.tracers.T)
+    S = !(ics.background_state isa Type{<:NoBackground}) ? model.tracers.S : Field(model.background_fields.tracers.S + model.tracers.S)
+    T = !(ics.background_state isa Type{<:NoBackground}) ? model.tracers.T : Field(model.background_fields.tracers.T + model.tracers.T)
 
-    Sᵤ_mean = Average(condition_operand(identity, S, upper_middle_fifth, 0))
-    Sₗ_mean = Average(condition_operand(identity, S, lower_middle_fifth, 0))
-    Tᵤ_mean = Average(condition_operand(identity, T, upper_middle_fifth, 0))
-    Tₗ_mean = Average(condition_operand(identity, T, lower_middle_fifth, 0))
+    S_ha = Average(S, dims = (1, 2))
+    T_ha = Average(T, dims = (1, 2))
 
-    tracers = Dict("S" => S, "Sᵤ_mean" => Sᵤ_mean, "Sₗ_mean" => Sₗ_mean,
-                   "T" => T, "Tᵤ_mean" => Tᵤ_mean, "Tₗ_mean" => Tₗ_mean)
+    tracers = Dict("S" => S, "S_ha" => S_ha, "T" => T, "T_ha" => T_ha)
 
-    if !(typeof(ics.background_state) <: NoBackground)
+    if !(ics.background_state isa Type{<:NoBackground})
         anomalies = Dict("S′" => model.tracers.S, "T′" => model.tracers.T)
         merge!(tracers, anomalies)
     end
@@ -205,18 +214,17 @@ function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
 
     simulation.output_writers[:tracers] =
         save_file == :netcdf ? NetCDFWriter(model, tracers;
-                                                  filename = "tracers",
-                                                  dir = output_dir,
-                                                  overwrite_existing = overwrite_saved_output,
-                                                  schedule = TimeInterval(save_schedule),
-                                                  with_halos
-                                                  ) :
+                                            filename = "tracers",
+                                            dir = output_dir,
+                                            overwrite_existing = overwrite_saved_output,
+                                            schedule = TimeInterval(save_schedule),
+                                            with_halos) :
                                 JLD2Writer(model, tracers;
-                                                 filename = "tracers",
-                                                 dir = output_dir,
-                                                 schedule = TimeInterval(save_schedule),
-                                                 overwrite_existing = overwrite_saved_output,
-                                                 with_halos)
+                                           filename = "tracers",
+                                           dir = output_dir,
+                                           schedule = TimeInterval(save_schedule),
+                                           overwrite_existing = overwrite_saved_output,
+                                           with_halos)
 
     return nothing
 
@@ -244,11 +252,11 @@ function save_all_velocities!(simulation, sdns, save_schedule, save_file, output
                                                 with_halos
                                                 ) :
                                 JLD2Writer(model, velocities;
-                                                filename = "velocities",
-                                                dir = output_dir,
-                                                schedule = TimeInterval(save_schedule),
-                                                overwrite_existing = overwrite_saved_output,
-                                                with_halos)
+                                            filename = "velocities",
+                                            dir = output_dir,
+                                            schedule = TimeInterval(save_schedule),
+                                            overwrite_existing = overwrite_saved_output,
+                                            with_halos)
 
     return nothing
 
@@ -299,11 +307,13 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
 
     model = sdns.model
     ics = sdns.initial_conditions
-    S = typeof(ics.background_state) <: NoBackground ? model.tracers.S : Field(model.background_fields.tracers.S + model.tracers.S)
-    T = typeof(ics.background_state) <: NoBackground ? model.tracers.T : Field(model.background_fields.tracers.T + model.tracers.T)
+    S = !(ics.background_state isa Type{<:NoBackground}) ? model.tracers.S : Field(model.background_fields.tracers.S + model.tracers.S)
+    T = !(ics.background_state isa Type{<:NoBackground}) ? model.tracers.T : Field(model.background_fields.tracers.T + model.tracers.T)
 
     σ = seawater_density(model, temperature = T, salinity = S, geopotential_height = reference_gp_height)
+    σ_ha = Average(σ, dims = (1, 2))
     N² = buoyancy_frequency(model)
+    N²_ha = Average(N², dims = (1, 2))
     ε = KineticEnergyDissipationRate(model)
     ∫ε = Integral(ε)
     ε_maximum = Reduction(maximum!, ε, dims = (1, 2, 3))
@@ -312,12 +322,16 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
     wb = BuoyancyProductionTerm(model)
     ∫wb = Integral(wb)
 
-    computed_outputs = Dict("σ" => σ, "N²" => N², "∫ε" => ∫ε, "ε_maximum" => ε_maximum,
-                            "∫Eₖ" => ∫Eₖ, "∫wb" => ∫wb)
+    computed_outputs = Dict("σ" => σ, "N²" => N², "σ_ha" => σ_ha, "N²_ha" => N²_ha,
+                            "∫ε" => ∫ε, "ε_maximum" => ε_maximum, "∫Eₖ" => ∫Eₖ, "∫wb" => ∫wb)
     oa = Dict(
         "σ" => Dict("longname" => "Seawater potential density calculated using equation of state in model.",
                     "units" => "kgm⁻³"),
         "N²" => Dict("longname" => "Buoyancy frequency.",
+                    "units" => "s⁻¹"),
+        "σ_ha" => Dict("longname" => "Horizontal average seawater potential density calculated using equation of state in model.",
+                    "units" => "kgm⁻³"),
+        "N²_ha" => Dict("longname" => "Horizontal average buoyancy frequency.",
                     "units" => "s⁻¹"),
         "∫ε" => Dict("longname" => "Volume integrated turbulent kinetic energy dissipation rate.",
                         "units" => "m⁵s⁻³"),
@@ -329,7 +343,7 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
                         "units" => "m⁵s⁻³")
         )
 
-    if !(typeof(ics.background_state) <: NoBackground)
+    if !(ics.background_state isa Type{<:NoBackground})
         S′ = model.tracers.S
         T′ = model.tracers.T
         σ′ = seawater_density(model, temperature = T′, salinity = S′, geopotential_height = reference_gp_height)
@@ -341,21 +355,21 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
             )
         merge(oa, oa_)
     end
+
     simulation.output_writers[:computed_output] =
         save_file == :netcdf ? NetCDFWriter(model, computed_outputs;
-                                                filename = "computed_output",
-                                                dir = output_dir,
-                                                overwrite_existing = overwrite_saved_output,
-                                                schedule = TimeInterval(save_schedule),
-                                                output_attributes = oa,
-                                                with_halos
-                                                ) :
+                                            filename = "computed_output",
+                                            dir = output_dir,
+                                            overwrite_existing = overwrite_saved_output,
+                                            schedule = TimeInterval(save_schedule),
+                                            output_attributes = oa,
+                                            with_halos) :
                                 JLD2Writer(model, computed_outputs;
-                                                filename = "computed_output",
-                                                dir = output_dir,
-                                                schedule = TimeInterval(save_schedule),
-                                                overwrite_existing = overwrite_saved_output,
-                                                with_halos)
+                                          filename = "computed_output",
+                                          dir = output_dir,
+                                          schedule = TimeInterval(save_schedule),
+                                          overwrite_existing = overwrite_saved_output,
+                                          with_halos)
 
 
     return nothing

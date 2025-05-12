@@ -83,10 +83,11 @@ using Test, CairoMakie
         depth_of_interface = -0.5
         salinity = [34.54, 34.70]
         temperature = [-1.5, 0.5]
-        interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature, interface_smoothing = TanhInterfaceThickness())
+        interface_ics = SingleInterfaceICs(eos, depth_of_interface, salinity, temperature,
+                                           interface_smoothing = TanhInterfaceThickness())
         sdns = StaircaseDNS(model, interface_ics, nothing)
         set_initial_conditions!(sdns)
-        stop_time = 4 * 60 # seconds
+        stop_time = 2 * 60 # seconds
         save_schedule = 60  # seconds
         output_path = joinpath(@__DIR__, "output")
         simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!, save_vertical_velocities!;
@@ -96,12 +97,13 @@ using Test, CairoMakie
         @test simulation.Δt == 0.2 * (min_spacing^2 / sdns.model.closure.ν) # tests `initial_timestep`
         run!(simulation)
         compute_R_ρ!(simulation.output_writers[:computed_output].filepath,
-                     simulation.output_writers[:tracers].filepath, eos)
+                     simulation.output_writers[:tracers].filepath,
+                     (-0.4, -0.2), (-0.8, -0.6), eos)
 
         # Plotting
         animate_density(simulation.output_writers[:computed_output].filepath, "σ", xslice = 2, yslice = 2)
-        @test isfile("density.mp4")
-        rm("density.mp4")
+        @test isfile("density_Nsquared.mp4")
+        rm("density_Nsquared.mp4")
         animate_tracers(simulation.output_writers[:tracers].filepath, xslice = 2, yslice = 2)
         @test isfile("tracers.mp4")
         rm("tracers.mp4")

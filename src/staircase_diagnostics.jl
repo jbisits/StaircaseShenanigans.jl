@@ -15,17 +15,23 @@ quarter of the domain, compute the density ratio and save to `computed_output`.
 compute this at the end of a script so everything can be easily accessed (see a singlge
 interface example).
 """
-function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString, eos)
+function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
+                      upper::Tuple, lower::Tuple, eos; i = "")
 
     interface_depth = NCDataset(computed_output) do co
                           co.attrib[:interface_depth]
                       end
     ds = NCDataset(tracers)
 
-    S_u = S_g = ds[:Sᵤ_mean][:]
-    S_l = S_f = ds[:Sₗ_mean][:]
-    T_u = T_f = ds[:Tᵤ_mean][:]
-    T_l = T_g = ds[:Tₗ_mean][:]
+    z = ds[:z_aac][:]
+
+    upper_range = findall(upper[1] .< z .< upper[2])
+    lower_range = findall(lower[1] .< z .< lower[2])
+
+    S_u = S_g = reshape(mean(ds[:S_ha][upper_range, :], dims = 1), :)
+    S_l = S_f = reshape(mean(ds[:S_ha][lower_range, :], dims = 1), :)
+    T_u = T_f = reshape(mean(ds[:T_ha][upper_range, :], dims = 1), :)
+    T_l = T_g = reshape(mean(ds[:T_ha][lower_range, :], dims = 1), :)
 
     eos_vec = fill(eos, length(S_u))
     ρ_u = total_density.(T_u, S_u, interface_depth, eos_vec)
@@ -36,18 +42,27 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
     R_ρ = @. (0.5 * (ρ_f - ρ_u) + 0.5 * (ρ_l - ρ_g)) / (0.5 * (ρ_f - ρ_l) + 0.5 * (ρ_u - ρ_g))
 
     NCDataset(computed_output, "a") do ds2
-        if haskey(ds2, "R_ρ")
+        if haskey(ds2, "R_ρ"*i)
             # rename so if picking up can saved the whole array
-            renameVar(ds2, "R_ρ", "R_ρ_prior_cp")
-            defVar(ds2, "R_ρ", R_ρ, ("time",),
-                    attrib = Dict("long_name" => "Density ratio"))
+            renameVar(ds2, "R_ρ"*i, "R_ρ_prior_cp"*i)
+            defVar(ds2, "R_ρ"*i, R_ρ, ("time",),
+                    attrib = Dict("long_name" => "Density ratio at interface "*i))
         else
-            defVar(ds2, "R_ρ", R_ρ, ("time",),
-                    attrib = Dict("long_name" => "Density ratio"))
+            defVar(ds2, "R_ρ"*i, R_ρ, ("time",),
+                    attrib = Dict("long_name" => "Density ratio at interface "*i))
         end
     end
 
     close(ds)
+
+    return nothing
+end
+function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
+                      upper::Array{Tuple{Float64, Float64}}, lower::Array{Tuple{Float64, Float64}}, eos)
+
+    for i ∈ eachindex(upper)
+        compute_R_ρ!(computed_output, tracers, upper[i], lower[i], eos, i = "$i")
+    end
 
     return nothing
 end
@@ -78,12 +93,13 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
             save_computed_output!(diagnostics_file, computed_output, group)
             φ_interface_flux!(diagnostics_file, tracers, :S, group)
             φ_interface_flux!(diagnostics_file, tracers, :T, group)
-            ha_φ_flux!(diagnostics_file, tracers, :S, group)
-            ha_φ_flux!(diagnostics_file, tracers, :T, group)
+            ha_φ_flux!(diagnostics_file, tracers, :S_ha, group)
+            ha_φ_flux!(diagnostics_file, tracers, :T_ha, group)
             compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
             interface_thickness!(diagnostics_file, tracers, group)
             ∫gρw!(diagnostics_file, computed_output, velocities, group)
             initial_non_dim_numbers!(diagnostics_file, computed_output, group)
+            save_horizontally_averaged_fields!(diagnostics_file, computed_output, tracers, group)
 
         end
 
@@ -93,12 +109,13 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         save_computed_output!(diagnostics_file, computed_output, group)
         φ_interface_flux!(diagnostics_file, tracers, :S, group)
         φ_interface_flux!(diagnostics_file, tracers, :T, group)
-        ha_φ_flux!(diagnostics_file, tracers, :S, group)
-        ha_φ_flux!(diagnostics_file, tracers, :T, group)
+        ha_φ_flux!(diagnostics_file, tracers, :S_ha, group)
+        ha_φ_flux!(diagnostics_file, tracers, :T_ha, group)
         compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
         interface_thickness!(diagnostics_file, tracers, group)
         ∫gρw!(diagnostics_file, computed_output, velocities, group)
         initial_non_dim_numbers!(diagnostics_file, computed_output, group)
+        save_horizontally_averaged_fields!(diagnostics_file, computed_output, tracers, group)
 
     end
 
@@ -167,7 +184,7 @@ Save space, time and any other variable that acts as a dimension (e.g `z✶`).
 """
 function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 
-    dims = ("time", "x_caa", "y_aca", "z_aaf")
+    dims = ("time", "x_caa", "y_aca", "z_aac", "z_aaf")
     NCDataset(co) do ds
 
         if isfile(diagnostics_file)
@@ -344,7 +361,7 @@ function ha_φ_flux!(diagnostics_file::AbstractString, tracers::AbstractString, 
     NCDataset(tracers) do ds
 
         φ = ds[tracer]
-        Δφ₀ = φ[1, 1, 1, 1] - 0.5 * (φ[1, 1, 1, 1] - φ[1, 1, end, 1])
+        Δφ₀ = φ[1, 1] - 0.5 * (φ[1, 1] - φ[end, 1])
         timestamps = ds[:time][:]
         Δt = diff(timestamps)
         z = ds[:z_aac][:]
@@ -355,7 +372,7 @@ function ha_φ_flux!(diagnostics_file::AbstractString, tracers::AbstractString, 
 
         for i ∈ eachindex(Δt)
 
-            φₜ = [reshape(mean(φ[:, :, :, i], dims = (1, 2)), :) reshape(mean(φ[:, :, :, i+1], dims = (1, 2)), :)]
+            φₜ = [φ[:, i] φ[:, i+1]]
             sort!(φₜ, rev = true, dims = 1)
             ∫φdz = cumsum(φₜ * Δz, dims = 1)
             dₜ∫φdz = vec(diff(∫φdz, dims = 2) ./ Δt[i])
@@ -413,26 +430,33 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
     ds = NCDataset(tracers) do ds
 
         timestamps = ds[:time][:]
-        ΔT = abs.(ds[:Tₗ_mean][:] .- ds[:Tᵤ_mean][:])
-        ΔS = abs.(ds[:Sₗ_mean][:] .- ds[:Sᵤ_mean][:])
-        zC = abs.(ds[:z_aac][:])
 
-        Tmidpoint = 0.5 * (ds[:Tₗ_mean][1] .+ ds[:Tᵤ_mean][1])
-        Smidpoint = 0.5 * (ds[:Sₗ_mean][1] .+ ds[:Sᵤ_mean][1])
+        zC = abs.(reverse(ds[:z_aac][:]))
+
+        Tmidpoint = 0.5 * (ds[:T_ha][1] .+ ds[:T_ha][end])
+        Smidpoint = 0.5 * (ds[:S_ha][1] .+ ds[:S_ha][end])
 
         hₜ = similar(timestamps[1:end-1])
         hₛ = similar(timestamps[1:end-1])
+        ΔT = similar(timestamps[1:end-1])
+        ΔS = similar(timestamps[1:end-1])
+
+        interface_offfset = 50 # how far from the interface the mean S and T for a layer are calculate
 
         for t ∈ eachindex(hₜ)
-            T = reshape(mean(ds[:T][:, :, :, t+1], dims = (1, 2)), :)
-            find = findall(Tmidpoint - (ΔT[t+1]/4) .<  T .< Tmidpoint + (ΔT[t+1]/4))
+            T = ds[:T_ha][:, t+1]
+            find_interface = findfirst(T .< Tmidpoint)
+            ΔT[t] = abs.(mean(ds[:T_ha][1:find_interface-interface_offfset]) .- mean(ds[:T_ha][find_interface+interface_offfset:end]))
+            find = findall(Tmidpoint - (ΔT[t]/4) .<  T .< Tmidpoint + (ΔT[t]/4))
             intercept, slope = [ones(length(find)) zC[find]] \ T[find]
             hₜ[t] = ΔT[t] / slope
         end
 
         for t ∈ eachindex(hₛ)
-            S = reshape(mean(ds[:S][:, :, :, t+1], dims = (1, 2)), :)
-            find = findall(Smidpoint - (ΔS[t+1]/4) .<  S .< Smidpoint + (ΔS[t+1]/4))
+            S = ds[:S_ha][:, t+1]
+            find_interface = findfirst(S .< Smidpoint)
+            ΔS[t] = abs.(mean(ds[:S_ha][1:find_interface-interface_offfset]) .- mean(ds[:S_ha][find_interface+interface_offfset:end]))
+            find = findall(Smidpoint - (ΔS[t]/4) .<  S .< Smidpoint + (ΔS[t]/4))
             intercept, slope = [ones(length(find)) zC[find]] \ S[find]
             hₛ[t] = ΔS[t] / slope
         end
@@ -487,9 +511,9 @@ function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, trac
     ds_co = NCDataset(co)
     ds_tracers = NCDataset(tracers)
 
-    timestamps = ds_co[:time][:]
-    zC = ds_co[:z_aac][:]
-    Δx, Δy, Δz = ds_co[:Δx_caa][1], ds_co[:Δy_aca][1], ds_co[:Δz_aac][1]
+    timestamps = ds_tracers[:time][:]
+    zC = ds_tracers[:z_aac][:]
+    Δx, Δy, Δz = ds_tracers[:Δx_caa][1], ds_tracers[:Δy_aca][1], ds_tracers[:Δz_aac][1]
 
     Δt = diff(timestamps)
     Ẽ = similar(Δt)
@@ -497,14 +521,14 @@ function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, trac
     S̄_ts = similar(T̄_ts)
     ρ̄_ts = similar(T̄_ts)
 
-    S = ds_tracers[:S]
-    T = ds_tracers[:T]
-    mid_T = 0.5 * (T[1, 1, end, 1] + T[1, 1, 1, 1])
-    σ = ds_co[:σ]
+    S = ds_tracers[:S_ha]
+    T = ds_tracers[:T_ha]
+    mid_T = 0.5 * (T[end, 1] + T[1, 1])
+    σ = ds_co[:σ_ha]
 
     for t ∈ eachindex(Δt)
 
-        T_ha = reshape(mean(T[:, :, :, t], dims = (1, 2)), :)
+        T_ha = T[:, t]
         interface_idx = findfirst(T_ha .< mid_T)
         lower = 1:interface_idx-1-interface_offset # the extra -1 is needed because of `findfirst` index.
         upper = interface_idx+interface_offset:length(zC)
@@ -512,25 +536,25 @@ function compute_Ẽ!(diagnostics_file::AbstractString, co::AbstractString, trac
         Hₗ = abs(zC[lower][1] - zC[lower][end])
         Hᵤ = abs(zC[upper][1] - zC[upper][end])
 
-        Tₗ = T[:, :, lower, t:t+1]
-        T̄ₗ = mean(Tₗ, dims = (1, 2, 3))
-        dₜT̄ₗ = diff(T̄ₗ, dims = 4) ./ Δt[t]
-        _ρₗ = 0.5 * sum(σ[:, :, lower, t:t+1], dims = 4)
+        Tₗ = T[lower, t:t+1]
+        T̄ₗ = mean(Tₗ, dims = 1)
+        dₜT̄ₗ = diff(T̄ₗ, dims = 2) ./ Δt[t]
+        _ρₗ = 0.5 * sum(σ[lower, t:t+1], dims = 2)
         ρₗ = mean(_ρₗ)
 
-        Tᵤ = T[:, :, upper, t:t+1]
-        T̄ᵤ = mean(Tᵤ, dims = (1, 2, 3))
-        dₜT̄ᵤ = diff(T̄ᵤ, dims = 4) ./ Δt[t]
-        _ρᵤ = 0.5 * sum(σ[:, :, upper, t:t+1], dims = 4)
+        Tᵤ = T[upper, t:t+1]
+        T̄ᵤ = mean(Tᵤ, dims = 1)
+        dₜT̄ᵤ = diff(T̄ᵤ, dims = 2) ./ Δt[t]
+        _ρᵤ = 0.5 * sum(σ[upper, t:t+1], dims = 2)
         ρᵤ = mean(_ρᵤ)
 
-        S̄ₗ, S̄ᵤ = mean(S[:, :, lower, t:t+1], dims = (1, 2, 3)), mean(S[:, :, upper, t:t+1], dims = (1, 2, 3))
-        S̄_ts[t, :] .= [S̄ₗ[1, 1, 1, 1], S̄ᵤ[1, 1, 1, 1]]
-        T̄_ts[t, :] .= [T̄ₗ[1, 1, 1, 1], T̄ᵤ[1, 1, 1, 1]]
+        S̄ₗ, S̄ᵤ = mean(S[lower, t:t+1], dims = 1), mean(S[upper, t:t+1], dims = 1)
+        S̄_ts[t, :] .= [S̄ₗ[1, 1], S̄ᵤ[1, 1]]
+        T̄_ts[t, :] .= [T̄ₗ[1, 1], T̄ᵤ[1, 1]]
         ρ̄_ts[t, :] .= [ρₗ, ρᵤ]
 
         _Ẽ = @. (ρₗ * Hₗ * dₜT̄ₗ + ρᵤ * Hᵤ * dₜT̄ᵤ) / (ρₗ * Hₗ * dₜT̄ₗ - ρᵤ * Hᵤ * dₜT̄ᵤ)
-        Ẽ[t] = _Ẽ[1, 1, 1, 1]
+        Ẽ[t] = _Ẽ[1, 1]
     end
 
     close(ds_co)
@@ -566,14 +590,14 @@ Compute the buoyancy flux from model density and vertical velocity fields.
 function ∫gρw!(diagnostics_file::AbstractString, computed_output::AbstractString, velocities::AbstractString, group)
 
     ds_co = NCDataset(computed_output, "a")
-    time = ds_co[:time][:]
+    timestamps = ds_co[:time][:]
     ρ₀ = ds_co.attrib["Reference density (kgm⁻³)"]
     ΔV = ds_co[:Δx_caa][1] * ds_co[:Δy_aca][1] * ds_co[:Δz_aac][1]
     ds_vel = NCDataset(velocities)
 
     g = 9.81
-    ∫gρw = similar(time)
-    for t ∈ eachindex(time)
+    ∫gρw = similar(timestamps)
+    for t ∈ eachindex(timestamps)
 
         σ = ds_co[:σ][:, :, :, t]
         σ1 = @view σ[:, :, 1:end-1]
@@ -600,6 +624,39 @@ function save_∫gρw!(diagnostics_file, ∫gρw, group)
     else
         jldopen(diagnostics_file, "w") do file
             file[group*"∫gρw"] = ∫gρw
+        end
+    end
+
+    return nothing
+end
+function save_horizontally_averaged_fields!(diagnostics_file::AbstractString,
+                                            computed_output::AbstractString,
+                                            tracers::AbstractString, group)
+    NCDataset(tracers) do ds
+        if isfile(diagnostics_file)
+            jldopen(diagnostics_file, "a+") do file
+                file[group*"T_ha"] = ds[:T_ha][:, :]
+                file[group*"S_ha"] = ds[:S_ha][:, :]
+            end
+        else
+            jldopen(diagnostics_file, "w") do file
+                file[group*"T_ha"] = ds[:T_ha][:, :]
+                file[group*"S_ha"] = ds[:S_ha][:, :]
+            end
+        end
+    end
+
+    NCDataset(computed_output) do ds
+        if isfile(diagnostics_file)
+            jldopen(diagnostics_file, "a+") do file
+                file[group*"σ_ha"] = ds[:σ_ha][:, :]
+                file[group*"N²_ha"] = ds[:N²_ha][:, :]
+            end
+        else
+            jldopen(diagnostics_file, "w") do file
+                file[group*"σ_ha"] = ds[:σ_ha][:, :]
+                file[group*"N²_ha"] = ds[:N²_ha][:, :]
+            end
         end
     end
 

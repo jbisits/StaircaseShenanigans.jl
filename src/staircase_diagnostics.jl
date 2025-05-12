@@ -454,7 +454,7 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
         for t ∈ eachindex(hₛ)
             S = ds[:S_ha][:, t+1]
             find_interface = findfirst(S .< Smidpoint)
-            ΔS = abs.(mea(ds[:S_ha][1:find_interface-interface_offfset]) .- mean(ds[:S_ha][find_interface+interface_offfset:end]))
+            ΔS = abs.(mean(ds[:S_ha][1:find_interface-interface_offfset]) .- mean(ds[:S_ha][find_interface+interface_offfset:end]))
             find = findall(Smidpoint - (ΔS/4) .<  S .< Smidpoint + (ΔS/4))
             intercept, slope = [ones(length(find)) zC[find]] \ S[find]
             hₛ[t] = ΔS / slope

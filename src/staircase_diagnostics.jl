@@ -100,6 +100,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
             interface_thickness!(diagnostics_file, tracers, group)
             ∫gρw!(diagnostics_file, computed_output, velocities, group)
             initial_non_dim_numbers!(diagnostics_file, computed_output, group)
+            save_horizontally_averaged_fields!(diagnostics_file, computed_output, tracers, group)
 
         end
 
@@ -115,6 +116,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         interface_thickness!(diagnostics_file, tracers, group)
         ∫gρw!(diagnostics_file, computed_output, velocities, group)
         initial_non_dim_numbers!(diagnostics_file, computed_output, group)
+        save_horizontally_averaged_fields!(diagnostics_file, computed_output, tracers, group)
 
     end
 
@@ -183,7 +185,7 @@ Save space, time and any other variable that acts as a dimension (e.g `z✶`).
 """
 function dimensions!(diagnostics_file::AbstractString, co::AbstractString)
 
-    dims = ("time", "x_caa", "y_aca", "z_aaf")
+    dims = ("time", "x_caa", "y_aca", "z_aac", "z_aaf")
     NCDataset(co) do ds
 
         if isfile(diagnostics_file)
@@ -451,7 +453,7 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
 
         for t ∈ eachindex(hₛ)
             S = ds[:S_ha][:, t+1]
-            find_interface = findfirst(T .< Tmidpoint)
+            find_interface = findfirst(S .< Tmidpoint)
             ΔS = abs.(mea(ds[:S_ha][1:find_interface-interface_offfset]) .- mean(ds[:S_ha][find_interface+interface_offfset:end]))
             find = findall(Smidpoint - (ΔS/4) .<  S .< Smidpoint + (ΔS/4))
             intercept, slope = [ones(length(find)) zC[find]] \ S[find]
@@ -621,6 +623,39 @@ function save_∫gρw!(diagnostics_file, ∫gρw, group)
     else
         jldopen(diagnostics_file, "w") do file
             file[group*"∫gρw"] = ∫gρw
+        end
+    end
+
+    return nothing
+end
+function save_horizontally_averaged_fields!(diagnostics_file::AbstractString,
+                                            computed_output::AbstractString,
+                                            tracers::AbstractString, group)
+    NCDataset(tracers) do ds
+        if isfile(diagnostics_file)
+            jldopen(diagnostics_file, "a+") do file
+                file[group*"T_ha"] = ds[:T_ha][:, :]
+                file[group*"S_ha"] = ds[:S_ha][:, :]
+            end
+        else
+            jldopen(diagnostics_file, "w") do file
+                file[group*"T_ha"] = ds[:T_ha][:, :]
+                file[group*"S_ha"] = ds[:S_ha][:, :]
+            end
+        end
+    end
+
+    NCDataset(computed_output) do ds
+        if isfile(diagnostics_file)
+            jldopen(diagnostics_file, "a+") do file
+                file[group*"σ_ha"] = ds[:σ_ha][:, :]
+                file[group*"N²_ha"] = ds[:N²_ha][:, :]
+            end
+        else
+            jldopen(diagnostics_file, "w") do file
+                file[group*"σ_ha"] = ds[:σ_ha][:, :]
+                file[group*"N²_ha"] = ds[:N²_ha][:, :]
+            end
         end
     end
 

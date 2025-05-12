@@ -22,10 +22,10 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
                       end
     ds = NCDataset(tracers)
 
-    S_u = S_g = ds[:Sᵤ_mean][:]
-    S_l = S_f = ds[:Sₗ_mean][:]
-    T_u = T_f = ds[:Tᵤ_mean][:]
-    T_l = T_g = ds[:Tₗ_mean][:]
+    S_u = S_g = ds[:S_ha][:, :]
+    S_l = S_f = ds[:S_ha][:, :]
+    T_u = T_f = ds[:T_ha][:, :]
+    T_l = T_g = ds[:T_ha][:, :]
 
     eos_vec = fill(eos, length(S_u))
     ρ_u = total_density.(T_u, S_u, interface_depth, eos_vec)

@@ -47,10 +47,10 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
             # rename so if picking up can saved the whole array
             renameVar(ds2, "R_ρ"*i, "R_ρ_prior_cp"*i)
             defVar(ds2, "R_ρ"*i, R_ρ, ("time",),
-                    attrib = Dict("long_name" => "Density ratio"))
+                    attrib = Dict("long_name" => "Density ratio at interface "*i))
         else
             defVar(ds2, "R_ρ"*i, R_ρ, ("time",),
-                    attrib = Dict("long_name" => "Density ratio"))
+                    attrib = Dict("long_name" => "Density ratio at interface "*i))
         end
     end
 
@@ -59,11 +59,12 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
     return nothing
 end
 function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
-                      upper::Array{Tuple{Number, Number}}, lower::Array{Tuple{Number, Number}}, eos)
+                      upper::Array{Tuple{Float64, Float64}}, lower::Array{Tuple{Float64, Float64}}, eos)
 
     for i ∈ eachindex(upper)
         compute_R_ρ!(computed_output, tracers, upper[i], lower[i], eos, i = "$i")
     end
+
     return nothing
 end
 """

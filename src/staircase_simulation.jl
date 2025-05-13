@@ -10,6 +10,7 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, stop_time::Number,
                                 max_Δt = Inf,
                                 max_change = 1.1,
                                 save_schedule = 60, # seconds
+                                time_average_stride = 100,
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
                                 checkpointer_time_interval = nothing,
@@ -29,7 +30,9 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, stop_time::Number,
     simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))
 
     output_dir = output_directory(sdns, stop_time, output_path)
-    save_info = (save_schedule, save_file, output_dir, overwrite_saved_output, with_halos)
+    schedule = isnothing(time_average_output) ? TimeInterval(save_schedule) :
+                                                AveragedTimeInterval(save_schedule, stride = time_average_stride)
+    save_info = (schedule, save_file, output_dir, overwrite_saved_output, with_halos)
 
     # model tracers
     save_tracers!(simulation, sdns, save_info)
@@ -190,10 +193,10 @@ function is_linear_eos(eos::SecondOrderSeawaterPolynomial)
     return eos_type
 end
 """
-    function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir, overwrite_saved_output)
+    function save_tracers!(simulation, sdns, schedule, save_file, output_dir, overwrite_saved_output)
 Save `model.tracers` during a `Simulation` using an `OutputWriter`.
 """
-function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
+function save_tracers!(simulation, sdns, schedule, save_file, output_dir,
                        overwrite_saved_output, with_halos)
 
     model  = sdns.model
@@ -217,12 +220,12 @@ function save_tracers!(simulation, sdns, save_schedule, save_file, output_dir,
                                             filename = "tracers",
                                             dir = output_dir,
                                             overwrite_existing = overwrite_saved_output,
-                                            schedule = TimeInterval(save_schedule),
+                                            schedule,
                                             with_halos) :
                                 JLD2Writer(model, tracers;
                                            filename = "tracers",
                                            dir = output_dir,
-                                           schedule = TimeInterval(save_schedule),
+                                           schedule,
                                            overwrite_existing = overwrite_saved_output,
                                            with_halos)
 
@@ -232,11 +235,11 @@ end
 save_tracers!(simulation, sdns, save_info::Tuple) =
     save_tracers!(simulation, sdns, save_info...)
 """
-    function save_all_velocities!(simulation, model, save_schedule, save_file, output_dir,
+    function save_all_velocities!(simulation, model, schedule, save_file, output_dir,
                               overwrite_saved_output)
 Save `model.velocities` during a `Simulation` using an `OutputWriter`.
 """
-function save_all_velocities!(simulation, sdns, save_schedule, save_file, output_dir,
+function save_all_velocities!(simulation, sdns, schedule, save_file, output_dir,
                           overwrite_saved_output, with_halos)
 
     model = sdns.model
@@ -245,16 +248,16 @@ function save_all_velocities!(simulation, sdns, save_schedule, save_file, output
 
     simulation.output_writers[:velocities] =
         save_file == :netcdf ? NetCDFWriter(model, velocities;
-                                                filename = "velocities",
-                                                dir = output_dir,
-                                                overwrite_existing = overwrite_saved_output,
-                                                schedule = TimeInterval(save_schedule),
-                                                with_halos
-                                                ) :
+                                            filename = "velocities",
+                                            dir = output_dir,
+                                            overwrite_existing = overwrite_saved_output,
+                                            schedule,
+                                            with_halos
+                                            ) :
                                 JLD2Writer(model, velocities;
                                             filename = "velocities",
                                             dir = output_dir,
-                                            schedule = TimeInterval(save_schedule),
+                                            schedule,
                                             overwrite_existing = overwrite_saved_output,
                                             with_halos)
 
@@ -264,11 +267,11 @@ end
 save_all_velocities!(simulation, sdns, save_info::Tuple) =
     save_all_velocities!(simulation, sdns, save_info...)
 """
-    function save_vertical_velocities!(simulation, sdns, save_schedule, save_file, output_dir,
+    function save_vertical_velocities!(simulation, sdns, schedule, save_file, output_dir,
                                     overwrite_saved_output)
 Only save vertical velocity.
 """
-function save_vertical_velocities!(simulation, sdns, save_schedule, save_file, output_dir,
+function save_vertical_velocities!(simulation, sdns, schedule, save_file, output_dir,
                                     overwrite_saved_output, with_halos)
 
     model = sdns.model
@@ -277,18 +280,18 @@ function save_vertical_velocities!(simulation, sdns, save_schedule, save_file, o
 
     simulation.output_writers[:velocities] =
     save_file == :netcdf ? NetCDFWriter(model, velocities;
-                                filename = "velocities",
-                                dir = output_dir,
-                                overwrite_existing = overwrite_saved_output,
-                                schedule = TimeInterval(save_schedule),
-                                with_halos
-                                ) :
-                JLD2Writer(model, velocities;
-                                filename = "velocities",
-                                dir = output_dir,
-                                schedule = TimeInterval(save_schedule),
-                                overwrite_existing = overwrite_saved_output,
-                                with_halos)
+                                        filename = "velocities",
+                                        dir = output_dir,
+                                        overwrite_existing = overwrite_saved_output,
+                                        schedule,
+                                        with_halos
+                                        ) :
+                            JLD2Writer(model, velocities;
+                                        filename = "velocities",
+                                        dir = output_dir,
+                                        schedule,
+                                        overwrite_existing = overwrite_saved_output,
+                                        with_halos)
 
     return nothing
 
@@ -298,11 +301,11 @@ save_vertical_velocities!(simulation, sdns, save_info::Tuple) =
 "Default"
 no_velocities!(simulation, sdns, save_info...) = nothing
 """
-    function save_computed_output!(simulation, sdns, save_schedule, save_file, output_dir,
+    function save_computed_output!(simulation, sdns, schedule, save_file, output_dir,
                                    overwrite_saved_output, reference_gp_height)
 Save selection of computed output during a `Simulation` using an `OutputWriter`.
 """
-function save_computed_output!(simulation, sdns, save_schedule, save_file, output_dir,
+function save_computed_output!(simulation, sdns, schedule, save_file, output_dir,
                                overwrite_saved_output, with_halos, reference_gp_height)
 
     model = sdns.model
@@ -361,13 +364,13 @@ function save_computed_output!(simulation, sdns, save_schedule, save_file, outpu
                                             filename = "computed_output",
                                             dir = output_dir,
                                             overwrite_existing = overwrite_saved_output,
-                                            schedule = TimeInterval(save_schedule),
+                                            schedule,
                                             output_attributes = oa,
                                             with_halos) :
                                 JLD2Writer(model, computed_outputs;
                                           filename = "computed_output",
                                           dir = output_dir,
-                                          schedule = TimeInterval(save_schedule),
+                                          schedule,
                                           overwrite_existing = overwrite_saved_output,
                                           with_halos)
 

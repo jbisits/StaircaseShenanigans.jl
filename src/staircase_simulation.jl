@@ -30,7 +30,7 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, stop_time::Number,
     simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))
 
     output_dir = output_directory(sdns, stop_time, output_path)
-    schedule = isnothing(time_average_output) ? TimeInterval(save_schedule) :
+    schedule = isnothing(time_average_stride) ? TimeInterval(save_schedule) :
                                                 AveragedTimeInterval(save_schedule, stride = time_average_stride)
     save_info = (schedule, save_file, output_dir, overwrite_saved_output, with_halos)
 

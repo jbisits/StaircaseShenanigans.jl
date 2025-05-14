@@ -157,7 +157,7 @@ using Test, CairoMakie
     @testset "Function for diffusivity closure" begin
 
         diffusivities = (ν = 1e-5, κ = (S = enhance_κₛ, T = enhance_κₜ),
-                        parameters = (κₛ = 1e-8, κₜ = 1e-6, start_enhance = 1, end_enhace = 2,
+                        parameters = (κₛ = 1e-8, κₜ = 1e-6, start_enhance = 1/60, end_enhace = 2/60,
                                       enhance = 10, τ = 1e-8 / 1e-6),
                         discrete_form = true)
         model = DNSModel(architecture, diffusivities, domain_extent, domain_topology, resolution)

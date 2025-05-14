@@ -2,6 +2,7 @@ module StaircaseShenanigans
 
 using Oceananigans, Reexport, Printf
 using Oceananigans: seawater_density
+using Oceananigans.TurbulenceClosures: DiscreteDiffusionFunction
 using Oceananigans.BuoyancyFormulations: buoyancy_frequency
 using Oceananigans.Fields: condition_operand
 import Oceananigans.BackgroundField

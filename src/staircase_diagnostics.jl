@@ -383,7 +383,7 @@ function ha_φ_flux!(diagnostics_file::AbstractString, tracers::AbstractString, 
 
         end
 
-        ha_tracer = "ha_"*string(tracer)
+        ha_tracer = string(tracer)
         save_fluxes!(diagnostics_file, φ_flux, interface_idx, ha_tracer, group)
 
     end

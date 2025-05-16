@@ -150,13 +150,13 @@ Enhance the isotropic, scalar diffusiviy applied to the salintiy field by `p.enh
 to give same enhancement to enhanced diffusivity as temperature, after time = `p.diff_change`.
 Note `p.diff_change` is expeceted in minutes.
 """
-@inline enhance_κₛ(i, j, k, grid, clock, fields, p) = p.start_enhance * 60 < clock.time < p.end_enhance * 60 ? p.κₛ * p.enhance / p.τ : p.κₛ
+@inline enhance_κₛ(i, j, k, grid, clock, fields, p) = p.start_enhance * 60 < clock.time < p.end_enhance * 60 ? p.κₛ + p.κ_turb : p.κₛ
 """
     enhance_enhance_κₜ(i, j, k, grid, clock, fields, p)
 Enhance the isotropic, scalar diffusiviy applied to the temperature field by `p.enhance` after
 time `p.diff_change`. Note `p.diff_change` is expeceted in minutes.
 """
-@inline enhance_κₜ(i, j, k, grid, clock, fields, p) = p.start_enhance * 60 < clock.time < p.end_enhance * 60 ? p.κₜ * p.enhance : p.κₜ
+@inline enhance_κₜ(i, j, k, grid, clock, fields, p) = p.start_enhance * 60 < clock.time < p.end_enhance * 60 ? p.κₜ + p.κ_turb : p.κₜ
 """
     function diffusivities_from_ν(ν; τ = 0.01, Pr = 7)
 Get the salinity and temperature diffusivities from a set kinematic viscosity, diffusivity

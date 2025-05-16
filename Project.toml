@@ -4,6 +4,7 @@ authors = ["Josef Bisits <jbisits@gmail.com>"]
 version = "0.8.1"
 
 [deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 GibbsSeaWater = "9a22fb26-0b63-4589-b28e-8f9d0b5c3d05"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
@@ -21,6 +22,7 @@ CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 StaircaseShenanigansMakieExt = "CairoMakie"
 
 [compat]
+CUDA = "5.7" # macthes Oceananigans
 CairoMakie = "0.12, 0.13"
 GibbsSeaWater = "0.1"
 JLD2 = "0.4, 0.5"
@@ -33,8 +35,8 @@ Statistics = "1"
 julia = "1.10"
 
 [extras]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Test", "CairoMakie"]

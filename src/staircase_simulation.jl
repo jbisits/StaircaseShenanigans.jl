@@ -10,7 +10,7 @@ function SDNS_simulation_setup(sdns::StaircaseDNS, stop_time::Number,
                                 max_Δt = Inf,
                                 max_change = 1.1,
                                 save_schedule = 60, # seconds
-                                time_average_stride = 100,
+                                time_average_stride = 1,
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
                                 checkpointer_time_interval = nothing,

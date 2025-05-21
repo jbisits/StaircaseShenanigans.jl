@@ -52,7 +52,8 @@ export save_computed_output!, save_all_velocities!, save_vertical_velocities!
 export compute_R_ρ!, save_diagnostics!, save_diagnostic!, update_diagnostic!
 
 export animate_tracers, animate_density, visualise_initial_conditions, visualise_initial_density,
-       animate_tracers_anomaly, animate_density_anomaly, animate_profile_in_S_Θ_space
+       animate_tracers_anomaly, animate_density_anomaly, animate_profile_in_S_Θ_space,
+       animate_vertical_velocity
 
 include("staircase_initial_conditions.jl")
 include("single_interfaces_initial_conditions.jl")

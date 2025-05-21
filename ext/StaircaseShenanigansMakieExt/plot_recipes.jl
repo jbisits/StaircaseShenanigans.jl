@@ -179,7 +179,7 @@ end
                                      xslice = 52, yslice = 52)
 Animate the density variable in `computed_output`.
 """
-function StaircaseShenanigans.animate_density(computed_output::AbstractString, variable::AbstractString;
+function StaircaseShenanigans.animate_density(computed_output::AbstractString, variable::AbstractString,
                                               xslice = 52, yslice = 52, with_halos = false,
                                               density_limit_adjustment = 0)
 
@@ -240,6 +240,48 @@ function StaircaseShenanigans.animate_density(computed_output::AbstractString, v
 
         frames = eachindex(t)
         record(fig, joinpath(pwd(), "density_Nsquared.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
+
+    end
+
+    return nothing
+end
+"""
+    function animate_vertical_velocity
+"""
+function StaircaseShenanigans.animate_vertical_velocity(velocities::AbstractString;
+                                                        xslice = 52, yslice = 52, with_halos = false)
+
+    NCDataset(velocities) do ds
+
+        xidx, yidx, zidx = with_halos ? (:, :, :) : check_for_halos(ds)
+        x = ds["x_caa"][xidx]
+        z = ds["z_aaf"][zidx]
+        t = ds["time"][:]
+
+        n = Observable(1)
+        w = @lift ds[:w][xidx, yslice, zidx, $n]
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (500, 500))
+        ax = Axis(fig[1, 1], title = time_title)
+
+        colormap = cgrad(:balance)[2:end-1]
+        colorrange = extrema(ds[:w][xidx, yidx, zidx, 1])
+        lowclip = cgrad(:balance)[1]
+        highclip = cgrad(:balance)[end]
+        hm = heatmap!(ax[4], x, z, w; colorrange, colormap, lowclip, highclip)
+
+        ax[4].xlabel = "x (m)"
+        ax[4].ylabel = "z (m)"
+        Colorbar(fig[1, 2], hm, label = "w (ms⁻¹)")
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "w.mp4"),
             frames, framerate=8) do i
             msg = string("Plotting frame ", i, " of ", frames[end])
             print(msg * " \r")

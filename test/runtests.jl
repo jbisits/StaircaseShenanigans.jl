@@ -107,6 +107,9 @@ using Test, CairoMakie
         animate_tracers(simulation.output_writers[:tracers].filepath, xslice = 2, yslice = 2)
         @test isfile("tracers.mp4")
         rm("tracers.mp4")
+        animate_vertical_velocity(simulation.output_writers[:velocities].filepath, xslice = 2, yslice = 2)
+        @test isfile("w.mp4")
+        rm("w.mp4")
         # Diagnositcs
         diagnostics_file = joinpath(output_path, "test_diagnostics.jld2")
         save_diagnostics!(diagnostics_file,

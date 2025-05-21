@@ -179,7 +179,7 @@ end
                                      xslice = 52, yslice = 52)
 Animate the density variable in `computed_output`.
 """
-function StaircaseShenanigans.animate_density(computed_output::AbstractString, variable::AbstractString,
+function StaircaseShenanigans.animate_density(computed_output::AbstractString, variable::AbstractString;
                                               xslice = 52, yslice = 52, with_halos = false,
                                               density_limit_adjustment = 0)
 
@@ -274,7 +274,7 @@ function StaircaseShenanigans.animate_vertical_velocity(velocities::AbstractStri
         colorrange = extrema(ds[:w][xidx, yidx, zidx, 1])
         lowclip = cgrad(:balance)[1]
         highclip = cgrad(:balance)[end]
-        hm = heatmap!(ax[4], x, z, w; colorrange, colormap, lowclip, highclip)
+        hm = heatmap!(ax, x, z, w; colorrange, colormap, lowclip, highclip)
 
         ax[4].xlabel = "x (m)"
         ax[4].ylabel = "z (m)"

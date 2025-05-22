@@ -270,11 +270,11 @@ function StaircaseShenanigans.animate_vertical_velocity(velocities::AbstractStri
         fig = Figure(size = (500, 500))
         ax = Axis(fig[1, 1], title = time_title, xlabel = "x (m)", ylabel = "z (m)")
 
-        # colormap = cgrad(:balance)[2:end-1]
-        # colorrange = extrema(ds[:w][xidx, yidx, zidx, 1])
-        # lowclip = cgrad(:balance)[1]
-        # highclip = cgrad(:balance)[end]
-        hm = heatmap!(ax, x, z, w)#; colorrange, colormap, lowclip, highclip)
+        colormap = cgrad(:balance)[2:end-1]
+        colorrange = colorrange = (-0.001, 0.001)
+        lowclip = cgrad(:balance)[1]
+        highclip = cgrad(:balance)[end]
+        hm = heatmap!(ax, x, z, w; colorrange, colormap, lowclip, highclip)
 
         Colorbar(fig[1, 2], hm, label = "w (ms⁻¹)")
 

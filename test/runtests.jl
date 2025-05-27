@@ -132,8 +132,8 @@ using Test, CairoMakie
         Ep, Ep_lower, Ep_upper = output["nonlineareos/∫Ep"], output["nonlineareos/∫Ep_lower"], output["nonlineareos/∫Ep_upper"]
         close(output)
         # test that the PE's sum to the total
-        @test Eb .≈ Eb_lower .+ Eb_upper
-        @test Ep .≈ Ep_lower .+ Ep_upper
+        @test all(Eb .≈ Eb_lower .+ Eb_upper)
+        @test all(Ep .≈ Ep_lower .+ Ep_upper)
 
         update_diagnostic!(diagnostics_file, "nonlineareos", "S_flux",
                           simulation.output_writers[:tracers].filepath,

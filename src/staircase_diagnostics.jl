@@ -735,7 +735,7 @@ function potential_and_background_potential_energy!(computed_output::AbstractStr
             Ep_upper[i] = (g / ρ₀) * sum(σᵢ[:, :, T_interface+1:end] .* z_grid[:, :, T_interface+1:end] * ΔV)
         end
 
-    close(tracers)
+    close(ds_tracers)
     # save
     haskey(ds, "∫Eb") ? nothing : defVar(ds, "∫Eb", Eb, ("time",),
                                         attrib = ("longname" => "Volume integrated background potential energy"))

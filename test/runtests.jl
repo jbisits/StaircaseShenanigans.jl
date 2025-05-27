@@ -77,7 +77,8 @@ using Test, CairoMakie
 
     end
 
-    @testset "Diagnostic saving and plotting" begin
+    @testset "Diagnostics saving and plotting" begin
+
         ## This does not test accuracy just that a file is saved
         model = DNSModel(architecture, diffusivities, domain_extent, domain_topology, resolution, eos)
         depth_of_interface = -0.5

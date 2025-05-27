@@ -79,6 +79,8 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
                            group = nothing,
                            interface_offset = 4)
 
+    potential_and_background_potential_energy!(computed_output, tracers) # compute and add to output
+
     group = isnothing(group) ? "" : group[end] == '/' ? group : group * "/" # creates a group in the saved output.
 
     if isfile(diagnostics_file)
@@ -95,11 +97,11 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
             φ_interface_flux!(diagnostics_file, tracers, :T, group)
             ha_φ_flux!(diagnostics_file, tracers, :S_ha, group)
             ha_φ_flux!(diagnostics_file, tracers, :T_ha, group)
-            compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
-            interface_thickness!(diagnostics_file, tracers, group)
             ∫gρw!(diagnostics_file, computed_output, velocities, group)
             initial_non_dim_numbers!(diagnostics_file, computed_output, group)
             save_horizontally_averaged_fields!(diagnostics_file, computed_output, tracers, group)
+            compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
+            interface_thickness!(diagnostics_file, tracers, group)
 
         end
 
@@ -111,19 +113,19 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         φ_interface_flux!(diagnostics_file, tracers, :T, group)
         ha_φ_flux!(diagnostics_file, tracers, :S_ha, group)
         ha_φ_flux!(diagnostics_file, tracers, :T_ha, group)
-        compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
-        interface_thickness!(diagnostics_file, tracers, group)
         ∫gρw!(diagnostics_file, computed_output, velocities, group)
         initial_non_dim_numbers!(diagnostics_file, computed_output, group)
         save_horizontally_averaged_fields!(diagnostics_file, computed_output, tracers, group)
+        compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
+        interface_thickness!(diagnostics_file, tracers, group)
 
     end
 
     return nothing
 end
 """
-function save_diagnostic!(diagnostics_file::AbstractString, diagnostic_function!::Function,
-                            function_args)
+    function save_diagnostic!(diagnostics_file::AbstractString, diagnostic_function!::Function,
+                                function_args)
 Save `diagnostic_function!` to `diagnostics_file`. The `function_args` are the arguments for
 `diagnostic_function`. This allows a nice way to add other diagnostics that follows syntax
 I have used above though this is really a nice to have rather than necessary function.
@@ -155,6 +157,12 @@ function save_computed_output!(diagnostics_file::AbstractString, computed_output
                 file[group*"R_ρ"] = ds["R_ρ"][:]
                 file[group*"∫ε"] = ds["∫ε"][:]
                 file[group*"∫Eₖ"] = ds["∫Eₖ"][:]
+                file[group*"∫Eb"] = ds["∫Eb"][:]
+                file[group*"∫Eb_lower"] = ds["∫Eb_lower"][:]
+                file[group*"∫Eb_upper"] = ds["∫Eb_upper"][:]
+                file[group*"∫Ep"] = ds["∫Ep"][:]
+                file[group*"∫Ep_lower"] = ds["∫Ep_lower"][:]
+                file[group*"∫Ep_upper"] = ds["∫Ep_upper"][:]
                 file[group*"∫wb"] = ds["∫wb"][:]
                 ν, Sc = ds.attrib["ν (m²s⁻¹)"], ds.attrib["Sc"]
                 η_ = η.(ν, ds["ε_maximum"][:])
@@ -658,6 +666,89 @@ function save_horizontally_averaged_fields!(diagnostics_file::AbstractString,
                 file[group*"N²_ha"] = ds[:N²_ha][:, :]
             end
         end
+    end
+
+    return nothing
+end
+"""
+    function potential_and_background_potential_energy!(computed_output::AbstractString)
+Compute and append the potential and background energy to `computed_output`. **Note** the
+PE and BPE are both referenced to ``z = 0``, and the saved quantities are volume integrated.
+"""
+function potential_and_background_potential_energy!(computed_output::AbstractString, tracers::AbstractString)
+
+    NCDataset(computed_output, "a") do ds
+
+        SA = sum(ds["Δx_caa"][:]) * sum(ds["Δy_aca"][:])
+        t = ds[:time][:]
+        ρ₀ = ds.attrib["Reference density (kgm⁻³)"]
+        ΔV = ds[:Δx_caa][1] * ds[:Δy_aca][1] * ds[:Δz_aac][1]
+        σ = ds[:σ]
+
+        V = cumsum(ones(length(reshape(σ[:, :, :, 1], :)))) * ΔV
+        z✶ = V / SA
+
+        σ = ds[:σ]
+
+        ds_tracers = NCDataset(tracers)
+        T = ds_tracers[:T]
+        mid_T = 0.5 * (T[1, 1, end, 1] + T[1, 1, 1, 1])
+
+        # background potential energy
+        Eb = similar(t)
+        Eb_lower = similar(t)
+        Eb_upper = similar(t)
+        T_interface_z✶ = similar(t)
+        g = 9.81
+        for i ∈ eachindex(t)
+            σᵢ = σ[:, :, :, i] .- ρ₀
+            σᵢ_array = reshape(σᵢ, :)
+            sort!(σᵢ_array, rev = true)
+            Eb[i] = (g / ρ₀) * sum(σᵢ_array .* z✶ * ΔV)
+            # find index of interface
+            Tᵢ = reshape(T[:, :, :, i], :)
+            sort!(Tᵢ, rev = true)
+            T_interface = findfirst(Tᵢ .< mid_T)
+            T_interface_z✶[i] = z✶[T_interface]
+            # compute BPE in each layer
+            Eb_lower[i] = (g / ρ₀) * sum(σᵢ_array[1:T_interface] .* z✶[1:T_interface] * ΔV)
+            Eb_upper[i] = (g / ρ₀) * sum(σᵢ_array[T_interface+1:end] .* z✶[T_interface+1:end] * ΔV)
+        end
+
+        # potential energy
+        z = ds["z_aac"]
+        Nx = ds.group["grid_reconstruction"].attrib["Nx"]
+        Ny = ds.group["grid_reconstruction"].attrib["Ny"]
+        Nz = ds.group["grid_reconstruction"].attrib["Nz"]
+        z_ref0 = reverse(abs.(z))
+        z_grid = reshape(repeat(z_ref0, inner = Nx * Ny), (Nx, Ny, Nz))
+        Ep = similar(t)
+        Ep_lower = similar(t)
+        Ep_upper = similar(t)
+        for i ∈ eachindex(t)
+            σᵢ = σ[:, :, :, i] .- ρ₀
+            Ep[i] = (g / ρ₀) * sum(σᵢ .* z_grid * ΔV)
+            # find index of interface
+            T_interface = findfirst(z_ref0 .≥ T_interface_z✶[i])
+            # compute PE within each layer
+            Ep_lower[i] = (g / ρ₀) * sum(σᵢ[:, :, 1:T_interface] .* z_grid[:, :, 1:T_interface] * ΔV)
+            Ep_upper[i] = (g / ρ₀) * sum(σᵢ[:, :, T_interface+1:end] .* z_grid[:, :, T_interface+1:end] * ΔV)
+        end
+
+    close(ds_tracers)
+    # save
+    haskey(ds, "∫Eb") ? nothing : defVar(ds, "∫Eb", Eb, ("time",),
+                                        attrib = ("longname" => "Volume integrated background potential energy"))
+    haskey(ds, "∫Eb_lower") ? nothing : defVar(ds, "∫Eb_lower", Eb_lower, ("time",),
+                                               attrib = ("longname" => "Volume integrated background potential energy in lower layer"))
+    haskey(ds, "∫Eb_upper") ? nothing : defVar(ds, "∫Eb_upper", Eb_upper, ("time",),
+                                               attrib = ("longname" => "Volume integrated background potential energy in upper layer"))
+    haskey(ds, "∫Ep") ? nothing : defVar(ds, "∫Ep", Ep, ("time",),
+                                        attrib = ("longname" => "Volume integrated potential energy"))
+    haskey(ds, "∫Ep_lower") ? nothing : defVar(ds, "∫Ep_lower", Ep_lower, ("time",),
+                                               attrib = ("longname" => "Volume integrated potential energy in lower layer"))
+    haskey(ds, "∫Ep_upper") ? nothing : defVar(ds, "∫Ep_upper", Ep_upper, ("time",),
+                                               attrib = ("longname" => "Volume integrated potential energy in upper layer"))
     end
 
     return nothing

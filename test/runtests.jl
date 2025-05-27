@@ -77,7 +77,8 @@ using Test, CairoMakie
 
     end
 
-    @testset "Diagnostic saving and plotting" begin
+    @testset "Diagnostics saving and plotting" begin
+
         ## This does not test accuracy just that a file is saved
         model = DNSModel(architecture, diffusivities, domain_extent, domain_topology, resolution, eos)
         depth_of_interface = -0.5
@@ -100,7 +101,7 @@ using Test, CairoMakie
                      simulation.output_writers[:tracers].filepath,
                      (-0.4, -0.2), (-0.8, -0.6), eos)
 
-        # Plotting
+        # Animations
         animate_density(simulation.output_writers[:computed_output].filepath, "σ", xslice = 2, yslice = 2)
         @test isfile("density_Nsquared.mp4")
         rm("density_Nsquared.mp4")
@@ -110,6 +111,7 @@ using Test, CairoMakie
         animate_vertical_velocity(simulation.output_writers[:velocities].filepath, xslice = 2, yslice = 2)
         @test isfile("w.mp4")
         rm("w.mp4")
+
         # Diagnositcs
         diagnostics_file = joinpath(output_path, "test_diagnostics.jld2")
         save_diagnostics!(diagnostics_file,
@@ -124,6 +126,14 @@ using Test, CairoMakie
                           simulation.output_writers[:velocities].filepath,
                           group = "nonlineareos")
         @test isfile(diagnostics_file)
+
+        output = jldopen(diagnostics_file)
+        Eb, Eb_lower, Eb_upper = output["nonlineareos/∫Eb"], output["nonlineareos/∫Eb_lower"], output["nonlineareos/∫Eb_upper"]
+        Ep, Ep_lower, Ep_upper = output["nonlineareos/∫Ep"], output["nonlineareos/∫Ep_lower"], output["nonlineareos/∫Ep_upper"]
+        close(output)
+        # test that the PE's sum to the total
+        @test all(Eb .≈ Eb_lower .+ Eb_upper)
+        @test all(Ep .≈ Ep_lower .+ Ep_upper)
 
         update_diagnostic!(diagnostics_file, "nonlineareos", "S_flux",
                           simulation.output_writers[:tracers].filepath,

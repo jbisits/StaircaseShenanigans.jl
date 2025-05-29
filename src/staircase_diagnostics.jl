@@ -688,8 +688,6 @@ function potential_and_background_potential_energy!(computed_output::AbstractStr
         V = cumsum(ones(length(reshape(σ[:, :, :, 1], :)))) * ΔV
         z✶ = V / SA
 
-        σ = ds[:σ]
-
         ds_tracers = NCDataset(tracers)
         T = ds_tracers[:T]
         mid_T = 0.5 * (T[1, 1, end, 1] + T[1, 1, 1, 1])
@@ -708,7 +706,7 @@ function potential_and_background_potential_energy!(computed_output::AbstractStr
             # find index of interface
             Tᵢ = reshape(T[:, :, :, i], :)
             sort!(Tᵢ, rev = true)
-            T_interface = findfirst(Tᵢ .< mid_T)
+            T_interface = findfirst(Tᵢ .≤ mid_T) - 1
             T_interface_z✶[i] = z✶[T_interface]
             # compute BPE in each layer
             Eb_lower[i] = (g / ρ₀) * sum(σᵢ_array[1:T_interface] .* z✶[1:T_interface] * ΔV)
@@ -729,7 +727,7 @@ function potential_and_background_potential_energy!(computed_output::AbstractStr
             σᵢ = σ[:, :, :, i] .- ρ₀
             Ep[i] = (g / ρ₀) * sum(σᵢ .* z_grid * ΔV)
             # find index of interface
-            T_interface = findfirst(z_ref0 .≥ T_interface_z✶[i])
+            T_interface = findfirst(z_ref0 .≥ T_interface_z✶[i]) - 1
             # compute PE within each layer
             Ep_lower[i] = (g / ρ₀) * sum(σᵢ[:, :, 1:T_interface] .* z_grid[:, :, 1:T_interface] * ΔV)
             Ep_upper[i] = (g / ρ₀) * sum(σᵢ[:, :, T_interface+1:end] .* z_grid[:, :, T_interface+1:end] * ΔV)

@@ -688,8 +688,6 @@ function potential_and_background_potential_energy!(computed_output::AbstractStr
         V = cumsum(ones(length(reshape(σ[:, :, :, 1], :)))) * ΔV
         z✶ = V / SA
 
-        σ = ds[:σ]
-
         ds_tracers = NCDataset(tracers)
         T = ds_tracers[:T]
         mid_T = 0.5 * (T[1, 1, end, 1] + T[1, 1, 1, 1])

@@ -128,8 +128,8 @@ using Test, CairoMakie
         @test isfile(diagnostics_file)
 
         output = jldopen(diagnostics_file)
-        Eb, Eb_lower, Eb_upper = output["nonlineareos/∫Eb"], output["nonlineareos/∫Eb_lower"], output["nonlineareos/∫Eb_upper"]
-        Ep, Ep_lower, Ep_upper = output["nonlineareos/∫Ep"], output["nonlineareos/∫Ep_lower"], output["nonlineareos/∫Ep_upper"]
+        Eb, Eb_lower, Eb_upper = output["nonlineareos/Eb"], output["nonlineareos/Eb_lower"], output["nonlineareos/Eb_upper"]
+        Ep, Ep_lower, Ep_upper = output["nonlineareos/Ep"], output["nonlineareos/Ep_lower"], output["nonlineareos/Ep_upper"]
         close(output)
         # test that the PE's sum to the total
         @test all(Eb .≈ Eb_lower .+ Eb_upper)

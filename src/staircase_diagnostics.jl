@@ -79,8 +79,6 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
                            group = nothing,
                            interface_offset = 4)
 
-    potential_and_background_potential_energy!(computed_output, tracers) # compute and add to output
-
     group = isnothing(group) ? "" : group[end] == '/' ? group : group * "/" # creates a group in the saved output.
 
     if isfile(diagnostics_file)
@@ -93,6 +91,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
 
             "dims" ∈ group_keys ? nothing : dimensions!(diagnostics_file, computed_output)
             save_computed_output!(diagnostics_file, computed_output, group)
+            potential_and_background_potential_energy!(diagnostics_file, computed_output, tracers, group)
             φ_interface_flux!(diagnostics_file, tracers, :S, group)
             φ_interface_flux!(diagnostics_file, tracers, :T, group)
             ha_φ_flux!(diagnostics_file, tracers, :S_ha, group)
@@ -109,6 +108,8 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
 
         dimensions!(diagnostics_file, computed_output)
         save_computed_output!(diagnostics_file, computed_output, group)
+        potential_and_background_potential_energy!(diagnostics_file, computed_output, tracers, group)
+        save_snaphots!(diagnostics_file, tracers, velocities, group; snapshots = 1:25)
         φ_interface_flux!(diagnostics_file, tracers, :S, group)
         φ_interface_flux!(diagnostics_file, tracers, :T, group)
         ha_φ_flux!(diagnostics_file, tracers, :S_ha, group)
@@ -675,7 +676,9 @@ end
 Compute and append the potential and background energy to `computed_output`. **Note** the
 PE and BPE are both referenced to ``z = 0``, and the saved quantities are volume integrated.
 """
-function potential_and_background_potential_energy!(computed_output::AbstractString, tracers::AbstractString)
+function potential_and_background_potential_energy!(diagnostics_file::AbstractString,
+                                                    computed_output::AbstractString,
+                                                    tracers::AbstractString, group)
 
     NCDataset(computed_output, "a") do ds
 
@@ -734,19 +737,81 @@ function potential_and_background_potential_energy!(computed_output::AbstractStr
         end
 
     close(ds_tracers)
-    # save
-    haskey(ds, "∫Eb") ? nothing : defVar(ds, "∫Eb", Eb, ("time",),
-                                        attrib = ("longname" => "Volume integrated background potential energy"))
-    haskey(ds, "∫Eb_lower") ? nothing : defVar(ds, "∫Eb_lower", Eb_lower, ("time",),
-                                               attrib = ("longname" => "Volume integrated background potential energy in lower layer"))
-    haskey(ds, "∫Eb_upper") ? nothing : defVar(ds, "∫Eb_upper", Eb_upper, ("time",),
-                                               attrib = ("longname" => "Volume integrated background potential energy in upper layer"))
-    haskey(ds, "∫Ep") ? nothing : defVar(ds, "∫Ep", Ep, ("time",),
-                                        attrib = ("longname" => "Volume integrated potential energy"))
-    haskey(ds, "∫Ep_lower") ? nothing : defVar(ds, "∫Ep_lower", Ep_lower, ("time",),
-                                               attrib = ("longname" => "Volume integrated potential energy in lower layer"))
-    haskey(ds, "∫Ep_upper") ? nothing : defVar(ds, "∫Ep_upper", Ep_upper, ("time",),
-                                               attrib = ("longname" => "Volume integrated potential energy in upper layer"))
+
+    save_pe_and_bpe!(diagnostics_file, Ep, Ep_lower, Ep_upper, Eb, Eb_lower, Eb_upper, group)
+
+    end
+
+    return nothing
+end
+function save_pe_and_bpe!(diagnostics_file::AbstractString, Ep, Ep_lower, Ep_upper, Eb, Eb_lower, Eb_upper, group)
+
+    if isfile(diagnostics_file)
+        jldopen(diagnostics_file, "a+") do file
+            file[group*"Ep"] = Ep
+            file[group*"Ep_lower"] = Ep_lower
+            file[group*"Ep_upper"] = Ep_upper
+            file[group*"Eb"] = Eb
+            file[group*"Eb_lower"] = Eb_lower
+            file[group*"Eb_upper"] = Eb_upper
+        end
+    else
+        jldopen(diagnostics_file, "w") do file
+            file[group*"Ep"] = Ep
+            file[group*"Ep_lower"] = Ep_lower
+            file[group*"Ep_upper"] = Ep_upper
+            file[group*"Eb"] = Eb
+            file[group*"Eb_lower"] = Eb_lower
+            file[group*"Eb_upper"] = Eb_upper
+        end
+    end
+    return nothing
+end
+function save_snaphots!(diagnostics_file::AbstractString, tracers::AbstractString,
+                        velocities::AbstractString, group; snapshots = 1:25)
+
+    if isfile(diagnostics_file)
+
+        jldopen(diagnostics_file, "w") do file
+            NCDataset(tracers) do ds
+
+                t = ds["time"][:]
+                for i ∈ snapshots
+                    file[group*"S/xzslice_$(t[i])"] = ds[:S][:, 1, :, i]
+                    file[group*"T/yzslice_$(t[i])"] = ds[:T][1, :, :, i]
+                end
+            end
+
+            NCDataset(velocities) do ds
+
+                t = ds["time"][:]
+                for i ∈ snapshots
+                    file[group*"w/w_zmean_$(t[i])"] = mean(ds[:w][:, :, :, i], dims = 3)
+                end
+            end
+        end
+
+    else
+
+        jldopen(diagnostics_file, "w") do file
+            NCDataset(tracers) do ds
+
+                t = ds["time"][:]
+                for i ∈ snapshots
+                    file["S/xzslice_$(t[i])"] = ds[:S][:, 1, :, i]
+                    file["T/yzslice_$(t[i])"] = ds[:T][1, :, :, i]
+                end
+            end
+
+            NCDataset(velocities) do ds
+
+                t = ds["time"][:]
+                for i ∈ snapshots
+                    file["w/w_zmean_$(t[i])"] = mean(ds[:w][:, :, :, i], dims = 3)
+                end
+            end
+        end
+
     end
 
     return nothing

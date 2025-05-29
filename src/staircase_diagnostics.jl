@@ -158,12 +158,6 @@ function save_computed_output!(diagnostics_file::AbstractString, computed_output
                 file[group*"R_ρ"] = ds["R_ρ"][:]
                 file[group*"∫ε"] = ds["∫ε"][:]
                 file[group*"∫Eₖ"] = ds["∫Eₖ"][:]
-                file[group*"∫Eb"] = ds["∫Eb"][:]
-                file[group*"∫Eb_lower"] = ds["∫Eb_lower"][:]
-                file[group*"∫Eb_upper"] = ds["∫Eb_upper"][:]
-                file[group*"∫Ep"] = ds["∫Ep"][:]
-                file[group*"∫Ep_lower"] = ds["∫Ep_lower"][:]
-                file[group*"∫Ep_upper"] = ds["∫Ep_upper"][:]
                 file[group*"∫wb"] = ds["∫wb"][:]
                 ν, Sc = ds.attrib["ν (m²s⁻¹)"], ds.attrib["Sc"]
                 η_ = η.(ν, ds["ε_maximum"][:])

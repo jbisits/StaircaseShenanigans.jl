@@ -89,7 +89,7 @@ using Test, CairoMakie
         sdns = StaircaseDNS(model, interface_ics, nothing)
         set_initial_conditions!(sdns)
         stop_time = 2 * 60 # seconds
-        save_schedule = 60  # seconds
+        save_schedule = 4  # seconds
         output_path = joinpath(@__DIR__, "output")
         simulation = SDNS_simulation_setup(sdns, stop_time, save_computed_output!, save_vertical_velocities!;
                                             save_schedule,

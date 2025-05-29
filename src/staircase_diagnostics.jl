@@ -706,7 +706,7 @@ function potential_and_background_potential_energy!(computed_output::AbstractStr
             # find index of interface
             Tᵢ = reshape(T[:, :, :, i], :)
             sort!(Tᵢ, rev = true)
-            T_interface = findfirst(Tᵢ .< mid_T)
+            T_interface = findfirst(Tᵢ .≤ mid_T) - 1
             T_interface_z✶[i] = z✶[T_interface]
             # compute BPE in each layer
             Eb_lower[i] = (g / ρ₀) * sum(σᵢ_array[1:T_interface] .* z✶[1:T_interface] * ΔV)

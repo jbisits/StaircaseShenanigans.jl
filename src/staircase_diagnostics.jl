@@ -766,7 +766,7 @@ function save_snaphots!(diagnostics_file::AbstractString, tracers::AbstractStrin
 
     if isfile(diagnostics_file)
 
-        jldopen(diagnostics_file, "w") do file
+        jldopen(diagnostics_file, "a+") do file
             NCDataset(tracers) do ds
 
                 t = ds["time"][:]

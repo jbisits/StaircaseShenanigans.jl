@@ -1,7 +1,7 @@
 name = "StaircaseShenanigans"
 uuid = "c2bb06a8-94f3-4279-b990-30bf3ab8ba6f"
 authors = ["Josef Bisits <jbisits@gmail.com>"]
-version = "0.8.1"
+version = "0.8.2"
 
 [deps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"

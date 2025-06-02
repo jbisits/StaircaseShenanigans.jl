@@ -92,6 +92,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
             "dims" ∈ group_keys ? nothing : dimensions!(diagnostics_file, computed_output)
             save_computed_output!(diagnostics_file, computed_output, group)
             potential_and_background_potential_energy!(diagnostics_file, computed_output, tracers, group)
+            ha_wC!(diagnostics_file, tracers, :T, velocities, group)
             φ_interface_flux!(diagnostics_file, tracers, :S, group)
             φ_interface_flux!(diagnostics_file, tracers, :T, group)
             ha_φ_flux!(diagnostics_file, tracers, :S_ha, group)
@@ -109,6 +110,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         dimensions!(diagnostics_file, computed_output)
         save_computed_output!(diagnostics_file, computed_output, group)
         potential_and_background_potential_energy!(diagnostics_file, computed_output, tracers, group)
+        ha_wC!(diagnostics_file, tracers, :T, velocities, group)
         save_snaphots!(diagnostics_file, tracers, velocities, group; snapshots = 1:25)
         φ_interface_flux!(diagnostics_file, tracers, :S, group)
         φ_interface_flux!(diagnostics_file, tracers, :T, group)
@@ -806,6 +808,42 @@ function save_snaphots!(diagnostics_file::AbstractString, tracers::AbstractStrin
             end
         end
 
+    end
+
+    return nothing
+end
+function ha_wC!(diagnostics_file::AbstractString, tracers::AbstractString, tracer::Symbol,
+                velocities::AbstractString, group)
+
+    ds_tracers = NCDataset(tracers)
+    ds_w = NCDataset(velocities)
+
+    t = ds_tracers["time"][:]
+    Nz = ds_tracers.group["grid_reconstruction"].dim["z_f"]
+    ha_wC = Array{Float64}(undef, Nz, length(t))
+    C = ds_tracers[tracer]
+    w = ds_w[:w]
+
+    for i ∈ eachindex(t)
+        C_interp = cat(C[:, :, 1, i],
+                        0.5 * (C[:, :, 1:end-1, i] .+ C[:, :, 2:end, i]),
+                        C[:, :, end, i], dims = 3)
+
+        wC = C_interp .* w[:, :, :, i]
+        ha_wC[:, i] = reshape(mean(wC, dims = (1, 2)), :)
+    end
+
+    close(ds_tracers)
+    close(ds_w)
+
+    if isfile(diagnostics_file)
+        jldopen(diagnostics_file, "a+") do file
+            file[group*"ha_w"*string(tracer)] = ha_wC
+        end
+    else
+        jldopen(diagnostics_file, "w") do file
+            file[group*"ha_w"*string(tracer)] = ha_wC
+        end
     end
 
     return nothing

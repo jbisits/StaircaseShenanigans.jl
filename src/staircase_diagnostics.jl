@@ -21,7 +21,7 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
     interface_depth = NCDataset(computed_output) do co
                           co.attrib[:interface_depth]
                       end
-    ds = NCDataset(tracers)
+    ds = NCDataset(tracers, "a")
 
     z = ds[:z_aac][:]
 
@@ -30,8 +30,11 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
 
     S_u = S_g = reshape(mean(ds[:S_ha][upper_range, :], dims = 1), :)
     S_l = S_f = reshape(mean(ds[:S_ha][lower_range, :], dims = 1), :)
+    ΔS = S_u .- S_l
     T_u = T_f = reshape(mean(ds[:T_ha][upper_range, :], dims = 1), :)
     T_l = T_g = reshape(mean(ds[:T_ha][lower_range, :], dims = 1), :)
+    ΔT = T_u .- T_l
+
 
     eos_vec = fill(eos, length(S_u))
     ρ_u = total_density.(T_u, S_u, interface_depth, eos_vec)
@@ -47,9 +50,19 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
             renameVar(ds2, "R_ρ"*i, "R_ρ_prior_cp"*i)
             defVar(ds2, "R_ρ"*i, R_ρ, ("time",),
                     attrib = Dict("long_name" => "Density ratio at interface "*i))
+            # Save ΔS, ΔT to tracers dataset
+            defVar(ds, "ΔS"*i, ΔS, ("time",),
+                    attrib = Dict("long_name" => "ΔS used for Rᵨ "*i))
+            defVar(ds, "ΔT"*i, ΔT, ("time",),
+                    attrib = Dict("long_name" => "ΔT used for Rᵨ "*i))
         else
             defVar(ds2, "R_ρ"*i, R_ρ, ("time",),
                     attrib = Dict("long_name" => "Density ratio at interface "*i))
+                                # Save ΔS, ΔT to tracers dataset
+            defVar(ds, "ΔS"*i, ΔS, ("time",),
+                    attrib = Dict("long_name" => "ΔS used for Rᵨ "*i))
+            defVar(ds, "ΔT"*i, ΔT, ("time",),
+                    attrib = Dict("long_name" => "ΔT used for Rᵨ "*i))
         end
     end
 

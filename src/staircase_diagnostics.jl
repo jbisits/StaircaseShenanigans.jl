@@ -21,7 +21,7 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
     interface_depth = NCDataset(computed_output) do co
                           co.attrib[:interface_depth]
                       end
-    ds = NCDataset(tracers)
+    ds = NCDataset(tracers, "a")
 
     z = ds[:z_aac][:]
 

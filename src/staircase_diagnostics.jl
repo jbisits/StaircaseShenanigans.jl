@@ -8,7 +8,8 @@ upper_middle_fifth(i, j, k, grid, c) = 0.2 * grid.Nz < k < 0.4 * grid.Nz
 "Condition for middle fifth of lower half of domain."
 lower_middle_fifth(i, j, k, grid, c) = 0.6 * grid.Nz < k < 0.8 * grid.Nz
 """
-    function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString, eos)
+    function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
+                            upper::Tuple, lower::Tuple, eos; i = "")
 From saved `tracers` output get the averaged salinity and temperature and lower and upper
 quarter of the domain, compute the density ratio and save to `computed_output`.
 **Note:** this method *needs the equation of state* used in the model so best practice is to
@@ -273,7 +274,7 @@ function update_diagnostic!(diagnostics_file::AbstractString, group::AbstractStr
     ha_S_flux_keys = ("ha_S_flux", "ha_S_interface_idx")
     T_flux_keys = ("T_flux", "T_interface_idx")
     ha_T_flux_keys = ("ha_T_flux", "ha_T_interface_idx")
-    interface_thickness_keys = ("hₜ", "hₛ", "r","ΔS", "ΔT")
+    interface_thickness_keys = ("hₜ", "hₛ", "r")
     Ẽ_keys = ("Ẽ", "Tₗ_Tᵤ_ts", "Sₗ_Sᵤ_ts", "ρₗ_ρᵤ_ts")
 
       keys_to_remove =  if key ∈ S_flux_keys
@@ -480,28 +481,24 @@ function interface_thickness!(diagnostics_file::AbstractString, tracers::Abstrac
         end
 
         r = hₜ ./ hₛ
-        save_interface_thickness!(diagnostics_file, hₜ, hₛ, r, ΔS, ΔT, group)
+        save_interface_thickness!(diagnostics_file, hₜ, hₛ, r, group)
     end
 
     return nothing
 end
-function save_interface_thickness!(diagnostics_file, hₜ, hₛ, r, ΔS, ΔT, group)
+function save_interface_thickness!(diagnostics_file, hₜ, hₛ, r, group)
 
     if isfile(diagnostics_file)
         jldopen(diagnostics_file, "a+") do file
             file[group*"hₜ"] = hₜ
             file[group*"hₛ"] = hₛ
             file[group*"r"] = r
-            file[group*"ΔS"] = ΔS
-            file[group*"ΔT"] = ΔT
         end
     else
         jldopen(diagnostics_file, "w") do file
             file[group*"hₜ"] = hₜ
             file[group*"hₛ"] = hₛ
             file[group*"r"] = r
-            file[group*"ΔS"] = ΔS
-            file[group*"ΔT"] = ΔT
         end
     end
 
@@ -655,11 +652,15 @@ function save_horizontally_averaged_fields!(diagnostics_file::AbstractString,
             jldopen(diagnostics_file, "a+") do file
                 file[group*"T_ha"] = ds[:T_ha][:, :]
                 file[group*"S_ha"] = ds[:S_ha][:, :]
+                file[group*"ΔS"] = ds[:ΔS][:]
+                file[group*"ΔT"] = ds[:ΔT][:]
             end
         else
             jldopen(diagnostics_file, "w") do file
                 file[group*"T_ha"] = ds[:T_ha][:, :]
                 file[group*"S_ha"] = ds[:S_ha][:, :]
+                file[group*"ΔS"] = ds[:ΔS][:]
+                file[group*"ΔT"] = ds[:ΔT][:]
             end
         end
     end

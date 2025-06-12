@@ -128,9 +128,15 @@ using Test, CairoMakie
         @test isfile(diagnostics_file)
 
         output = jldopen(diagnostics_file)
+        ΔS, ΔT = output["lineareos/ΔS"], output["lineareos/ΔT"]
         Eb, Eb_lower, Eb_upper = output["nonlineareos/Eb"], output["nonlineareos/Eb_lower"], output["nonlineareos/Eb_upper"]
         Ep, Ep_lower, Ep_upper = output["nonlineareos/Ep"], output["nonlineareos/Ep_lower"], output["nonlineareos/Ep_upper"]
         close(output)
+        # salinity and temperature averages are correcy
+        @test ΔS[1] ≈ salinity[1] - salinity[2]
+        @test floor(ΔT[1]) ≈ temperature[1] - temperature[2]
+        @test ΔS[2] ≈ salinity[1] - salinity[2]
+        @test floor(ΔT[2]) ≈ temperature[1] - temperature[2]
         # test that the PE's sum to the total
         @test all(Eb .≈ Eb_lower .+ Eb_upper)
         @test all(Ep .≈ Ep_lower .+ Ep_upper)

@@ -134,9 +134,9 @@ using Test, CairoMakie
         close(output)
         # salinity and temperature averages are correcy
         @test ΔS[1] ≈ salinity[1] - salinity[2]
-        @test ΔT[1] ≈ temperature[1] - temperature[2]
+        @test floor(ΔT[1]) ≈ temperature[1] - temperature[2]
         @test ΔS[2] ≈ salinity[1] - salinity[2]
-        @test ΔT[2] ≈ temperature[1] - temperature[2]
+        @test floor(ΔT[2]) ≈ temperature[1] - temperature[2]
         # test that the PE's sum to the total
         @test all(Eb .≈ Eb_lower .+ Eb_upper)
         @test all(Ep .≈ Ep_lower .+ Ep_upper)

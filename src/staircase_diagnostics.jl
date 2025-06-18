@@ -115,7 +115,6 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
             initial_non_dim_numbers!(diagnostics_file, computed_output, group)
             save_horizontally_averaged_fields!(diagnostics_file, computed_output, tracers, group)
             compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
-            interface_thickness!(diagnostics_file, tracers, group)
 
         end
 
@@ -134,7 +133,6 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         initial_non_dim_numbers!(diagnostics_file, computed_output, group)
         save_horizontally_averaged_fields!(diagnostics_file, computed_output, tracers, group)
         compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
-        interface_thickness!(diagnostics_file, tracers, group)
 
     end
 

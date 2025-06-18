@@ -146,11 +146,6 @@ using Test, CairoMakie
                           simulation.output_writers[:computed_output].filepath)
         @test isfile(diagnostics_file)
 
-        update_diagnostic!(diagnostics_file, "lineareos", "hₜ",
-                            simulation.output_writers[:tracers].filepath,
-                            simulation.output_writers[:computed_output].filepath)
-        @test isfile(diagnostics_file)
-
         update_diagnostic!(diagnostics_file, "nonlineareos", "Ẽ",
                             simulation.output_writers[:tracers].filepath,
                             simulation.output_writers[:computed_output].filepath,

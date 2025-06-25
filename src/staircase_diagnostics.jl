@@ -877,17 +877,17 @@ function median_density_height!(diagnostics_file::AbstractString, computed_outpu
     SA = sum(ds[:Δx_caa][:]) * sum(ds[:Δy_aca][:])
     V = cumsum(ones(length(reshape(σ[:, :, :, 1], :)))) * ΔV
     z✶ = V / SA
-    σ_median = similar(t)
-    σ_median_height = similar(t)
-    σ_median_height_idx = similar(t)
+    σ_mid = similar(t)
+    σ_mid_height = similar(t)
+    σ_mid_height_idx = similar(t)
 
     for i ∈ eachindex(t)
 
         σₜ = reshape(σ[:, :, :, i], :)
         sort!(σₜ)
-        σ_mid = σ_median[i] = median(σₜ)
-        find_height = σ_median_height_idx[i] = findfirst(σₜ .> σ_mid) - 1
-        σ_median_height[i] = z✶[find_height]
+        σ_mid[i] = median(σₜ)
+        find_height = σ_mid_height_idx[i] = findfirst(σₜ .> σ_mid[i]) - 1
+        σ_mid_height[i] = z✶[find_height]
 
     end
 
@@ -895,15 +895,15 @@ function median_density_height!(diagnostics_file::AbstractString, computed_outpu
 
     if isfile(diagnostics_file)
         jldopen(diagnostics_file, "a+") do file
-            file[group*"σ_median"] = σ_median
-            file[group*"σ_median_height"] = σ_median_height
-            file[group*"σ_median_height_idx"] = σ_median_height_idx
+            file[group*"σ_mid"] = σ_mid
+            file[group*"σ_mid_height"] = σ_mid_height
+            file[group*"σ_mid_height_idx"] = σ_mid_height_idx
         end
     else
         jldopen(diagnostics_file, "w") do file
-            file[group*"σ_median"] = σ_median
-            file[group*"σ_median_height"] = σ_median_height
-            file[group*"σ_median_height_idx"] = σ_median_height_idx
+            file[group*"σ_mid"] = σ_mid
+            file[group*"σ_mid_height"] = σ_mid_height
+            file[group*"σ_mid_height_idx"] = σ_mid_height_idx
         end
     end
 

@@ -877,9 +877,9 @@ function median_density_height!(diagnostics_file::AbstractString, computed_outpu
     SA = sum(ds[:Δx_caa][:]) * sum(ds[:Δy_aca][:])
     V = cumsum(ones(length(reshape(σ[:, :, :, 1], :)))) * ΔV
     z✶ = V / SA
-    σ_median = similar(time)
-    σ_median_height = similar(time)
-    σ_median_height_idx = similar(time)
+    σ_median = similar(t)
+    σ_median_height = similar(t)
+    σ_median_height_idx = similar(t)
 
     for i ∈ eachindex(t)
 

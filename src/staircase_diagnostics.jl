@@ -52,6 +52,8 @@ function compute_R_ρ!(computed_output::AbstractString, tracers::AbstractString,
             defVar(ds2, "R_ρ"*i, R_ρ, ("time",),
                     attrib = Dict("long_name" => "Density ratio at interface "*i))
             # Save ΔS, ΔT to tracers dataset
+            renameVar(ds, "ΔS"*i, "ΔS_prior_cp"*i)
+            renameVar(ds, "ΔT"*i, "ΔT_prior_cp"*i)
             defVar(ds, "ΔS"*i, ΔS, ("time",),
                     attrib = Dict("long_name" => "ΔS used for Rᵨ "*i))
             defVar(ds, "ΔT"*i, ΔT, ("time",),
@@ -115,6 +117,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
             initial_non_dim_numbers!(diagnostics_file, computed_output, group)
             save_horizontally_averaged_fields!(diagnostics_file, computed_output, tracers, group)
             compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
+            median_density_height!(diagnostics_file, computed_output, group)
 
         end
 
@@ -133,6 +136,7 @@ function save_diagnostics!(diagnostics_file::AbstractString, tracers::AbstractSt
         initial_non_dim_numbers!(diagnostics_file, computed_output, group)
         save_horizontally_averaged_fields!(diagnostics_file, computed_output, tracers, group)
         compute_Ẽ!(diagnostics_file, computed_output, tracers, group, interface_offset)
+        median_density_height!(diagnostics_file, computed_output, group)
 
     end
 
@@ -855,6 +859,51 @@ function ha_wC!(diagnostics_file::AbstractString, tracers::AbstractString, trace
     else
         jldopen(diagnostics_file, "w") do file
             file[group*"ha_w"*string(tracer)] = ha_wC
+        end
+    end
+
+    return nothing
+end
+"""
+    function median_density_height!(diagnostics_file::AbstractString, computed_output::AbstractString, group)
+Find the height of the median density within the reshaped (full 3D domain) and sorted density profile.
+"""
+function median_density_height!(diagnostics_file::AbstractString, computed_output::AbstractString, group)
+
+    ds = NCDataset(computed_output)
+    σ = ds[:σ]
+    t = ds[:time][:]
+    ΔV = ds[:Δx_caa][1] * ds[:Δy_aca][1] * ds[:Δz_aac][1]
+    SA = sum(ds[:Δx_caa][:]) * sum(ds[:Δy_aca][:])
+    V = cumsum(ones(length(reshape(σ[:, :, :, 1], :)))) * ΔV
+    z✶ = V / SA
+    σ_median = similar(t)
+    σ_median_height = similar(t)
+    σ_median_height_idx = similar(t)
+
+    for i ∈ eachindex(t)
+
+        σₜ = reshape(σ[:, :, :, i], :)
+        sort!(σₜ)
+        σ_mid = σ_median[i] = median(σₜ)
+        find_height = σ_median_height_idx[i] = findfirst(σₜ .> σ_mid) - 1
+        σ_median_height[i] = z✶[find_height]
+
+    end
+
+    close(ds)
+
+    if isfile(diagnostics_file)
+        jldopen(diagnostics_file, "a+") do file
+            file[group*"σ_median"] = σ_median
+            file[group*"σ_median_height"] = σ_median_height
+            file[group*"σ_median_height_idx"] = σ_median_height_idx
+        end
+    else
+        jldopen(diagnostics_file, "w") do file
+            file[group*"σ_median"] = σ_median
+            file[group*"σ_median_height"] = σ_median_height
+            file[group*"σ_median_height_idx"] = σ_median_height_idx
         end
     end
 

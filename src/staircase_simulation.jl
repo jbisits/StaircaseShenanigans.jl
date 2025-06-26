@@ -318,7 +318,7 @@ function save_computed_output!(simulation, sdns, schedule, save_file, output_dir
     σ_ha = Average(σ, dims = (1, 2))
     N² = buoyancy_frequency(model)
     N²_ha = Average(N², dims = (1, 2))
-    ε = KineticEnergyDissipationRate(model)
+    ε = IsotropicKineticEnergyDissipationRate(model)
     ∫ε = Integral(ε)
     ε_maximum = Reduction(maximum!, ε, dims = (1, 2, 3))
     Eₖ = KineticEnergy(model)
